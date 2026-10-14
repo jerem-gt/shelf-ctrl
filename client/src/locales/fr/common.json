@@ -24,7 +24,9 @@
     "network": "Impossible de joindre le serveur.",
     "validation": "Certains champs sont invalides.",
     "generic": "Une erreur est survenue.",
-    "conflict": "Cette action n'est plus possible : l'état de l'exemplaire a changé."
+    "conflict": "Cette action n'est plus possible : l'état de l'exemplaire a changé.",
+    "unauthorized": "Identifiant ou mot de passe incorrect.",
+    "tooManyAttempts": "Trop de tentatives : réessaie dans quelques minutes."
   },
   "collection": {
     "title": "Ma collection",
@@ -113,7 +115,8 @@
     "main": "Navigation",
     "collection": "Collection",
     "loans": "Prêts",
-    "sales": "Ventes"
+    "sales": "Ventes",
+    "logout": "Se déconnecter"
   },
   "loan": {
     "section": "Prêts",
@@ -178,5 +181,12 @@
     "noPrice": "prix non renseigné",
     "listedSince": "en vente depuis le {{date}}",
     "soldOn": "vendu le {{date}}"
+  },
+  "login": {
+    "title": "Connexion",
+    "username": "Identifiant",
+    "password": "Mot de passe",
+    "submit": "Se connecter",
+    "submitting": "Connexion…"
   }
 }

@@ -113,6 +113,11 @@ export interface BarcodeLookupResponse {
   suggestion: BarcodeSuggestion;
 }
 
+/** Utilisateur connecté (réponse de `/api/auth/me` et de la connexion). */
+export interface SessionResponse {
+  username: string;
+}
+
 export interface HealthResponse {
   status: 'ok';
 }

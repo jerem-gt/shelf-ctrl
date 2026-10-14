@@ -10,6 +10,7 @@ import type {
   OpenLoanItem,
   SaleItem,
   SaleListItem,
+  SessionResponse,
 } from '@shelfctrl/types';
 
 import i18n from '@/i18n';
@@ -23,14 +24,15 @@ export class ApiError extends Error {
   }
 }
 
+const ERROR_KEYS: Record<number, string> = {
+  400: 'errors.validation',
+  401: 'errors.unauthorized',
+  409: 'errors.conflict',
+  429: 'errors.tooManyAttempts',
+};
+
 function errorMessage(status: number): string {
-  if (status === 400) {
-    return i18n.t('errors.validation');
-  }
-  if (status === 409) {
-    return i18n.t('errors.conflict');
-  }
-  return i18n.t('errors.generic');
+  return i18n.t(ERROR_KEYS[status] ?? 'errors.generic');
 }
 
 async function request<T>(method: string, url: string, body?: unknown): Promise<T> {
@@ -110,7 +112,17 @@ export interface SalePayload {
   priceCents?: number | null;
 }
 
+export interface LoginPayload {
+  username: string;
+  password: string;
+}
+
 export const api = {
+  auth: {
+    me: () => request<SessionResponse>('GET', '/api/auth/me'),
+    login: (payload: LoginPayload) => request<SessionResponse>('POST', '/api/auth/login', payload),
+    logout: () => request<undefined>('POST', '/api/auth/logout'),
+  },
   sales: {
     all: () => request<SaleListItem[]>('GET', '/api/sales'),
     forCopy: (copyId: number) => request<SaleItem | null>('GET', `/api/copies/${copyId}/sale`),
