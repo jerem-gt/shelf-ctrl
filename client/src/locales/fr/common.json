@@ -71,6 +71,7 @@
   },
   "sources": {
     "local": "ta collection",
+    "bnf": "la BnF",
     "openlibrary": "Open Library",
     "googlebooks": "Google Books",
     "upcitemdb": "UPCitemdb"

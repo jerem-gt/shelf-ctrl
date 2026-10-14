@@ -49,7 +49,7 @@ export interface CopyListResponse {
 /** `isbn` : livre (préfixe 978/979) ; `ean` : tout autre code (vidéo). */
 export type BarcodeKind = 'isbn' | 'ean';
 
-export type BarcodeSource = 'local' | 'openlibrary' | 'googlebooks' | 'upcitemdb';
+export type BarcodeSource = 'local' | 'bnf' | 'openlibrary' | 'googlebooks' | 'upcitemdb';
 
 /** Fiche proposée pour un code-barres : à relire par l'utilisateur avant enregistrement. */
 export interface BarcodeSuggestion {
