@@ -23,6 +23,9 @@ services:
       - LOG_LEVEL=INFO
       - GOOGLE_BOOKS_API_KEY=${GOOGLE_BOOKS_API_KEY:-}
       - TMDB_API_KEY=${TMDB_API_KEY:-}
+    networks:
+      mynet:
+        ipv4_address: 172.27.0.2
   shelfctrl-dev:
     image: ghcr.io/jerem-gt/shelf-ctrl:dev
     user: '${PUID}:${PGID}'
@@ -45,3 +48,13 @@ services:
       - LOG_LEVEL=INFO
       - GOOGLE_BOOKS_API_KEY=${GOOGLE_BOOKS_API_KEY:-}
       - TMDB_API_KEY=${TMDB_API_KEY:-}
+    networks:
+      mynet:
+        ipv4_address: 172.27.0.3
+networks:
+  mynet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.27.0.0/24
+          gateway: 172.27.0.1
