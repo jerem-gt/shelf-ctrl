@@ -71,6 +71,46 @@ describe('api.barcodes.lookup', () => {
   });
 });
 
+describe('api.copies.get / update / remove', () => {
+  it('lit un exemplaire par son identifiant', async () => {
+    const copy = await api.copies.get(2);
+    expect(copy.work.title).toBe('Alien');
+  });
+
+  it('envoie les modifications en PATCH, y compris les effacements', async () => {
+    let received: unknown;
+    server.use(
+      http.patch('/api/copies/:id', async ({ request }) => {
+        received = await request.json();
+        return HttpResponse.json({ id: 1 });
+      }),
+    );
+
+    await api.copies.update(1, { condition: 'poor', location: null });
+
+    expect(received).toEqual({ condition: 'poor', location: null });
+  });
+
+  it('supprime un exemplaire sans corps de réponse', async () => {
+    let method = '';
+    server.use(
+      http.delete('/api/copies/:id', ({ request }) => {
+        method = request.method;
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+
+    await expect(api.copies.remove(1)).resolves.toBeUndefined();
+    expect(method).toBe('DELETE');
+  });
+
+  it('signale un exemplaire inconnu par une ApiError 404', async () => {
+    const error = await api.copies.get(99).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ status: 404 });
+  });
+});
+
 describe('api.copies.create', () => {
   it('envoie le corps en JSON et renvoie l’exemplaire créé', async () => {
     let received: unknown;
