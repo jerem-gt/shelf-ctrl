@@ -203,6 +203,9 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # Pas d'attestation de provenance : sinon l'image devient un index dont les manifests enfants
+          # n'ont pas de tag, et le job de nettoyage les supprime (le tag pointe alors vers rien).
+          provenance: false
           build-args: |
             APP_VERSION=${{ needs.release.outputs.new_release_version || 'dev' }}
             DOZZLE_ICON=${{ steps.dozzle_icon.outputs.value }}
