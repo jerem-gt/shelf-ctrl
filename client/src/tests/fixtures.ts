@@ -1,4 +1,10 @@
-import type { BarcodeLookupResponse, CopyItem } from '@shelfctrl/types';
+import type {
+  BarcodeLookupResponse,
+  BorrowerItem,
+  CopyItem,
+  LoanItem,
+  OpenLoanItem,
+} from '@shelfctrl/types';
 
 export const COPY_TINTIN: CopyItem = {
   id: 1,
@@ -63,3 +69,43 @@ export const BARCODE_TINTIN: BarcodeLookupResponse = {
     edition: { format: 'book', publisher: 'Casterman', releaseYear: 1960, language: null },
   },
 };
+
+export const LOAN_OPEN: LoanItem = {
+  id: 1,
+  copyId: 2,
+  borrowerId: 1,
+  borrowerName: 'Alice',
+  loanedAt: '2026-10-01',
+  returnedAt: null,
+};
+
+export const LOAN_DONE: LoanItem = {
+  id: 2,
+  copyId: 2,
+  borrowerId: 2,
+  borrowerName: 'Bob',
+  loanedAt: '2026-01-05',
+  returnedAt: '2026-01-20',
+};
+
+export const OPEN_LOAN_ALIEN: OpenLoanItem = {
+  ...LOAN_OPEN,
+  work: { title: 'Alien', series: null, volumeNumber: null },
+  format: 'bluray',
+};
+
+export const OPEN_LOAN_TINTIN: OpenLoanItem = {
+  id: 3,
+  copyId: 1,
+  borrowerId: 2,
+  borrowerName: 'Bob',
+  loanedAt: '2026-09-15',
+  returnedAt: null,
+  work: { title: 'Tintin au Tibet', series: 'Tintin', volumeNumber: 20 },
+  format: 'book',
+};
+
+export const BORROWERS: BorrowerItem[] = [
+  { id: 1, name: 'Alice', openLoans: 1 },
+  { id: 2, name: 'Bob', openLoans: 0 },
+];

@@ -9,6 +9,7 @@ import { createBarcodesRouter } from './modules/barcodes/barcodes.routes.js';
 import { createDefaultProviders } from './modules/barcodes/providers/index.js';
 import type { BarcodeProvider } from './modules/barcodes/providers/types.js';
 import { createCopiesRouter } from './modules/copies/copies.routes.js';
+import { createLoansRouter } from './modules/loans/loans.routes.js';
 
 export interface AppOptions {
   /** Check de santé supplémentaire : renvoie une raison d'échec, ou null si OK. */
@@ -74,6 +75,7 @@ export function createApp(db: Database, options: AppOptions = {}) {
     createBarcodesRouter(db, options.barcodeProviders ?? createDefaultProviders()),
   );
   app.use('/api/copies', createCopiesRouter(db));
+  app.use('/api', createLoansRouter(db));
 
   app.use(errorHandler);
 

@@ -40,6 +40,17 @@ describe('CopyPage — consultation', () => {
     );
   });
 
+  it('affiche la section des prêts en consultation, pas pendant une modification', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: 'Prêts' })).toBeInTheDocument();
+    expect(await screen.findByText('Jamais prêté.')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Modifier' }));
+    expect(screen.queryByRole('heading', { name: 'Prêts' })).not.toBeInTheDocument();
+  });
+
   it('remplace les champs vides par un tiret et masque la série absente', async () => {
     renderPage(2);
 
