@@ -4,6 +4,9 @@ import { http, HttpResponse } from 'msw';
 import { BORROWERS, COPIES, COPY_TINTIN, LOAN_OPEN, SALE_LISTED, SALE_SOLD } from '../fixtures';
 
 export const handlers = [
+  http.get('/api/auth/me', () => HttpResponse.json({ username: 'admin' })),
+  http.post('/api/auth/login', () => HttpResponse.json({ username: 'admin' })),
+  http.post('/api/auth/logout', () => new HttpResponse(null, { status: 204 })),
   http.get('/api/copies', () => HttpResponse.json({ items: COPIES, total: COPIES.length })),
   http.post('/api/copies', () => HttpResponse.json(COPY_TINTIN, { status: 201 })),
   http.get('/api/copies/:id', ({ params }) => {

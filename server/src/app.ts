@@ -2,21 +2,32 @@ import type { HealthResponse } from '@shelfctrl/types';
 import type { Database } from 'better-sqlite3';
 import compression from 'compression';
 import express, { type ErrorRequestHandler } from 'express';
+import session from 'express-session';
 import helmet from 'helmet';
 import { ZodError } from 'zod';
 
+import { requireAuth } from './middleware.js';
+import { createAuthRouter, SESSION_COOKIE } from './modules/auth/auth.routes.js';
 import { createBarcodesRouter } from './modules/barcodes/barcodes.routes.js';
 import { createDefaultProviders } from './modules/barcodes/providers/index.js';
 import type { BarcodeProvider } from './modules/barcodes/providers/types.js';
 import { createCopiesRouter } from './modules/copies/copies.routes.js';
 import { createLoansRouter } from './modules/loans/loans.routes.js';
 import { createSalesRouter } from './modules/sales/sales.routes.js';
+import { SQLiteSessionStore } from './session-store.js';
+
+const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 export interface AppOptions {
   /** Check de santé supplémentaire : renvoie une raison d'échec, ou null si OK. */
   healthExtraCheck?: () => string | null;
   /** Sources de résolution des codes-barres (par défaut : chaîne configurée par l'environnement). */
   barcodeProviders?: readonly BarcodeProvider[];
+  /**
+   * Authentification par session. Sans elle l'API est ouverte (tests) : `index.ts` la fournit
+   * toujours, et refuse de démarrer en production si la configuration est incomplète.
+   */
+  auth?: { sessionSecret: string; secureCookies: boolean };
 }
 
 function isClientError(err: unknown): err is { status: number } {
@@ -70,6 +81,29 @@ export function createApp(db: Database, options: AppOptions = {}) {
     const body: HealthResponse = { status: 'ok' };
     res.json(body);
   });
+
+  if (options.auth) {
+    app.use(
+      session({
+        // Nom propre à l'appli : cookies et noms d'hôte sont partagés avec cash-ctrl sur le NAS.
+        name: SESSION_COOKIE,
+        store: new SQLiteSessionStore(db),
+        secret: options.auth.sessionSecret,
+        resave: false,
+        saveUninitialized: false,
+        rolling: true,
+        cookie: {
+          httpOnly: true,
+          secure: options.auth.secureCookies ? 'auto' : false,
+          sameSite: 'lax',
+          maxAge: SESSION_MAX_AGE_MS,
+        },
+      }),
+    );
+    app.use('/api/auth', createAuthRouter(db));
+    // /api/health et /api/auth/* sont déclarés avant : tout le reste de l'API exige une session.
+    app.use('/api', requireAuth);
+  }
 
   app.use(
     '/api/barcodes',

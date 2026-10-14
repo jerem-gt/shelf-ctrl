@@ -195,6 +195,39 @@ describe('api.sales', () => {
   });
 });
 
+describe('api.auth', () => {
+  it('lit l’utilisateur connecté, se connecte et se déconnecte', async () => {
+    let credentials: unknown;
+    server.use(
+      http.post('/api/auth/login', async ({ request }) => {
+        credentials = await request.json();
+        return HttpResponse.json({ username: 'admin' });
+      }),
+    );
+
+    expect(await api.auth.me()).toEqual({ username: 'admin' });
+    expect(await api.auth.login({ username: 'admin', password: 'secret' })).toEqual({
+      username: 'admin',
+    });
+    expect(credentials).toEqual({ username: 'admin', password: 'secret' });
+    await expect(api.auth.logout()).resolves.toBeUndefined();
+  });
+
+  it.each([
+    [401, 'Identifiant ou mot de passe incorrect.'],
+    [429, 'Trop de tentatives : réessaie dans quelques minutes.'],
+  ])('traduit un statut %i en message', async (status, message) => {
+    server.use(http.post('/api/auth/login', () => HttpResponse.json({}, { status })));
+
+    const error = await api.auth
+      .login({ username: 'admin', password: 'x' })
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ status, message });
+  });
+});
+
 describe('api.copies.create', () => {
   it('envoie le corps en JSON et renvoie l’exemplaire créé', async () => {
     let received: unknown;

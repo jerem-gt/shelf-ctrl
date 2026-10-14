@@ -7,15 +7,23 @@ import express from 'express';
 
 import { createApp } from './app.js';
 import { createDb, initDatabase } from './db/init.js';
+import { syncAdminUser } from './modules/auth/auth.repo.js';
+import { loadAuthConfig } from './modules/auth/config.js';
 
 const PORT = Number.parseInt(process.env.PORT ?? '3001');
 const IS_PROD = process.env.NODE_ENV === 'production';
 const CLIENT_DIST = path.join(import.meta.dirname, '../../client/dist');
 
+const auth = loadAuthConfig(process.env);
+
 const db = createDb();
 initDatabase(db);
+console.log(
+  `[auth] compte « ${auth.adminUser} » : ${syncAdminUser(db, auth.adminUser, auth.adminPassword)}`,
+);
 
 const app = createApp(db, {
+  auth: { sessionSecret: auth.sessionSecret, secureCookies: auth.secureCookies },
   healthExtraCheck: IS_PROD
     ? () => (fs.existsSync(path.join(CLIENT_DIST, 'index.html')) ? null : 'frontend')
     : undefined,

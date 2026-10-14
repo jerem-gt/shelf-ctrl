@@ -73,6 +73,31 @@ export function initSchema(db: Database) {
     -- Une seule ligne par exemplaire : la ligne seule vaut « en vente », avec sold_at « vendu » ; la supprimer retire l'annonce.
     CREATE UNIQUE INDEX IF NOT EXISTS idx_sales_copy_unique ON sales (copy_id);
 
+    -- Compte unique, synchronisé avec ADMIN_USER / ADMIN_PASSWORD au démarrage.
+    CREATE TABLE IF NOT EXISTS users
+    (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        username      TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- Sessions express-session (voir session-store.ts).
+    CREATE TABLE IF NOT EXISTS sessions
+    (
+        sid        TEXT PRIMARY KEY,
+        data       TEXT NOT NULL,
+        expires_at INTEGER NOT NULL
+    );
+
+    -- Échecs de connexion par adresse IP (limitation du brute-force).
+    CREATE TABLE IF NOT EXISTS login_attempts
+    (
+        key      TEXT PRIMARY KEY,
+        count    INTEGER NOT NULL,
+        reset_at INTEGER NOT NULL
+    );
+
     CREATE VIEW IF NOT EXISTS copy_status AS
     SELECT c.id AS copy_id,
            CASE
