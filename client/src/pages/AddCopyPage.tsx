@@ -183,11 +183,7 @@ export function AddCopyPage() {
             )}
           </div>
           {!scanSupported && <p className="text-xs text-slate-500">{t('scan.unsupported')}</p>}
-          {lookupMessage && (
-            <p role="status" className="text-sm text-slate-600">
-              {lookupMessage}
-            </p>
-          )}
+          {lookupMessage && <output className="text-sm text-slate-600">{lookupMessage}</output>}
         </fieldset>
 
         {scanning && <BarcodeScanner onDetect={handleScan} onClose={() => setScanning(false)} />}
