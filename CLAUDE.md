@@ -55,11 +55,11 @@ Français uniquement pour l'instant, mais **tous les textes passent par `useTran
 - Séparer routes, services et validation (Zod). Migrations SQLite par `user_version` (à introduire à la première évolution de schéma).
 - Les images (pochettes, photos) sont stockées dans `DATA_DIR` et servies par le serveur, jamais liées à distance.
 - Les annonces générées passent par une **interface fournisseur LLM** (API distantes uniquement : Groq ou Mistral en gratuit par défaut ; pas de modèle local, le NAS est trop peu puissant).
-- Résolution des codes-barres : chaîne de sources avec repli de saisie manuelle (ISBN → Google Books/OpenLibrary ; EAN vidéo → API de code-barres puis TMDB par titre).
+- Résolution des codes-barres (`GET /api/barcodes/:code`, module `barcodes`) : le code est normalisé (ISBN-10 → ISBN-13, UPC-A → EAN-13, clé de contrôle vérifiée), cherché d'abord dans la collection, puis dans une chaîne de sources par type de code, avec repli en saisie manuelle (404). ISBN : Google Books (si `GOOGLE_BOOKS_API_KEY`, le quota anonyme est nul) puis Open Library. EAN vidéo : UPCitemdb (gratuit, limité en débit), dont le titre est fiabilisé par TMDB si `TMDB_API_KEY` (TMDB ne cherche pas par code-barres). Une source en erreur est ignorée ; les codes sont stockés sous leur forme normalisée.
 
 ## Testing
 
-- Vitest partout. Client : `@testing-library/react` + jsdom ; MSW à introduire avec le premier appel API.
+- Vitest partout. Client : `@testing-library/react` + jsdom ; appels API simulés avec MSW (`client/src/tests/msw`) ; serveur : sources externes simulées par un `fetch` injecté.
 - Intitulés de tests : laisser Prettier gérer les quotes (`singleQuote: true`).
 
 ## Déploiement

@@ -21,6 +21,8 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - SECURE_COOKIE=true
       - LOG_LEVEL=INFO
+      - GOOGLE_BOOKS_API_KEY=${GOOGLE_BOOKS_API_KEY:-}
+      - TMDB_API_KEY=${TMDB_API_KEY:-}
   shelfctrl-dev:
     image: ghcr.io/jerem-gt/shelf-ctrl:dev
     user: '${PUID}:${PGID}'
@@ -41,3 +43,5 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - SECURE_COOKIE=true
       - LOG_LEVEL=INFO
+      - GOOGLE_BOOKS_API_KEY=${GOOGLE_BOOKS_API_KEY:-}
+      - TMDB_API_KEY=${TMDB_API_KEY:-}

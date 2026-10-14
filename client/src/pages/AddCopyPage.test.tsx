@@ -1,10 +1,10 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http, HttpResponse } from 'msw';
+import { http, HttpResponse, type JsonBodyType } from 'msw';
 import { Route, Routes } from 'react-router';
 import { describe, expect, it } from 'vitest';
 
-import { COPY_TINTIN } from '@/tests/fixtures';
+import { BARCODE_TINTIN, COPY_TINTIN } from '@/tests/fixtures';
 import { server } from '@/tests/msw/server';
 import { renderWithProviders } from '@/tests/renderWithProviders';
 
@@ -90,5 +90,86 @@ describe('AddCopyPage', () => {
   it('propose d’annuler', () => {
     renderPage();
     expect(screen.getByRole('link', { name: 'Annuler' })).toHaveAttribute('href', '/');
+  });
+});
+
+describe('AddCopyPage — recherche par code-barres', () => {
+  const stubLookup = (status: number, body: JsonBodyType) =>
+    server.use(http.get('/api/barcodes/:code', () => HttpResponse.json(body, { status })));
+
+  async function searchFor(code: string) {
+    const user = userEvent.setup();
+    renderPage();
+    await user.type(screen.getByLabelText('Code-barres (ISBN / EAN)'), code);
+    await user.click(screen.getByRole('button', { name: 'Rechercher la fiche' }));
+    return user;
+  }
+
+  it('désactive la recherche tant qu’aucun code n’est saisi', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const button = screen.getByRole('button', { name: 'Rechercher la fiche' });
+
+    expect(button).toBeDisabled();
+    await user.type(screen.getByLabelText('Code-barres (ISBN / EAN)'), '9');
+    expect(button).toBeEnabled();
+  });
+
+  it('remplit le formulaire avec la fiche trouvée', async () => {
+    stubLookup(200, BARCODE_TINTIN);
+    await searchFor('2203001194');
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      "Fiche trouvée via Open Library : vérifie les informations avant d'enregistrer.",
+    );
+    expect(screen.getByLabelText('Titre')).toHaveValue('Tintin au Tibet');
+    expect(screen.getByLabelText('Série')).toHaveValue('Les Aventures de Tintin');
+    expect(screen.getByLabelText('Numéro de tome')).toHaveValue(20);
+    expect(screen.getByLabelText('Auteurs / réalisateurs')).toHaveValue('Hergé');
+    expect(screen.getByLabelText('Éditeur')).toHaveValue('Casterman');
+    expect(screen.getByLabelText('Format')).toHaveValue('book');
+    expect(screen.getByLabelText('Code-barres (ISBN / EAN)')).toHaveValue('9782203001190');
+  });
+
+  it('conserve la saisie quand la fiche ne renseigne pas un champ', async () => {
+    stubLookup(200, {
+      ...BARCODE_TINTIN,
+      suggestion: {
+        work: { title: 'Alien', series: null, volumeNumber: null, creators: null, year: null },
+        edition: { format: null, publisher: null, releaseYear: null, language: null },
+      },
+    });
+    const user = userEvent.setup();
+    renderPage();
+    await user.type(screen.getByLabelText('Série'), 'Saga');
+    await user.selectOptions(screen.getByLabelText('Format'), 'bluray');
+    await user.type(screen.getByLabelText('Code-barres (ISBN / EAN)'), '5051889000006');
+    await user.click(screen.getByRole('button', { name: 'Rechercher la fiche' }));
+
+    await screen.findByRole('status');
+    expect(screen.getByLabelText('Titre')).toHaveValue('Alien');
+    expect(screen.getByLabelText('Série')).toHaveValue('Saga');
+    expect(screen.getByLabelText('Format')).toHaveValue('bluray');
+  });
+
+  it('signale une édition déjà présente dans la collection', async () => {
+    stubLookup(200, { ...BARCODE_TINTIN, source: 'local', known: true });
+    await searchFor('9782203001190');
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Cette édition est déjà dans ta collection',
+    );
+  });
+
+  it.each([
+    [404, 'Aucune fiche trouvée pour ce code : saisis les informations à la main.'],
+    [400, 'Code-barres invalide : vérifie la saisie.'],
+    [500, 'Une erreur est survenue.'],
+  ])('affiche un message adapté pour une réponse %i', async (status, message) => {
+    stubLookup(status, { error: 'x' });
+    await searchFor('9782203001190');
+
+    expect(await screen.findByRole('status')).toHaveTextContent(message);
+    expect(screen.getByLabelText('Titre')).toHaveValue('');
   });
 });

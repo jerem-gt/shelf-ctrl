@@ -55,6 +55,17 @@ describe('POST /api/copies', () => {
     expect(db.prepare('SELECT COUNT(*) AS n FROM works').get()).toEqual({ n: 1 });
   });
 
+  it('stocke un ISBN-10 en ISBN-13 et retrouve la même édition', async () => {
+    const { app, db } = setup();
+    const withIsbn10 = { ...tintin, edition: { format: 'book', barcode: '2203001194' } };
+    const first = await request(app).post('/api/copies').send(withIsbn10);
+    const second = await request(app).post('/api/copies').send(tintin);
+
+    expect(first.body.edition.barcode).toBe('9782203001190');
+    expect(second.body.edition.id).toBe(first.body.edition.id);
+    expect(db.prepare('SELECT COUNT(*) AS n FROM editions').get()).toEqual({ n: 1 });
+  });
+
   it('réutilise l’œuvre pour une autre édition du même titre', async () => {
     const { app, db } = setup();
     await request(app).post('/api/copies').send(tintin);

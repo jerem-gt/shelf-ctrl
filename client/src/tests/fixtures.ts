@@ -1,4 +1,4 @@
-import type { CopyItem } from '@shelfctrl/types';
+import type { BarcodeLookupResponse, CopyItem } from '@shelfctrl/types';
 
 export const COPY_TINTIN: CopyItem = {
   id: 1,
@@ -46,3 +46,20 @@ export const COPY_ALIEN: CopyItem = {
 };
 
 export const COPIES = [COPY_TINTIN, COPY_ALIEN];
+
+export const BARCODE_TINTIN: BarcodeLookupResponse = {
+  barcode: '9782203001190',
+  kind: 'isbn',
+  source: 'openlibrary',
+  known: false,
+  suggestion: {
+    work: {
+      title: 'Tintin au Tibet',
+      series: 'Les Aventures de Tintin',
+      volumeNumber: 20,
+      creators: 'Hergé',
+      year: null,
+    },
+    edition: { format: 'book', publisher: 'Casterman', releaseYear: 1960, language: null },
+  },
+};

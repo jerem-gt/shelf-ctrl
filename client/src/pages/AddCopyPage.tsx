@@ -1,14 +1,17 @@
 import {
+  type BarcodeLookupResponse,
   COPY_CONDITIONS,
   type CopyCondition,
   MEDIA_FORMATS,
   type MediaFormat,
 } from '@shelfctrl/types';
+import { Search } from 'lucide-react';
 import { type SyntheticEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 
-import type { CreateCopyPayload } from '@/api/client';
+import { ApiError, type CreateCopyPayload } from '@/api/client';
+import { useBarcodeLookup } from '@/hooks/useBarcodeLookup';
 import { useCreateCopy } from '@/hooks/useCopies';
 
 const FIELD_CLASS =
@@ -66,6 +69,21 @@ function toPayload(form: FormState): CreateCopyPayload {
   };
 }
 
+/** Reporte la fiche trouvée dans le formulaire ; une valeur absente laisse la saisie en place. */
+function applySuggestion(form: FormState, result: BarcodeLookupResponse): FormState {
+  const { work, edition } = result.suggestion;
+  return {
+    ...form,
+    barcode: result.barcode,
+    title: work.title,
+    series: work.series ?? form.series,
+    volumeNumber: work.volumeNumber?.toString() ?? form.volumeNumber,
+    creators: work.creators ?? form.creators,
+    format: edition.format ?? form.format,
+    publisher: edition.publisher ?? form.publisher,
+  };
+}
+
 function Field({ label, children }: Readonly<{ label: string; children: React.ReactNode }>) {
   return (
     <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
@@ -79,10 +97,37 @@ export function AddCopyPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const createCopy = useCreateCopy();
+  const lookup = useBarcodeLookup();
   const [form, setForm] = useState<FormState>(INITIAL_STATE);
+  const [lookupMessage, setLookupMessage] = useState<string | null>(null);
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((current) => ({ ...current, [key]: value }));
+
+  const lookupErrorMessage = (error: Error): string => {
+    if (error instanceof ApiError && error.status === 404) {
+      return t('add.lookup.notFound');
+    }
+    if (error instanceof ApiError && error.status === 400) {
+      return t('add.lookup.invalid');
+    }
+    return error.message;
+  };
+
+  const handleLookup = () => {
+    setLookupMessage(null);
+    lookup.mutate(form.barcode, {
+      onSuccess: (result) => {
+        setForm((current) => applySuggestion(current, result));
+        setLookupMessage(
+          result.known
+            ? t('add.lookup.known')
+            : t('add.lookup.found', { source: t(`sources.${result.source}`) }),
+        );
+      },
+      onError: (error) => setLookupMessage(lookupErrorMessage(error)),
+    });
+  };
 
   const handleSubmit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -94,6 +139,36 @@ export function AddCopyPage() {
       <h2 className="text-xl font-semibold">{t('add.title')}</h2>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1 font-semibold">{t('add.barcodeSection')}</legend>
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <Field label={t('add.barcode')}>
+                <input
+                  inputMode="numeric"
+                  value={form.barcode}
+                  onChange={(event) => update('barcode', event.target.value)}
+                  className={FIELD_CLASS}
+                />
+              </Field>
+            </div>
+            <button
+              type="button"
+              onClick={handleLookup}
+              disabled={lookup.isPending || form.barcode.trim() === ''}
+              className="flex items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium disabled:opacity-60"
+            >
+              <Search aria-hidden className="size-4" />
+              {lookup.isPending ? t('add.lookup.searching') : t('add.lookup.button')}
+            </button>
+          </div>
+          {lookupMessage && (
+            <p role="status" className="text-sm text-slate-600">
+              {lookupMessage}
+            </p>
+          )}
+        </fieldset>
+
         <fieldset className="flex flex-col gap-3">
           <legend className="mb-1 font-semibold">{t('add.work')}</legend>
           <Field label={t('add.titleLabel')}>
@@ -149,24 +224,14 @@ export function AddCopyPage() {
               ))}
             </select>
           </Field>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label={t('add.barcode')}>
-              <input
-                inputMode="numeric"
-                value={form.barcode}
-                onChange={(event) => update('barcode', event.target.value)}
-                className={FIELD_CLASS}
-              />
-            </Field>
-            <Field label={t('add.publisher')}>
-              <input
-                maxLength={200}
-                value={form.publisher}
-                onChange={(event) => update('publisher', event.target.value)}
-                className={FIELD_CLASS}
-              />
-            </Field>
-          </div>
+          <Field label={t('add.publisher')}>
+            <input
+              maxLength={200}
+              value={form.publisher}
+              onChange={(event) => update('publisher', event.target.value)}
+              className={FIELD_CLASS}
+            />
+          </Field>
         </fieldset>
 
         <fieldset className="flex flex-col gap-3">
