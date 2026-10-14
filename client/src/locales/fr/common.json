@@ -1,4 +1,63 @@
 {
   "appName": "ShelfCtrl",
-  "tagline": "Ta collection de BD, DVD et Blu-ray : prêts, ventes, état."
+  "tagline": "Ta collection de BD, DVD et Blu-ray : prêts, ventes, état.",
+  "formats": {
+    "book": "Livre / BD",
+    "dvd": "DVD",
+    "bluray": "Blu-ray",
+    "uhd4k": "4K UHD"
+  },
+  "conditions": {
+    "new": "Neuf",
+    "very_good": "Très bon état",
+    "good": "Bon état",
+    "acceptable": "État correct",
+    "poor": "Mauvais état"
+  },
+  "statuses": {
+    "owned": "En rayon",
+    "loaned": "Prêté",
+    "listed": "En vente",
+    "sold": "Vendu"
+  },
+  "errors": {
+    "network": "Impossible de joindre le serveur.",
+    "validation": "Certains champs sont invalides.",
+    "generic": "Une erreur est survenue."
+  },
+  "collection": {
+    "title": "Ma collection",
+    "add": "Ajouter",
+    "searchLabel": "Rechercher",
+    "searchPlaceholder": "Titre, série, auteur, code-barres…",
+    "formatFilter": "Format",
+    "statusFilter": "Statut",
+    "all": "Tous",
+    "loading": "Chargement…",
+    "empty": "Aucun exemplaire pour l'instant.",
+    "noResult": "Aucun résultat pour ces critères.",
+    "count_one": "{{count}} exemplaire",
+    "count_other": "{{count}} exemplaires",
+    "volume": "Tome {{number}}",
+    "retry": "Réessayer"
+  },
+  "add": {
+    "title": "Ajouter un exemplaire",
+    "work": "Titre",
+    "titleLabel": "Titre",
+    "series": "Série",
+    "volumeNumber": "Numéro de tome",
+    "creators": "Auteurs / réalisateurs",
+    "edition": "Édition",
+    "format": "Format",
+    "barcode": "Code-barres (ISBN / EAN)",
+    "publisher": "Éditeur",
+    "copy": "Exemplaire",
+    "condition": "État",
+    "conditionNote": "Note sur l'état",
+    "location": "Emplacement",
+    "submit": "Enregistrer",
+    "submitting": "Enregistrement…",
+    "cancel": "Annuler"
+  }
 }
