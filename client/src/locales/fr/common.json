@@ -74,5 +74,15 @@
     "openlibrary": "Open Library",
     "googlebooks": "Google Books",
     "upcitemdb": "UPCitemdb"
+  },
+  "scan": {
+    "button": "Scanner",
+    "title": "Scanner un code-barres",
+    "hint": "Place le code-barres dans le cadre, bien à plat et éclairé.",
+    "close": "Fermer",
+    "unsupported": "Le scan n'est pas disponible ici : il faut Chrome (sur Android), une connexion HTTPS et l'accès à la caméra. Tu peux saisir le code à la main.",
+    "denied": "Accès à la caméra refusé : autorise-le dans les réglages du navigateur pour ce site.",
+    "noCamera": "Aucune caméra disponible sur cet appareil.",
+    "error": "Impossible de démarrer la caméra."
   }
 }

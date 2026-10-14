@@ -20,7 +20,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['lcov', 'text'],
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/**/*.test.{ts,tsx}', 'src/main.tsx', 'src/tests/**', 'src/vite-env.d.ts'],
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/main.tsx', 'src/tests/**', 'src/**/*.d.ts'],
       thresholds: {
         lines: 80,
         statements: 80,
