@@ -1,0 +1,260 @@
+name: Build, Release & Push
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Annule le run précédent du même groupe quand un nouveau démarre.
+# Pour un push sur develop avec une PR ouverte, les deux événements partagent
+# la même clé (head_ref=develop ou ref_name=develop) → un seul run actif à la fois.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  ci:
+    name: 🧪 CI & Tests
+    runs-on: ubuntu-latest
+    container: node:24.21.0-alpine
+    steps:
+      - name: Install system deps
+        run: apk add --no-cache git g++ make python3 tar
+
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # Remplacement de actions/setup-node par actions/cache
+      - name: Cache npm dependencies
+        uses: actions/cache@v6
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Install deps
+        run: npm ci --ignore-scripts
+
+      # Le checkout réécrit les mtimes → cache-strategy content obligatoire côté ESLint
+      - name: Cache ESLint
+        uses: actions/cache@v6
+        with:
+          path: .eslintcache
+          key: eslint-${{ hashFiles('package-lock.json', 'eslint.config.js') }}-${{ github.sha }}
+          restore-keys: |
+            eslint-${{ hashFiles('package-lock.json', 'eslint.config.js') }}-
+
+      - name: Lint, types des tests & Tests (parallèle)
+        run: |
+          npm run lint -- --cache --cache-location .eslintcache --cache-strategy content &
+          LINT=$!
+          npm run typecheck:test --workspace=client &
+          TYPES=$!
+          npm run test:coverage --workspace=server &
+          SERVER=$!
+          npm run test:coverage --workspace=client &
+          CLIENT=$!
+          FAIL=0
+          wait $LINT || FAIL=1
+          wait $TYPES || FAIL=1
+          wait $SERVER || FAIL=1
+          wait $CLIENT || FAIL=1
+          exit $FAIL
+
+      - name: Build
+        run: |
+          npm run build --workspace=server
+          npm run build --workspace=client
+
+      - name: Prune dev deps
+        run: npm prune --omit=dev
+
+      # Artifact léger pour Sonar : uniquement les rapports de coverage
+      - name: Upload coverage
+        uses: actions/upload-artifact@v7
+        with:
+          name: sonar-assets
+          path: |
+            server/coverage/lcov.info
+            client/coverage/lcov.info
+
+      # Artifact lourd pour le build Docker
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-assets
+          path: |
+            node_modules
+            server/dist
+            client/dist
+
+  sonar:
+    name: 🛡️ SonarCloud Analysis
+    needs: [ci]
+    # Le plan SonarCloud ne couvre que la branche main + les PR : pas d'analyse sur push develop.
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Download coverage
+        uses: actions/download-artifact@v8
+        with:
+          name: sonar-assets
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v8
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+
+  release:
+    name: 🚀 Semantic Release
+    needs: [ci]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    outputs:
+      new_release_published: ${{ steps.semantic.outputs.new_release_published }}
+      new_release_version: ${{ steps.semantic.outputs.new_release_version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Semantic Release
+        id: semantic
+        uses: cycjimmy/semantic-release-action@v8
+        with:
+          branches: |
+            [
+              "main",
+              { "name": "develop", "prerelease": "dev" }
+            ]
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-and-push:
+    name: 📦 Docker Build & Push
+    needs: [ci, release]
+    # On build si on est sur PR, sur un déclenchement manuel, OU si une nouvelle release a été publiée
+    if: |
+      github.event_name == 'pull_request' ||
+      github.event_name == 'workflow_dispatch' ||
+      (needs.release.outputs.new_release_published == 'true')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download build assets
+        uses: actions/download-artifact@v8
+        with:
+          name: build-assets
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            # Tag précis (ex: 1.1.0 ou 1.2.0-dev.1)
+            type=semver,pattern={{version}},value=${{ needs.release.outputs.new_release_version }}
+            # Le tag 'latest' ne bouge que lors d'un push sur main
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            # Un tag 'dev' pratique pour pull la dernière version de develop
+            type=raw,value=dev,enable=${{ github.ref == 'refs/heads/develop' }}
+            type=sha,prefix=sha-
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # Icône Dozzle : data URI encodée depuis le favicon, pour éviter de dupliquer le SVG
+      - name: Compute Dozzle icon
+        id: dozzle_icon
+        run: echo "value=data:image/svg+xml;base64,$(base64 -w0 client/public/favicon.svg)" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            APP_VERSION=${{ needs.release.outputs.new_release_version || 'dev' }}
+            DOZZLE_ICON=${{ steps.dozzle_icon.outputs.value }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  prune-git-tags:
+    name: 🧹 Prune Older Dev Tags
+    needs: [release]
+    # On ne lance le ménage que si une nouvelle version stable est publiée sur main
+    if: needs.release.outputs.new_release_published == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # Important pour récupérer tous les tags
+
+      - name: Delete inferior dev tags
+        run: |
+          # On s'assure d'avoir la version sans le 'v' pour la comparaison
+          CURRENT_VERSION=$(echo "${{ needs.release.outputs.new_release_version }}" | sed 's/^v//')
+          echo "Comparing against stable version: $CURRENT_VERSION"
+
+          # On liste tous les tags de dev
+          for tag in $(git tag -l "*dev*"); do
+            # On extrait la version de base et on enlève le 'v' initial pour comparer des chiffres
+            # v1.3.0-dev.1 -> 1.3.0
+            TAG_BASE=$(echo $tag | sed 's/^v//' | cut -d'-' -f1)
+
+            # Si TAG_BASE est inférieur ou égal à CURRENT_VERSION
+            if [ "$(printf '%s\n%s' "$TAG_BASE" "$CURRENT_VERSION" | sort -V | head -n1)" == "$TAG_BASE" ]; then
+              echo "Cleaning up: $tag (Base: $TAG_BASE <= $CURRENT_VERSION)"
+              git push origin --delete "$tag" || echo "Could not delete $tag"
+            else
+              echo "Keeping: $tag (Base: $TAG_BASE is newer than $CURRENT_VERSION)"
+            fi
+          done
+
+  prune-images:
+    name: 🧹 Prune Dev Images
+    needs: [build-and-push]
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Delete old dev images
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: ${{ github.event.repository.name }}
+          package-type: 'container'
+          min-versions-to-keep: 5 # On garde les 5 dernières versions de dev
+          delete-only-pre-release-versions: true # On ne touche pas aux versions stables !
+          ignore-versions: '^(latest)$'

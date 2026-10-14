@@ -1,0 +1,43 @@
+# Stack dédiée : projet Container Manager indépendant de cash-ctrl (réseau par défaut propre au projet).
+services:
+  shelfctrl:
+    image: ghcr.io/jerem-gt/shelf-ctrl:latest
+    user: '${PUID}:${PGID}'
+    container_name: shelf-ctrl
+    labels:
+      # Pour watchtower-fast
+      - 'com.centurylinklabs.watchtower.scope=app-fast'
+    restart: unless-stopped
+    ports:
+      - '3001:3001'
+    volumes:
+      - /volume1/data/shelf-ctrl:/data
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATA_DIR=/data
+      - SESSION_SECRET=${SESSION_SECRET}
+      - ADMIN_USER=admin
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - SECURE_COOKIE=true
+      - LOG_LEVEL=INFO
+  shelfctrl-dev:
+    image: ghcr.io/jerem-gt/shelf-ctrl:dev
+    user: '${PUID}:${PGID}'
+    container_name: shelf-ctrl-dev
+    labels:
+      - 'com.centurylinklabs.watchtower.scope=app-fast'
+    restart: unless-stopped
+    ports:
+      - '4001:4001'
+    volumes:
+      - /volume1/data/shelf-ctrl-dev:/data
+    environment:
+      - NODE_ENV=production
+      - PORT=4001
+      - DATA_DIR=/data
+      - SESSION_SECRET=${SESSION_SECRET}
+      - ADMIN_USER=admin
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - SECURE_COOKIE=true
+      - LOG_LEVEL=INFO
