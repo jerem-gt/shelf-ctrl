@@ -7,6 +7,7 @@ import type {
 } from '@shelfctrl/types';
 import type { Database } from 'better-sqlite3';
 
+import { today } from '../../lib/isoDate.js';
 import type { LendInput, ReturnInput } from './loans.schema.js';
 
 export type LoanFailure =
@@ -43,10 +44,6 @@ function toLoanItem(row: LoanRow): LoanItem {
     loanedAt: row.loaned_at,
     returnedAt: row.returned_at,
   };
-}
-
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
 }
 
 export function createLoansService(db: Database) {

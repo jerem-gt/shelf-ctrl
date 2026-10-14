@@ -68,6 +68,25 @@ export interface BorrowerItem {
   openLoans: number;
 }
 
+/**
+ * Mise en vente ou vente d'un exemplaire (au plus une par exemplaire). Sans `soldAt` : en vente ;
+ * avec : vendu. `listedAt` est `null` pour une vente directe. Prix en centimes, dates AAAA-MM-JJ.
+ */
+export interface SaleItem {
+  id: number;
+  copyId: number;
+  platform: string | null;
+  priceCents: number | null;
+  listedAt: string | null;
+  soldAt: string | null;
+}
+
+/** Vente avec de quoi identifier l'exemplaire dans une liste. */
+export interface SaleListItem extends SaleItem {
+  work: Pick<WorkSummary, 'title' | 'series' | 'volumeNumber'>;
+  format: MediaFormat;
+}
+
 /** `isbn` : livre (préfixe 978/979) ; `ean` : tout autre code (vidéo). */
 export type BarcodeKind = 'isbn' | 'ean';
 

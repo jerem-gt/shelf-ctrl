@@ -151,6 +151,50 @@ describe('api.loans / api.borrowers', () => {
   });
 });
 
+describe('api.sales', () => {
+  it('lit les ventes et la vente d’un exemplaire, null quand il n’y en a pas', async () => {
+    expect(await api.sales.all()).toEqual([]);
+    expect(await api.sales.forCopy(1)).toBeNull();
+  });
+
+  it('envoie mise en vente, vente, modification et retrait à leurs routes', async () => {
+    const calls: string[] = [];
+    const bodies: unknown[] = [];
+    const record =
+      (label: string) =>
+      async ({ request }: { request: Request }) => {
+        calls.push(label);
+        bodies.push(await request.json().catch(() => null));
+        return HttpResponse.json({ id: 1 });
+      };
+    server.use(
+      http.post('/api/copies/:id/sale', record('list')),
+      http.post('/api/copies/:id/sale/sold', record('sell')),
+      http.patch('/api/copies/:id/sale', record('update')),
+      http.delete('/api/copies/:id/sale', () => {
+        calls.push('remove');
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+
+    await api.sales.listForSale(1, {
+      platform: 'Vinted',
+      priceCents: 1250,
+      listedAt: '2026-10-01',
+    });
+    await api.sales.sell(1, { soldAt: '2026-10-05' });
+    await api.sales.update(1, { platform: null });
+    await expect(api.sales.remove(1)).resolves.toBeUndefined();
+
+    expect(calls).toEqual(['list', 'sell', 'update', 'remove']);
+    expect(bodies).toEqual([
+      { platform: 'Vinted', priceCents: 1250, listedAt: '2026-10-01' },
+      { soldAt: '2026-10-05' },
+      { platform: null },
+    ]);
+  });
+});
+
 describe('api.copies.create', () => {
   it('envoie le corps en JSON et renvoie l’exemplaire créé', async () => {
     let received: unknown;

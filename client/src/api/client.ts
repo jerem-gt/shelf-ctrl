@@ -8,6 +8,8 @@ import type {
   LoanItem,
   MediaFormat,
   OpenLoanItem,
+  SaleItem,
+  SaleListItem,
 } from '@shelfctrl/types';
 
 import i18n from '@/i18n';
@@ -102,7 +104,24 @@ export interface LendPayload {
   loanedAt?: string;
 }
 
+/** Plateforme et prix (en centimes) d'une annonce ou d'une vente ; `null` efface une valeur. */
+export interface SalePayload {
+  platform?: string | null;
+  priceCents?: number | null;
+}
+
 export const api = {
+  sales: {
+    all: () => request<SaleListItem[]>('GET', '/api/sales'),
+    forCopy: (copyId: number) => request<SaleItem | null>('GET', `/api/copies/${copyId}/sale`),
+    listForSale: (copyId: number, payload: SalePayload & { listedAt?: string }) =>
+      request<SaleItem>('POST', `/api/copies/${copyId}/sale`, payload),
+    sell: (copyId: number, payload: SalePayload & { soldAt?: string }) =>
+      request<SaleItem>('POST', `/api/copies/${copyId}/sale/sold`, payload),
+    update: (copyId: number, payload: SalePayload) =>
+      request<SaleItem>('PATCH', `/api/copies/${copyId}/sale`, payload),
+    remove: (copyId: number) => request<undefined>('DELETE', `/api/copies/${copyId}/sale`),
+  },
   borrowers: {
     list: () => request<BorrowerItem[]>('GET', '/api/borrowers'),
   },

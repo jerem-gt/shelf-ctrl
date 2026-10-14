@@ -8,6 +8,7 @@ import { ApiError } from '@/api/client';
 import { DeleteCopyConfirmation } from '@/components/DeleteCopyConfirmation';
 import { EditCopyForm } from '@/components/EditCopyForm';
 import { LoanSection } from '@/components/LoanSection';
+import { SaleSection } from '@/components/SaleSection';
 import { StatusBadge } from '@/components/StatusBadge';
 import { useCopy } from '@/hooks/useCopies';
 import { formatDate } from '@/lib/format';
@@ -109,6 +110,7 @@ export function CopyPage() {
           </button>
         </div>
         <LoanSection copy={copy} />
+        <SaleSection copy={copy} />
       </>
     );
   }

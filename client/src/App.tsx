@@ -7,6 +7,7 @@ import { AddCopyPage } from '@/pages/AddCopyPage';
 import { CollectionPage } from '@/pages/CollectionPage';
 import { CopyPage } from '@/pages/CopyPage';
 import { LoansPage } from '@/pages/LoansPage';
+import { SalesPage } from '@/pages/SalesPage';
 
 function navClass({ isActive }: { isActive: boolean }) {
   return isActive ? 'text-slate-900 underline underline-offset-4' : 'text-slate-500';
@@ -30,6 +31,9 @@ export function AppRoutes() {
               <NavLink to="/loans" className={navClass}>
                 {t('nav.loans')}
               </NavLink>
+              <NavLink to="/sales" className={navClass}>
+                {t('nav.sales')}
+              </NavLink>
             </nav>
           </div>
           <p className="hidden text-sm text-slate-500 md:block">{t('tagline')}</p>
@@ -41,6 +45,7 @@ export function AppRoutes() {
           <Route path="/add" element={<AddCopyPage />} />
           <Route path="/copies/:id" element={<CopyPage />} />
           <Route path="/loans" element={<LoansPage />} />
+          <Route path="/sales" element={<SalesPage />} />
         </Routes>
       </main>
     </div>

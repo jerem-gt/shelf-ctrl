@@ -112,7 +112,8 @@
   "nav": {
     "main": "Navigation",
     "collection": "Collection",
-    "loans": "Prêts"
+    "loans": "Prêts",
+    "sales": "Ventes"
   },
   "loan": {
     "section": "Prêts",
@@ -138,5 +139,44 @@
     "days_one": "{{count}} jour",
     "days_other": "{{count}} jours",
     "giveBack": "Rendu"
+  },
+  "sale": {
+    "section": "Vente",
+    "listed": "En vente",
+    "sold": "Vendu",
+    "onPlatform": "sur {{platform}}",
+    "atPrice": "à {{price}}",
+    "forPrice": "pour {{price}}",
+    "sinceDate": "depuis le {{date}}",
+    "onDate": "le {{date}}",
+    "listButton": "Mettre en vente",
+    "sellButton": "Marquer comme vendu",
+    "editButton": "Modifier l'annonce",
+    "withdrawButton": "Retirer de la vente",
+    "cancelSaleButton": "Annuler la vente",
+    "loanedNote": "Rends d'abord l'exemplaire prêté pour le vendre.",
+    "platform": "Plateforme",
+    "price": "Prix (€)",
+    "listDate": "Date de mise en vente",
+    "soldDate": "Date de vente",
+    "listSubmit": "Mettre en vente",
+    "sellSubmit": "Enregistrer la vente",
+    "editSubmit": "Enregistrer",
+    "saving": "Enregistrement…",
+    "cancel": "Annuler",
+    "cancelSaleTitle": "Annuler cette vente ?",
+    "cancelSaleText": "L'exemplaire redeviendra « en rayon ».",
+    "keep": "Garder la vente"
+  },
+  "salesPage": {
+    "title": "Ventes",
+    "listedTab": "En vente",
+    "soldTab": "Vendus",
+    "emptyListed": "Aucun exemplaire en vente.",
+    "emptySold": "Aucune vente enregistrée.",
+    "total": "Total des ventes : {{amount}}",
+    "noPrice": "prix non renseigné",
+    "listedSince": "en vente depuis le {{date}}",
+    "soldOn": "vendu le {{date}}"
   }
 }
