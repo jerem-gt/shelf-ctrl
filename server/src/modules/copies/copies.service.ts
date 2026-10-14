@@ -200,9 +200,32 @@ export function createCopiesService(db: Database) {
       return result.changes > 0 ? findById(id) : null;
     },
 
-    remove(id: number): boolean {
-      return db.prepare('DELETE FROM copies WHERE id = ?').run(id).changes > 0;
-    },
+    /**
+     * Supprime l'exemplaire (et ses prêts et ventes, en cascade), puis l'édition et l'œuvre
+     * qui n'ont plus d'exemplaire : sinon un code-barres resterait « connu » sans rien posséder.
+     */
+    remove: db.transaction((id: number): boolean => {
+      const row = db.prepare('SELECT edition_id FROM copies WHERE id = ?').get(id) as
+        { edition_id: number } | undefined;
+      if (!row) {
+        return false;
+      }
+      db.prepare('DELETE FROM copies WHERE id = ?').run(id);
+      const edition = db
+        .prepare(
+          `DELETE FROM editions
+           WHERE id = ? AND NOT EXISTS (SELECT 1 FROM copies WHERE edition_id = ?)
+           RETURNING work_id`,
+        )
+        .get(row.edition_id, row.edition_id) as { work_id: number } | undefined;
+      if (edition) {
+        db.prepare(
+          `DELETE FROM works
+           WHERE id = ? AND NOT EXISTS (SELECT 1 FROM editions WHERE work_id = ?)`,
+        ).run(edition.work_id, edition.work_id);
+      }
+      return true;
+    }),
   };
 }
 

@@ -1,13 +1,14 @@
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { COPY_ALIEN, COPY_TINTIN } from '@/tests/fixtures';
+import { renderWithProviders } from '@/tests/renderWithProviders';
 
 import { CopyCard } from './CopyCard';
 
 describe('CopyCard', () => {
   it('affiche le titre, la série et le tome, le statut, le format, l’état et l’emplacement', () => {
-    render(<CopyCard copy={COPY_TINTIN} />);
+    renderWithProviders(<CopyCard copy={COPY_TINTIN} />);
 
     expect(screen.getByRole('heading', { name: 'Tintin au Tibet' })).toBeInTheDocument();
     expect(screen.getByText('Tintin · Tome 20')).toBeInTheDocument();
@@ -18,7 +19,7 @@ describe('CopyCard', () => {
   });
 
   it('masque la série et l’emplacement quand ils sont absents', () => {
-    render(<CopyCard copy={COPY_ALIEN} />);
+    renderWithProviders(<CopyCard copy={COPY_ALIEN} />);
 
     expect(screen.getByRole('heading', { name: 'Alien' })).toBeInTheDocument();
     expect(screen.getByText('Prêté')).toBeInTheDocument();
@@ -27,9 +28,18 @@ describe('CopyCard', () => {
   });
 
   it('n’affiche pas le tome quand la série n’en a pas', () => {
-    render(
+    renderWithProviders(
       <CopyCard copy={{ ...COPY_TINTIN, work: { ...COPY_TINTIN.work, volumeNumber: null } }} />,
     );
     expect(screen.getByText('Tintin')).toBeInTheDocument();
+  });
+
+  it('renvoie vers la fiche de l’exemplaire', () => {
+    renderWithProviders(<CopyCard copy={COPY_TINTIN} />);
+
+    expect(screen.getByRole('link', { name: 'Tintin au Tibet' })).toHaveAttribute(
+      'href',
+      '/copies/1',
+    );
   });
 });

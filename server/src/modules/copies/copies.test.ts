@@ -195,6 +195,56 @@ describe('GET/PATCH/DELETE /api/copies/:id', () => {
     expect((await request(app).get(url)).status).toBe(404);
   });
 
+  describe('nettoyage à la suppression', () => {
+    const counts = (db: ReturnType<typeof setup>['db']) => ({
+      works: db.prepare('SELECT COUNT(*) AS n FROM works').get(),
+      editions: db.prepare('SELECT COUNT(*) AS n FROM editions').get(),
+      copies: db.prepare('SELECT COUNT(*) AS n FROM copies').get(),
+    });
+
+    it('supprime l’édition et l’œuvre quand le dernier exemplaire part', async () => {
+      const { app, db } = setup();
+      const created = await request(app).post('/api/copies').send(tintin);
+
+      await request(app).delete(`/api/copies/${created.body.id}`);
+
+      expect(counts(db)).toEqual({ works: { n: 0 }, editions: { n: 0 }, copies: { n: 0 } });
+    });
+
+    it('garde l’édition tant qu’un autre exemplaire la possède', async () => {
+      const { app, db } = setup();
+      const first = await request(app).post('/api/copies').send(tintin);
+      await request(app).post('/api/copies').send(tintin);
+
+      await request(app).delete(`/api/copies/${first.body.id}`);
+
+      expect(counts(db)).toEqual({ works: { n: 1 }, editions: { n: 1 }, copies: { n: 1 } });
+    });
+
+    it('garde l’œuvre tant qu’une autre édition existe', async () => {
+      const { app, db } = setup();
+      const first = await request(app).post('/api/copies').send(tintin);
+      await request(app)
+        .post('/api/copies')
+        .send({ ...tintin, edition: { format: 'book', barcode: '9782203001191' } });
+
+      await request(app).delete(`/api/copies/${first.body.id}`);
+
+      expect(counts(db)).toEqual({ works: { n: 1 }, editions: { n: 1 }, copies: { n: 1 } });
+    });
+
+    it('supprime aussi les prêts de l’exemplaire', async () => {
+      const { app, db } = setup();
+      const created = await request(app).post('/api/copies').send(tintin);
+      db.prepare("INSERT INTO borrowers (name) VALUES ('Alice')").run();
+      db.prepare('INSERT INTO loans (copy_id, borrower_id) VALUES (?, 1)').run(created.body.id);
+
+      await request(app).delete(`/api/copies/${created.body.id}`);
+
+      expect(db.prepare('SELECT COUNT(*) AS n FROM loans').get()).toEqual({ n: 0 });
+    });
+  });
+
   it('renvoie 404 pour un exemplaire inconnu', async () => {
     const { app } = setup();
     expect((await request(app).get('/api/copies/99')).status).toBe(404);

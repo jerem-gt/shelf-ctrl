@@ -5,6 +5,7 @@ import { BrowserRouter, Link, Route, Routes } from 'react-router';
 
 import { AddCopyPage } from '@/pages/AddCopyPage';
 import { CollectionPage } from '@/pages/CollectionPage';
+import { CopyPage } from '@/pages/CopyPage';
 
 export function AppRoutes() {
   const { t } = useTranslation();
@@ -23,6 +24,7 @@ export function AppRoutes() {
         <Routes>
           <Route path="/" element={<CollectionPage />} />
           <Route path="/add" element={<AddCopyPage />} />
+          <Route path="/copies/:id" element={<CopyPage />} />
         </Routes>
       </main>
     </div>

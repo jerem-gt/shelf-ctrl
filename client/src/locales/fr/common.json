@@ -84,5 +84,27 @@
     "denied": "Accès à la caméra refusé : autorise-le dans les réglages du navigateur pour ce site.",
     "noCamera": "Aucune caméra disponible sur cet appareil.",
     "error": "Impossible de démarrer la caméra."
+  },
+  "detail": {
+    "back": "Retour à la collection",
+    "notFound": "Exemplaire introuvable.",
+    "format": "Format",
+    "barcode": "Code-barres",
+    "publisher": "Éditeur",
+    "creators": "Auteurs / réalisateurs",
+    "condition": "État",
+    "conditionNote": "Note sur l'état",
+    "location": "Emplacement",
+    "addedOn": "Ajouté le",
+    "noValue": "—",
+    "edit": "Modifier",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "deleteTitle": "Supprimer cet exemplaire ?",
+    "deleteWarning": "Son historique de prêts et de ventes sera supprimé aussi. L'action est définitive.",
+    "deleteConfirm": "Supprimer définitivement",
+    "deleting": "Suppression…"
   }
 }

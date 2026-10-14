@@ -1,6 +1,7 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
+import { Route, Routes } from 'react-router';
 import { describe, expect, it } from 'vitest';
 
 import { server } from '@/tests/msw/server';
@@ -28,6 +29,20 @@ describe('CollectionPage', () => {
     expect(screen.getByText('Alien')).toBeInTheDocument();
     expect(screen.getByText('2 exemplaires')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Ajouter/ })).toHaveAttribute('href', '/add');
+  });
+
+  it('ouvre la fiche d’un exemplaire au clic sur son titre', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <Routes>
+        <Route path="/" element={<CollectionPage />} />
+        <Route path="/copies/:id" element={<p>Fiche de l’exemplaire</p>} />
+      </Routes>,
+    );
+
+    await user.click(await screen.findByRole('link', { name: 'Alien' }));
+
+    expect(await screen.findByText('Fiche de l’exemplaire')).toBeInTheDocument();
   });
 
   it('affiche un message quand la collection est vide', async () => {

@@ -39,6 +39,9 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
   if (!res.ok) {
     throw new ApiError(errorMessage(res.status), res.status);
   }
+  if (res.status === 204) {
+    return undefined as T;
+  }
   return (await res.json()) as T;
 }
 
@@ -65,6 +68,13 @@ export interface CreateCopyPayload {
   location?: string;
 }
 
+/** Champs modifiables d'un exemplaire ; `null` efface une note ou un emplacement. */
+export interface UpdateCopyPayload {
+  condition?: CopyCondition;
+  conditionNote?: string | null;
+  location?: string | null;
+}
+
 function toQueryString(filters: CopyFilters): string {
   const params = new URLSearchParams();
   if (filters.q) {
@@ -88,6 +98,10 @@ export const api = {
   copies: {
     list: (filters: CopyFilters = {}) =>
       request<CopyListResponse>('GET', `/api/copies${toQueryString(filters)}`),
+    get: (id: number) => request<CopyItem>('GET', `/api/copies/${id}`),
     create: (payload: CreateCopyPayload) => request<CopyItem>('POST', '/api/copies', payload),
+    update: (id: number, payload: UpdateCopyPayload) =>
+      request<CopyItem>('PATCH', `/api/copies/${id}`, payload),
+    remove: (id: number) => request<undefined>('DELETE', `/api/copies/${id}`),
   },
 };
