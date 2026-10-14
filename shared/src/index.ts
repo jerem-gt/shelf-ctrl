@@ -46,6 +46,28 @@ export interface CopyListResponse {
   total: number;
 }
 
+/** Un prêt d'exemplaire ; `returnedAt` vaut `null` tant qu'il est en cours. Dates au format AAAA-MM-JJ. */
+export interface LoanItem {
+  id: number;
+  copyId: number;
+  borrowerId: number;
+  borrowerName: string;
+  loanedAt: string;
+  returnedAt: string | null;
+}
+
+/** Prêt en cours avec de quoi identifier l'exemplaire dans une liste. */
+export interface OpenLoanItem extends LoanItem {
+  work: Pick<WorkSummary, 'title' | 'series' | 'volumeNumber'>;
+  format: MediaFormat;
+}
+
+export interface BorrowerItem {
+  id: number;
+  name: string;
+  openLoans: number;
+}
+
 /** `isbn` : livre (préfixe 978/979) ; `ean` : tout autre code (vidéo). */
 export type BarcodeKind = 'isbn' | 'ean';
 

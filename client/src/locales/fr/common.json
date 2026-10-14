@@ -23,7 +23,8 @@
   "errors": {
     "network": "Impossible de joindre le serveur.",
     "validation": "Certains champs sont invalides.",
-    "generic": "Une erreur est survenue."
+    "generic": "Une erreur est survenue.",
+    "conflict": "Cette action n'est plus possible : l'état de l'exemplaire a changé."
   },
   "collection": {
     "title": "Ma collection",
@@ -107,5 +108,35 @@
     "deleteWarning": "Son historique de prêts et de ventes sera supprimé aussi. L'action est définitive.",
     "deleteConfirm": "Supprimer définitivement",
     "deleting": "Suppression…"
+  },
+  "nav": {
+    "main": "Navigation",
+    "collection": "Collection",
+    "loans": "Prêts"
+  },
+  "loan": {
+    "section": "Prêts",
+    "lendButton": "Prêter",
+    "borrower": "Prêté à",
+    "date": "Date du prêt",
+    "lendSubmit": "Enregistrer le prêt",
+    "lending": "Enregistrement…",
+    "cancel": "Annuler",
+    "current": "Prêté à {{name}} depuis le {{date}}",
+    "giveBack": "Marquer comme rendu",
+    "givingBack": "Enregistrement…",
+    "history": "Historique",
+    "never": "Jamais prêté.",
+    "ongoing": "en cours",
+    "period": "{{from}} → {{to}}",
+    "soldNote": "Un exemplaire vendu ne peut plus être prêté."
+  },
+  "loansPage": {
+    "title": "Prêts en cours",
+    "empty": "Aucun prêt en cours.",
+    "since": "depuis le {{date}}",
+    "days_one": "{{count}} jour",
+    "days_other": "{{count}} jours",
+    "giveBack": "Rendu"
   }
 }

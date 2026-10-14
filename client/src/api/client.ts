@@ -1,10 +1,13 @@
 import type {
   BarcodeLookupResponse,
+  BorrowerItem,
   CopyCondition,
   CopyItem,
   CopyListResponse,
   CopyStatus,
+  LoanItem,
   MediaFormat,
+  OpenLoanItem,
 } from '@shelfctrl/types';
 
 import i18n from '@/i18n';
@@ -21,6 +24,9 @@ export class ApiError extends Error {
 function errorMessage(status: number): string {
   if (status === 400) {
     return i18n.t('errors.validation');
+  }
+  if (status === 409) {
+    return i18n.t('errors.conflict');
   }
   return i18n.t('errors.generic');
 }
@@ -90,7 +96,24 @@ function toQueryString(filters: CopyFilters): string {
   return query ? `?${query}` : '';
 }
 
+export interface LendPayload {
+  borrowerName: string;
+  /** AAAA-MM-JJ ; par défaut aujourd'hui côté serveur. */
+  loanedAt?: string;
+}
+
 export const api = {
+  borrowers: {
+    list: () => request<BorrowerItem[]>('GET', '/api/borrowers'),
+  },
+  loans: {
+    open: () => request<OpenLoanItem[]>('GET', '/api/loans'),
+    forCopy: (copyId: number) => request<LoanItem[]>('GET', `/api/copies/${copyId}/loans`),
+    lend: (copyId: number, payload: LendPayload) =>
+      request<LoanItem>('POST', `/api/copies/${copyId}/loans`, payload),
+    giveBack: (loanId: number, returnedAt?: string) =>
+      request<LoanItem>('POST', `/api/loans/${loanId}/return`, { returnedAt }),
+  },
   barcodes: {
     lookup: (code: string) =>
       request<BarcodeLookupResponse>('GET', `/api/barcodes/${encodeURIComponent(code)}`),

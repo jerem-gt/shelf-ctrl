@@ -111,6 +111,46 @@ describe('api.copies.get / update / remove', () => {
   });
 });
 
+describe('api.loans / api.borrowers', () => {
+  it('lit les emprunteurs, les prêts en cours et l’historique d’un exemplaire', async () => {
+    expect(await api.borrowers.list()).toHaveLength(2);
+    expect(await api.loans.open()).toEqual([]);
+    expect(await api.loans.forCopy(1)).toEqual([]);
+  });
+
+  it('enregistre un prêt puis son retour avec leurs dates', async () => {
+    const bodies: unknown[] = [];
+    server.use(
+      http.post('/api/copies/:id/loans', async ({ request }) => {
+        bodies.push(await request.json());
+        return HttpResponse.json({ id: 5 }, { status: 201 });
+      }),
+      http.post('/api/loans/:id/return', async ({ request, params }) => {
+        bodies.push({ id: params.id, ...((await request.json()) as object) });
+        return HttpResponse.json({ id: 5 });
+      }),
+    );
+
+    await api.loans.lend(1, { borrowerName: 'Alice', loanedAt: '2026-10-01' });
+    await api.loans.giveBack(5, '2026-10-10');
+
+    expect(bodies).toEqual([
+      { borrowerName: 'Alice', loanedAt: '2026-10-01' },
+      { id: '5', returnedAt: '2026-10-10' },
+    ]);
+  });
+
+  it('traduit un conflit (409) en message', async () => {
+    server.use(http.post('/api/copies/:id/loans', () => HttpResponse.json({}, { status: 409 })));
+
+    const error = await api.loans.lend(1, { borrowerName: 'Alice' }).catch((e: unknown) => e);
+    expect(error).toMatchObject({
+      status: 409,
+      message: "Cette action n'est plus possible : l'état de l'exemplaire a changé.",
+    });
+  });
+});
+
 describe('api.copies.create', () => {
   it('envoie le corps en JSON et renvoie l’exemplaire créé', async () => {
     let received: unknown;
