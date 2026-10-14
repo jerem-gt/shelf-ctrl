@@ -1,4 +1,5 @@
 import type {
+  BarcodeLookupResponse,
   CopyCondition,
   CopyItem,
   CopyListResponse,
@@ -80,6 +81,10 @@ function toQueryString(filters: CopyFilters): string {
 }
 
 export const api = {
+  barcodes: {
+    lookup: (code: string) =>
+      request<BarcodeLookupResponse>('GET', `/api/barcodes/${encodeURIComponent(code)}`),
+  },
   copies: {
     list: (filters: CopyFilters = {}) =>
       request<CopyListResponse>('GET', `/api/copies${toQueryString(filters)}`),

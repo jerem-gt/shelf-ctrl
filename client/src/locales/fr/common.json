@@ -58,6 +58,21 @@
     "location": "Emplacement",
     "submit": "Enregistrer",
     "submitting": "Enregistrement…",
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "barcodeSection": "Code-barres",
+    "lookup": {
+      "button": "Rechercher la fiche",
+      "searching": "Recherche…",
+      "found": "Fiche trouvée via {{source}} : vérifie les informations avant d'enregistrer.",
+      "known": "Cette édition est déjà dans ta collection : les champs ont été remplis.",
+      "notFound": "Aucune fiche trouvée pour ce code : saisis les informations à la main.",
+      "invalid": "Code-barres invalide : vérifie la saisie."
+    }
+  },
+  "sources": {
+    "local": "ta collection",
+    "openlibrary": "Open Library",
+    "googlebooks": "Google Books",
+    "upcitemdb": "UPCitemdb"
   }
 }

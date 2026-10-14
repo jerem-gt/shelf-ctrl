@@ -1,6 +1,7 @@
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
+import { BARCODE_TINTIN } from '@/tests/fixtures';
 import { server } from '@/tests/msw/server';
 
 import { api, ApiError } from './client';
@@ -38,6 +39,35 @@ describe('api.copies.list', () => {
 
     const error = await api.copies.list().catch((e: unknown) => e);
     expect(error).toMatchObject({ status: 0, message: 'Impossible de joindre le serveur.' });
+  });
+});
+
+describe('api.barcodes.lookup', () => {
+  it('interroge la route du code-barres et renvoie la fiche', async () => {
+    let path = '';
+    server.use(
+      http.get('/api/barcodes/:code', ({ request }) => {
+        path = new URL(request.url).pathname;
+        return HttpResponse.json(BARCODE_TINTIN);
+      }),
+    );
+
+    const result = await api.barcodes.lookup('978 2203001190');
+
+    expect(path).toBe('/api/barcodes/978%202203001190');
+    expect(result.suggestion.work.title).toBe('Tintin au Tibet');
+  });
+
+  it('signale un code inconnu par une ApiError 404', async () => {
+    server.use(
+      http.get('/api/barcodes/:code', () =>
+        HttpResponse.json({ error: 'not_found' }, { status: 404 }),
+      ),
+    );
+
+    const error = await api.barcodes.lookup('9782203001190').catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ status: 404 });
   });
 });
 

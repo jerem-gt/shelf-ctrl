@@ -46,6 +46,32 @@ export interface CopyListResponse {
   total: number;
 }
 
+/** `isbn` : livre (préfixe 978/979) ; `ean` : tout autre code (vidéo). */
+export type BarcodeKind = 'isbn' | 'ean';
+
+export type BarcodeSource = 'local' | 'openlibrary' | 'googlebooks' | 'upcitemdb';
+
+/** Fiche proposée pour un code-barres : à relire par l'utilisateur avant enregistrement. */
+export interface BarcodeSuggestion {
+  work: Omit<WorkSummary, 'id'>;
+  edition: {
+    format: MediaFormat | null;
+    publisher: string | null;
+    releaseYear: number | null;
+    language: string | null;
+  };
+}
+
+export interface BarcodeLookupResponse {
+  /** Code normalisé (ISBN-13, EAN-13…). */
+  barcode: string;
+  kind: BarcodeKind;
+  source: BarcodeSource;
+  /** Une édition portant ce code existe déjà dans la collection. */
+  known: boolean;
+  suggestion: BarcodeSuggestion;
+}
+
 export interface HealthResponse {
   status: 'ok';
 }

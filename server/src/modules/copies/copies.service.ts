@@ -7,6 +7,7 @@ import type {
 } from '@shelfctrl/types';
 import type { Database } from 'better-sqlite3';
 
+import { normalizeBarcode } from '../barcodes/barcode.js';
 import type { CreateCopyInput, ListCopiesQuery, UpdateCopyInput } from './copies.schema.js';
 
 interface CopyRow {
@@ -96,7 +97,7 @@ export function createCopiesService(db: Database) {
   };
 
   const findOrCreateEdition = (input: CreateCopyInput): number => {
-    const barcode = input.edition.barcode?.toUpperCase() ?? null;
+    const barcode = input.edition.barcode ? normalizeBarcode(input.edition.barcode) : null;
     if (barcode) {
       const existing = db.prepare('SELECT id FROM editions WHERE barcode = ?').get(barcode) as
         { id: number } | undefined;

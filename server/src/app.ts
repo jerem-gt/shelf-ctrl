@@ -5,11 +5,16 @@ import express, { type ErrorRequestHandler } from 'express';
 import helmet from 'helmet';
 import { ZodError } from 'zod';
 
+import { createBarcodesRouter } from './modules/barcodes/barcodes.routes.js';
+import { createDefaultProviders } from './modules/barcodes/providers/index.js';
+import type { BarcodeProvider } from './modules/barcodes/providers/types.js';
 import { createCopiesRouter } from './modules/copies/copies.routes.js';
 
 export interface AppOptions {
   /** Check de santé supplémentaire : renvoie une raison d'échec, ou null si OK. */
   healthExtraCheck?: () => string | null;
+  /** Sources de résolution des codes-barres (par défaut : chaîne configurée par l'environnement). */
+  barcodeProviders?: readonly BarcodeProvider[];
 }
 
 function isClientError(err: unknown): err is { status: number } {
@@ -64,6 +69,10 @@ export function createApp(db: Database, options: AppOptions = {}) {
     res.json(body);
   });
 
+  app.use(
+    '/api/barcodes',
+    createBarcodesRouter(db, options.barcodeProviders ?? createDefaultProviders()),
+  );
   app.use('/api/copies', createCopiesRouter(db));
 
   app.use(errorHandler);
