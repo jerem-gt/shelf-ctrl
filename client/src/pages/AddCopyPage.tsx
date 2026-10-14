@@ -5,14 +5,16 @@ import {
   MEDIA_FORMATS,
   type MediaFormat,
 } from '@shelfctrl/types';
-import { Search } from 'lucide-react';
+import { Camera, Search } from 'lucide-react';
 import { type SyntheticEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 
 import { ApiError, type CreateCopyPayload } from '@/api/client';
+import { BarcodeScanner } from '@/components/BarcodeScanner';
 import { useBarcodeLookup } from '@/hooks/useBarcodeLookup';
 import { useCreateCopy } from '@/hooks/useCopies';
+import { isScanSupported } from '@/lib/scanner';
 
 const FIELD_CLASS =
   'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-slate-500 focus:outline-none';
@@ -100,6 +102,8 @@ export function AddCopyPage() {
   const lookup = useBarcodeLookup();
   const [form, setForm] = useState<FormState>(INITIAL_STATE);
   const [lookupMessage, setLookupMessage] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const scanSupported = isScanSupported();
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((current) => ({ ...current, [key]: value }));
@@ -114,9 +118,9 @@ export function AddCopyPage() {
     return error.message;
   };
 
-  const handleLookup = () => {
+  const runLookup = (code: string) => {
     setLookupMessage(null);
-    lookup.mutate(form.barcode, {
+    lookup.mutate(code, {
       onSuccess: (result) => {
         setForm((current) => applySuggestion(current, result));
         setLookupMessage(
@@ -127,6 +131,12 @@ export function AddCopyPage() {
       },
       onError: (error) => setLookupMessage(lookupErrorMessage(error)),
     });
+  };
+
+  const handleScan = (code: string) => {
+    setScanning(false);
+    update('barcode', code);
+    runLookup(code);
   };
 
   const handleSubmit = (event: SyntheticEvent<HTMLFormElement>) => {
@@ -154,20 +164,33 @@ export function AddCopyPage() {
             </div>
             <button
               type="button"
-              onClick={handleLookup}
+              onClick={() => runLookup(form.barcode)}
               disabled={lookup.isPending || form.barcode.trim() === ''}
               className="flex items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium disabled:opacity-60"
             >
               <Search aria-hidden className="size-4" />
               {lookup.isPending ? t('add.lookup.searching') : t('add.lookup.button')}
             </button>
+            {scanSupported && (
+              <button
+                type="button"
+                onClick={() => setScanning(true)}
+                className="flex items-center gap-1 rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white"
+              >
+                <Camera aria-hidden className="size-4" />
+                {t('scan.button')}
+              </button>
+            )}
           </div>
+          {!scanSupported && <p className="text-xs text-slate-500">{t('scan.unsupported')}</p>}
           {lookupMessage && (
             <p role="status" className="text-sm text-slate-600">
               {lookupMessage}
             </p>
           )}
         </fieldset>
+
+        {scanning && <BarcodeScanner onDetect={handleScan} onClose={() => setScanning(false)} />}
 
         <fieldset className="flex flex-col gap-3">
           <legend className="mb-1 font-semibold">{t('add.work')}</legend>

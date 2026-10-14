@@ -1,9 +1,10 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse, type JsonBodyType } from 'msw';
 import { Route, Routes } from 'react-router';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
+import { mockCamera, restoreCamera } from '@/tests/cameraMocks';
 import { BARCODE_TINTIN, COPY_TINTIN } from '@/tests/fixtures';
 import { server } from '@/tests/msw/server';
 import { renderWithProviders } from '@/tests/renderWithProviders';
@@ -171,5 +172,53 @@ describe('AddCopyPage — recherche par code-barres', () => {
 
     expect(await screen.findByRole('status')).toHaveTextContent(message);
     expect(screen.getByLabelText('Titre')).toHaveValue('');
+  });
+});
+
+describe('AddCopyPage — scan caméra', () => {
+  afterEach(() => {
+    restoreCamera();
+  });
+
+  it('masque le bouton et explique pourquoi quand le scan est indisponible', () => {
+    renderPage();
+
+    expect(screen.queryByRole('button', { name: 'Scanner' })).not.toBeInTheDocument();
+    expect(screen.getByText(/Le scan n.est pas disponible ici/)).toBeInTheDocument();
+  });
+
+  it('scanne un code puis préremplit la fiche', async () => {
+    mockCamera({ reads: [['9782203001190']] });
+    let requested = '';
+    server.use(
+      http.get('/api/barcodes/:code', ({ params }) => {
+        requested = String(params.code);
+        return HttpResponse.json(BARCODE_TINTIN);
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    expect(screen.queryByText(/Le scan n.est pas disponible ici/)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Scanner' }));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(await screen.findByRole('status')).toHaveTextContent('Fiche trouvée via Open Library');
+    expect(requested).toBe('9782203001190');
+    expect(screen.getByLabelText('Code-barres (ISBN / EAN)')).toHaveValue('9782203001190');
+    expect(screen.getByLabelText('Titre')).toHaveValue('Tintin au Tibet');
+  });
+
+  it('ferme le scan sans rien modifier', async () => {
+    mockCamera({ reads: [[]] });
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: 'Scanner' }));
+    await user.click(await screen.findByRole('button', { name: 'Fermer' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Code-barres (ISBN / EAN)')).toHaveValue('');
   });
 });
