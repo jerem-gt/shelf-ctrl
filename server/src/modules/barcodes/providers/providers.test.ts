@@ -220,12 +220,16 @@ describe('TMDB', () => {
 
 describe('createDefaultProviders', () => {
   it('n’active que les sources sans clé par défaut', () => {
-    expect(createDefaultProviders({}).map((p) => p.source)).toEqual(['openlibrary', 'upcitemdb']);
+    expect(createDefaultProviders({}).map((p) => p.source)).toEqual([
+      'bnf',
+      'openlibrary',
+      'upcitemdb',
+    ]);
   });
 
-  it('place Google Books en premier quand sa clé est renseignée', () => {
+  it('place Google Books après la BnF quand sa clé est renseignée', () => {
     const sources = createDefaultProviders({ GOOGLE_BOOKS_API_KEY: 'k' }).map((p) => p.source);
-    expect(sources).toEqual(['googlebooks', 'openlibrary', 'upcitemdb']);
+    expect(sources).toEqual(['bnf', 'googlebooks', 'openlibrary', 'upcitemdb']);
   });
 
   it('enrichit les fiches vidéo avec TMDB quand sa clé est renseignée', async () => {

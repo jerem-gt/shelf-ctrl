@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { normalizeBarcode, parseBarcode } from './barcode.js';
+import { isbn13ToIsbn10, normalizeBarcode, parseBarcode } from './barcode.js';
 
 describe('parseBarcode', () => {
   it.each([
@@ -38,4 +38,21 @@ describe('normalizeBarcode', () => {
   it('conserve en majuscules un code invalide, tel que saisi', () => {
     expect(normalizeBarcode(' ab-12 ')).toBe('AB-12');
   });
+});
+
+describe('isbn13ToIsbn10', () => {
+  it.each([
+    ['9782203001190', '2203001194'],
+    ['9780804429573', '080442957X'],
+    ['9782205060164', '2205060163'],
+  ])('convertit %s en %s', (isbn13, isbn10) => {
+    expect(isbn13ToIsbn10(isbn13)).toBe(isbn10);
+  });
+
+  it.each([['9791234567896'], ['5051889000006'], ['2203001194']])(
+    'renvoie null pour %s (pas d’équivalent ISBN-10)',
+    (code) => {
+      expect(isbn13ToIsbn10(code)).toBeNull();
+    },
+  );
 });

@@ -36,6 +36,20 @@ function isbn10ToIsbn13(isbn10: string): string {
   return `${body}${(10 - (sum % 10)) % 10}`;
 }
 
+/** ISBN-10 équivalent d'un ISBN-13 en 978 (les 979 n'en ont pas) : certains catalogues n'indexent que lui. */
+export function isbn13ToIsbn10(isbn13: string): string | null {
+  if (!/^978\d{10}$/.test(isbn13)) {
+    return null;
+  }
+  const body = isbn13.slice(3, 12);
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += (10 - i) * Number(body[i]);
+  }
+  const check = (11 - (sum % 11)) % 11;
+  return `${body}${check === 10 ? 'X' : check}`;
+}
+
 /** Valide un code saisi ou scanné et le ramène à sa forme canonique ; `null` s'il est invalide. */
 export function parseBarcode(raw: string): ParsedBarcode | null {
   const cleaned = raw.replaceAll(/[\s-]/g, '').toUpperCase();

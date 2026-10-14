@@ -1,3 +1,4 @@
+import { createBnfProvider } from './bnf.js';
 import { createGoogleBooksProvider } from './googleBooks.js';
 import { createOpenLibraryProvider } from './openLibrary.js';
 import { createTmdbEnricher } from './tmdb.js';
@@ -17,7 +18,8 @@ export function createDefaultProviders(
   env: ProviderEnv = process.env,
   fetchFn: FetchFn = fetch,
 ): BarcodeProvider[] {
-  const providers: BarcodeProvider[] = [];
+  // La BnF d'abord : elle donne série et tome des BD francophones, que les autres sources manquent.
+  const providers: BarcodeProvider[] = [createBnfProvider(fetchFn)];
 
   if (env.GOOGLE_BOOKS_API_KEY) {
     providers.push(createGoogleBooksProvider(env.GOOGLE_BOOKS_API_KEY, fetchFn));
