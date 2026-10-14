@@ -69,11 +69,12 @@ export function BarcodeScanner({ onDetect, onClose }: Readonly<BarcodeScannerPro
   }, [t]);
 
   return (
-    <div
-      role="dialog"
+    // <dialog open> plutôt que role="dialog" ; les styles remplacent ceux, centrés, du navigateur.
+    <dialog
+      open
       aria-modal="true"
       aria-label={t('scan.title')}
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-black/85 p-4"
+      className="fixed inset-0 z-50 m-0 flex h-full w-full max-w-none flex-col items-center justify-center gap-4 border-0 bg-black/85 p-4"
     >
       <div className="relative w-full max-w-md overflow-hidden rounded-lg bg-black">
         <video ref={videoRef} playsInline muted className="aspect-[4/3] w-full object-cover" />
@@ -99,6 +100,6 @@ export function BarcodeScanner({ onDetect, onClose }: Readonly<BarcodeScannerPro
         <X aria-hidden className="size-4" />
         {t('scan.close')}
       </button>
-    </div>
+    </dialog>
   );
 }
