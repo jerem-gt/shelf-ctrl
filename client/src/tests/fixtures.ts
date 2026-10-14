@@ -4,6 +4,8 @@ import type {
   CopyItem,
   LoanItem,
   OpenLoanItem,
+  SaleItem,
+  SaleListItem,
 } from '@shelfctrl/types';
 
 export const COPY_TINTIN: CopyItem = {
@@ -109,3 +111,35 @@ export const BORROWERS: BorrowerItem[] = [
   { id: 1, name: 'Alice', openLoans: 1 },
   { id: 2, name: 'Bob', openLoans: 0 },
 ];
+
+export const SALE_LISTED: SaleItem = {
+  id: 1,
+  copyId: 1,
+  platform: 'Vinted',
+  priceCents: 1250,
+  listedAt: '2026-10-01',
+  soldAt: null,
+};
+
+export const SALE_SOLD: SaleItem = {
+  id: 2,
+  copyId: 1,
+  platform: 'Leboncoin',
+  priceCents: 1000,
+  listedAt: '2026-09-01',
+  soldAt: '2026-09-10',
+};
+
+export const SALE_LIST_LISTED: SaleListItem = {
+  ...SALE_LISTED,
+  work: { title: 'Tintin au Tibet', series: 'Tintin', volumeNumber: 20 },
+  format: 'book',
+};
+
+export const SALE_LIST_SOLD: SaleListItem = {
+  ...SALE_SOLD,
+  id: 3,
+  copyId: 2,
+  work: { title: 'Alien', series: null, volumeNumber: null },
+  format: 'bluray',
+};

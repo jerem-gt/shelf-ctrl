@@ -70,6 +70,8 @@ export function initSchema(db: Database) {
         sold_at     TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_sales_copy ON sales (copy_id);
+    -- Une seule ligne par exemplaire : la ligne seule vaut « en vente », avec sold_at « vendu » ; la supprimer retire l'annonce.
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_sales_copy_unique ON sales (copy_id);
 
     CREATE VIEW IF NOT EXISTS copy_status AS
     SELECT c.id AS copy_id,

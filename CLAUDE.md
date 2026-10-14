@@ -27,6 +27,8 @@ Titre → édition → exemplaire :
 - `copies` : **l'objet physique possédé** (état sur 5 niveaux, note, photo, emplacement).
 - `borrowers`, `loans`, `sales` : mouvements d'un exemplaire.
 - **Le statut d'un exemplaire (`owned`/`loaned`/`listed`/`sold`) n'est jamais stocké** : il dérive des mouvements via la vue `copy_status`. Ne jamais ajouter de colonne `status` sur `copies`.
+- **Ventes** : au plus une ligne `sales` par exemplaire (index unique). La ligne seule vaut « en vente » (`listed_at`), `sold_at` renseigné vaut « vendu » (vente directe : `listed_at` nul). Retirer l'annonce ou annuler la vente supprime la ligne ; un exemplaire prêté ne peut pas être vendu. Prix en centimes.
+- **Prêts** : un seul prêt en cours par exemplaire (index partiel) ; un exemplaire vendu ne peut plus être prêté. Dates au format AAAA-MM-JJ, par défaut le jour même.
 - États, formats et statuts sont définis une seule fois dans `shared/src/index.ts` ; les `CHECK` SQL de `server/src/db/schema.ts` doivent rester alignés.
 
 ## TypeScript & Code Quality

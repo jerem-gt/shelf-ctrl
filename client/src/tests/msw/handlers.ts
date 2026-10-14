@@ -1,7 +1,7 @@
 import type { CopyItem } from '@shelfctrl/types';
 import { http, HttpResponse } from 'msw';
 
-import { BORROWERS, COPIES, COPY_TINTIN, LOAN_OPEN } from '../fixtures';
+import { BORROWERS, COPIES, COPY_TINTIN, LOAN_OPEN, SALE_LISTED, SALE_SOLD } from '../fixtures';
 
 export const handlers = [
   http.get('/api/copies', () => HttpResponse.json({ items: COPIES, total: COPIES.length })),
@@ -36,4 +36,10 @@ export const handlers = [
     HttpResponse.json({ ...LOAN_OPEN, id: Number(params.id), returnedAt: '2026-10-14' }),
   ),
   http.get('/api/borrowers', () => HttpResponse.json(BORROWERS)),
+  http.get('/api/copies/:id/sale', () => HttpResponse.json(null)),
+  http.post('/api/copies/:id/sale', () => HttpResponse.json(SALE_LISTED, { status: 201 })),
+  http.post('/api/copies/:id/sale/sold', () => HttpResponse.json(SALE_SOLD)),
+  http.patch('/api/copies/:id/sale', () => HttpResponse.json(SALE_LISTED)),
+  http.delete('/api/copies/:id/sale', () => new HttpResponse(null, { status: 204 })),
+  http.get('/api/sales', () => HttpResponse.json([])),
 ];
