@@ -67,4 +67,4 @@ Français uniquement pour l'instant, mais **tous les textes passent par `useTran
 
 ## Déploiement
 
-Stack Container Manager dédiée (`docker-compose.yml`) : prod sur le port 3001, dev sur 4001, données dans `/volume1/data/shelf-ctrl` et `/volume1/data/shelf-ctrl-dev`. Image `ghcr.io/jerem-gt/shelf-ctrl` construite par la CI, mise à jour automatiquement par Watchtower (scope `app-fast`). Variables : `SESSION_SECRET`, `ADMIN_PASSWORD`, `PUID`, `PGID`.
+Stack Container Manager dédiée (`docker-compose.yml`) : prod sur le port 3101, dev sur 4101 (identiques en interne et publiés, comme cash-ctrl ; 3001 et 4001 étaient déjà utilisés sur le NAS), données dans `/volume1/data/shelf-ctrl` et `/volume1/data/shelf-ctrl-dev`. Image `ghcr.io/jerem-gt/shelf-ctrl` construite par la CI, mise à jour automatiquement par Watchtower (scope `app-fast`). Variables : `SESSION_SECRET`, `ADMIN_PASSWORD`, `PUID`, `PGID`.

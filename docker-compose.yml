@@ -9,12 +9,12 @@ services:
       - 'com.centurylinklabs.watchtower.scope=app-fast'
     restart: unless-stopped
     ports:
-      - '3001:3001'
+      - '3101:3101'
     volumes:
       - /volume1/data/shelf-ctrl:/data
     environment:
       - NODE_ENV=production
-      - PORT=3001
+      - PORT=3101
       - DATA_DIR=/data
       - SESSION_SECRET=${SESSION_SECRET}
       - ADMIN_USER=admin
@@ -31,12 +31,12 @@ services:
       - 'com.centurylinklabs.watchtower.scope=app-fast'
     restart: unless-stopped
     ports:
-      - '4001:4001'
+      - '4101:4101'
     volumes:
       - /volume1/data/shelf-ctrl-dev:/data
     environment:
       - NODE_ENV=production
-      - PORT=4001
+      - PORT=4101
       - DATA_DIR=/data
       - SESSION_SECRET=${SESSION_SECRET}
       - ADMIN_USER=admin
