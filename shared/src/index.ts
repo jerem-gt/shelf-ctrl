@@ -10,6 +10,42 @@ export type CopyCondition = (typeof COPY_CONDITIONS)[number];
 export const COPY_STATUSES = ['owned', 'loaned', 'listed', 'sold'] as const;
 export type CopyStatus = (typeof COPY_STATUSES)[number];
 
+export interface WorkSummary {
+  id: number;
+  title: string;
+  series: string | null;
+  volumeNumber: number | null;
+  creators: string | null;
+  year: number | null;
+}
+
+export interface EditionSummary {
+  id: number;
+  format: MediaFormat;
+  barcode: string | null;
+  publisher: string | null;
+  releaseYear: number | null;
+  language: string | null;
+  coverPath: string | null;
+}
+
+/** Un exemplaire physique avec son édition et son œuvre. */
+export interface CopyItem {
+  id: number;
+  status: CopyStatus;
+  condition: CopyCondition;
+  conditionNote: string | null;
+  location: string | null;
+  createdAt: string;
+  edition: EditionSummary;
+  work: WorkSummary;
+}
+
+export interface CopyListResponse {
+  items: CopyItem[];
+  total: number;
+}
+
 export interface HealthResponse {
   status: 'ok';
 }

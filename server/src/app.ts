@@ -1,13 +1,45 @@
 import type { HealthResponse } from '@shelfctrl/types';
 import type { Database } from 'better-sqlite3';
 import compression from 'compression';
-import express from 'express';
+import express, { type ErrorRequestHandler } from 'express';
 import helmet from 'helmet';
+import { ZodError } from 'zod';
+
+import { createCopiesRouter } from './modules/copies/copies.routes.js';
 
 export interface AppOptions {
   /** Check de santé supplémentaire : renvoie une raison d'échec, ou null si OK. */
   healthExtraCheck?: () => string | null;
 }
+
+function isClientError(err: unknown): err is { status: number } {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    'status' in err &&
+    typeof err.status === 'number' &&
+    err.status >= 400 &&
+    err.status < 500
+  );
+}
+
+// 4 params requis pour qu'Express reconnaisse le gestionnaire d'erreur (fn.length === 4)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const errorHandler: ErrorRequestHandler = (err: unknown, _req, res, _next) => {
+  if (err instanceof ZodError) {
+    res.status(400).json({
+      error: 'validation',
+      issues: err.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message })),
+    });
+    return;
+  }
+  if (isClientError(err)) {
+    res.status(err.status).json({ error: 'bad_request' });
+    return;
+  }
+  console.error(err);
+  res.status(500).json({ error: 'internal' });
+};
 
 export function createApp(db: Database, options: AppOptions = {}) {
   const app = express();
@@ -31,6 +63,10 @@ export function createApp(db: Database, options: AppOptions = {}) {
     const body: HealthResponse = { status: 'ok' };
     res.json(body);
   });
+
+  app.use('/api/copies', createCopiesRouter(db));
+
+  app.use(errorHandler);
 
   return app;
 }
