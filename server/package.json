@@ -24,7 +24,7 @@
   "devDependencies": {
     "@shelfctrl/types": "*",
     "@types/bcrypt": "^6.0.0",
-    "@types/better-sqlite3": "^7.6.13",
+    "@types/better-sqlite3": "^9.6.0",
     "@types/compression": "^1.8.1",
     "@types/express": "^5.0.6",
     "@types/express-session": "^1.19.0",
