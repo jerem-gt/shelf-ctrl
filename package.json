@@ -22,7 +22,7 @@
     "format": "prettier . --write"
   },
   "devDependencies": {
-    "@eslint-react/eslint-plugin": "^5.27.1",
+    "@eslint-react/eslint-plugin": "^5.27.2",
     "@eslint/js": "^10.0.1",
     "concurrently": "^10.0.6",
     "eslint": "^10.12.0",
