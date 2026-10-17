@@ -30,7 +30,6 @@ export function LoginPage() {
           {t('login.username')}
           <input
             required
-            autoFocus
             autoComplete="username"
             maxLength={200}
             value={username}
