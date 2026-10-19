@@ -16,29 +16,34 @@ function CopyField({
   multiline,
 }: Readonly<{ label: string; value: string; multiline?: boolean }>) {
   const { t } = useTranslation();
-  const [copied, setCopied] = useState(false);
+  const fieldId = useId();
+  // On retient le texte copié : dès que le texte affiché change (autre plateforme), « Copié »
+  // ne vaut plus, et on ne laisse pas croire que le nouveau texte est dans le presse-papiers.
+  const [copiedValue, setCopiedValue] = useState<string | null>(null);
 
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(value);
-      setCopied(true);
+      setCopiedValue(value);
     } catch {
       // Presse-papiers indisponible (contexte non sécurisé) : le texte reste sélectionnable.
     }
   };
 
   return (
-    <label className="flex flex-col gap-1 text-sm font-medium">
-      {label}
+    <div className="flex flex-col gap-1">
+      <label htmlFor={fieldId} className="text-sm font-medium">
+        {label}
+      </label>
       {multiline ? (
-        <textarea readOnly rows={10} value={value} className={FIELD_CLASS} />
+        <textarea id={fieldId} readOnly rows={10} value={value} className={FIELD_CLASS} />
       ) : (
-        <input readOnly value={value} className={FIELD_CLASS} />
+        <input id={fieldId} readOnly value={value} className={FIELD_CLASS} />
       )}
       <button type="button" onClick={() => void copy()} className={`${BUTTON_CLASS} self-start`}>
-        {t(copied ? 'listingDraft.copied' : 'listingDraft.copy')}
+        {t(copiedValue === value ? 'listingDraft.copied' : 'listingDraft.copy')}
       </button>
-    </label>
+    </div>
   );
 }
 

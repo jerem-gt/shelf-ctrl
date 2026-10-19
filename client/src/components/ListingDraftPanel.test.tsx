@@ -49,6 +49,36 @@ describe('ListingDraftPanel', () => {
     );
   });
 
+  it('ne laisse pas « Copié » quand le texte affiché change', async () => {
+    const copy = {
+      ...COPY_TINTIN,
+      work: { ...COPY_TINTIN.work, title: 'Les Aventures extraordinaires de Tintin au Tibet' },
+    };
+    const user = userEvent.setup();
+    renderWithProviders(<ListingDraftPanel copy={copy} sale={null} />);
+    await user.click(screen.getByRole('button', { name: 'Préparer une annonce' }));
+
+    const [copyTitle] = screen.getAllByRole('button', { name: 'Copier' });
+    await user.click(copyTitle);
+    expect(screen.getByRole('button', { name: 'Copié' })).toBeInTheDocument();
+
+    // Autre plateforme : le titre n'est plus le même, il n'est donc plus dans le presse-papiers.
+    await user.selectOptions(screen.getByLabelText('Plateforme visée'), 'eBay');
+
+    expect(screen.queryByRole('button', { name: 'Copié' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Copier' })).toHaveLength(2);
+  });
+
+  it('nomme chaque champ par son seul libellé, bouton Copier à part', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<ListingDraftPanel copy={COPY_TINTIN} sale={null} />);
+
+    await user.click(screen.getByRole('button', { name: 'Préparer une annonce' }));
+
+    expect(screen.getByRole('textbox', { name: 'Titre' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Description' })).toBeInTheDocument();
+  });
+
   it('propose d’abord la plateforme de l’annonce en cours', async () => {
     const sale = { ...SALE_LISTED, platform: 'Autre site' };
     const user = userEvent.setup();
