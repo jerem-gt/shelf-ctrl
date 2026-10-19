@@ -48,6 +48,9 @@ export function createImages(db: Database, options: ImagesOptions) {
   };
 
   return {
+    /** Cherche la pochette d'une édition sans la remplacer ; `true` si elle a été trouvée. */
+    fetchCover: async (editionId: number): Promise<boolean> =>
+      (await covers.fetchForEdition(editionId, false)) === 'fetched',
     router: createImagesRouter(covers, photos),
     copiesHooks,
     covers: express.static(store.dirOf('covers'), STATIC_OPTIONS),

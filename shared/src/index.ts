@@ -127,6 +127,86 @@ export interface TitleSearchResponse {
   results: TitleSearchResult[];
 }
 
+/** Colonnes reconnues d'un fichier CSV d'import. */
+export const IMPORT_FIELDS = [
+  'title',
+  'series',
+  'volume',
+  'creators',
+  'format',
+  'barcode',
+  'publisher',
+  'year',
+  'language',
+  'condition',
+  'note',
+  'location',
+] as const;
+export type ImportField = (typeof IMPORT_FIELDS)[number];
+
+export const IMPORT_ISSUE_CODES = [
+  'missing_title',
+  'missing_format',
+  'invalid_format',
+  'invalid_condition',
+  'invalid_volume',
+  'invalid_year',
+  'invalid_barcode',
+  'too_long',
+  'not_found_online',
+  'invalid',
+] as const;
+export type ImportIssueCode = (typeof IMPORT_ISSUE_CODES)[number];
+
+/** Problème d'une ligne ; `field` désigne la colonne concernée quand il y en a une. */
+export interface ImportIssue {
+  code: ImportIssueCode;
+  field: ImportField | null;
+}
+
+/** Une ligne du fichier, numérotée comme dans un tableur (l'en-tête est la ligne 1). */
+export interface ImportRowPreview {
+  line: number;
+  title: string | null;
+  barcode: string | null;
+  issues: ImportIssue[];
+  /** Une édition identique existe déjà, ou apparaît plus haut dans le fichier. */
+  duplicate: boolean;
+  /** Des champs seront complétés en ligne à partir du code-barres. */
+  willComplete: boolean;
+}
+
+export interface ImportPreview {
+  total: number;
+  valid: number;
+  invalid: number;
+  duplicates: number;
+  /** Lignes dont des champs seront cherchés en ligne. */
+  toComplete: number;
+  /** En-têtes du fichier que l'import ne reconnaît pas (ignorés). */
+  ignoredColumns: string[];
+  rows: ImportRowPreview[];
+}
+
+export interface ImportRowFailure {
+  line: number;
+  title: string | null;
+  issues: ImportIssue[];
+}
+
+/** Avancement d'un import en cours ou terminé (suivi par l'interface). */
+export interface ImportJob {
+  id: string;
+  status: 'running' | 'done' | 'failed';
+  total: number;
+  processed: number;
+  created: number;
+  /** Exemplaires dont des champs ont été complétés en ligne. */
+  completed: number;
+  coversFound: number;
+  failures: ImportRowFailure[];
+}
+
 /** Utilisateur connecté (réponse de `/api/auth/me` et de la connexion). */
 export interface SessionResponse {
   username: string;

@@ -8,11 +8,14 @@ import { ZodError } from 'zod';
 
 import { requireAuth } from './middleware.js';
 import { createAuthRouter, SESSION_COOKIE } from './modules/auth/auth.routes.js';
+import { parseBarcode } from './modules/barcodes/barcode.js';
 import { createBarcodesRouter } from './modules/barcodes/barcodes.routes.js';
+import { createBarcodesService } from './modules/barcodes/barcodes.service.js';
 import { createDefaultProviders } from './modules/barcodes/providers/index.js';
 import type { BarcodeProvider } from './modules/barcodes/providers/types.js';
 import { createCopiesRouter } from './modules/copies/copies.routes.js';
 import { createImages, type ImagesOptions } from './modules/images/index.js';
+import { createImportRouter } from './modules/import/import.routes.js';
 import { createLoansRouter } from './modules/loans/loans.routes.js';
 import { createSalesRouter } from './modules/sales/sales.routes.js';
 import { createDefaultTitleSearchProviders } from './modules/titles/providers/index.js';
@@ -123,10 +126,8 @@ export function createApp(db: Database, options: AppOptions = {}) {
     app.use('/photos', images.photos);
   }
 
-  app.use(
-    '/api/barcodes',
-    createBarcodesRouter(db, options.barcodeProviders ?? createDefaultProviders()),
-  );
+  const barcodeProviders = options.barcodeProviders ?? createDefaultProviders();
+  app.use('/api/barcodes', createBarcodesRouter(db, barcodeProviders));
   app.use(
     '/api/titles',
     createTitlesRouter(options.titleSearchProviders ?? createDefaultTitleSearchProviders()),
@@ -135,6 +136,17 @@ export function createApp(db: Database, options: AppOptions = {}) {
   if (images) {
     app.use('/api', images.router);
   }
+  const barcodes = createBarcodesService(db, barcodeProviders);
+  app.use(
+    '/api/import',
+    createImportRouter(db, {
+      resolve: (code) => {
+        const parsed = parseBarcode(code);
+        return parsed ? barcodes.resolve(parsed) : Promise.resolve(null);
+      },
+      fetchCover: images?.fetchCover,
+    }),
+  );
   app.use('/api', createLoansRouter(db));
   app.use('/api', createSalesRouter(db));
 
