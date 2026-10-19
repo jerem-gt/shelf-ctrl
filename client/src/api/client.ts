@@ -5,6 +5,8 @@ import type {
   CopyItem,
   CopyListResponse,
   CopyStatus,
+  ImportJob,
+  ImportPreview,
   LoanItem,
   MediaFormat,
   OpenLoanItem,
@@ -18,10 +20,13 @@ import i18n from '@/i18n';
 
 export class ApiError extends Error {
   readonly status: number;
-  constructor(message: string, status: number) {
+  /** Code d'erreur du serveur (`error` du corps JSON), quand il y en a un. */
+  readonly code: string | null;
+  constructor(message: string, status: number, code: string | null = null) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -49,6 +54,18 @@ function toRequestInit(method: string, body: unknown): RequestInit {
   return { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
 }
 
+async function readErrorCode(res: Response): Promise<string | null> {
+  try {
+    const body: unknown = await res.json();
+    if (typeof body === 'object' && body !== null && 'error' in body) {
+      return typeof body.error === 'string' ? body.error : null;
+    }
+  } catch {
+    // Corps absent ou qui n'est pas du JSON : le statut suffit.
+  }
+  return null;
+}
+
 async function request<T>(method: string, url: string, body?: unknown): Promise<T> {
   let res: Response;
   try {
@@ -57,7 +74,7 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
     throw new ApiError(i18n.t('errors.network'), 0);
   }
   if (!res.ok) {
-    throw new ApiError(errorMessage(res.status), res.status);
+    throw new ApiError(errorMessage(res.status), res.status, await readErrorCode(res));
   }
   if (res.status === 204) {
     return undefined as T;
@@ -128,6 +145,12 @@ export interface LoginPayload {
 }
 
 export const api = {
+  import: {
+    templateUrl: '/api/import/template',
+    preview: (file: Blob) => request<ImportPreview>('POST', '/api/import/preview', file),
+    start: (file: Blob) => request<ImportJob>('POST', '/api/import', file),
+    job: (id: string) => request<ImportJob>('GET', `/api/import/${encodeURIComponent(id)}`),
+  },
   images: {
     uploadCover: (editionId: number, file: Blob) =>
       request<{ coverPath: string }>('PUT', `/api/editions/${editionId}/cover`, file),

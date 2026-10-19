@@ -9,6 +9,7 @@ import { ME_KEY, useLogout, useMe } from '@/hooks/useAuth';
 import { AddCopyPage } from '@/pages/AddCopyPage';
 import { CollectionPage } from '@/pages/CollectionPage';
 import { CopyPage } from '@/pages/CopyPage';
+import { ImportPage } from '@/pages/ImportPage';
 import { LoansPage } from '@/pages/LoansPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { SalesPage } from '@/pages/SalesPage';
@@ -39,6 +40,9 @@ export function AppRoutes() {
               <NavLink to="/sales" className={navClass}>
                 {t('nav.sales')}
               </NavLink>
+              <NavLink to="/import" className={navClass}>
+                {t('nav.import')}
+              </NavLink>
             </nav>
           </div>
           <div className="flex items-center gap-3">
@@ -63,6 +67,7 @@ export function AppRoutes() {
           <Route path="/copies/:id" element={<CopyPage />} />
           <Route path="/loans" element={<LoansPage />} />
           <Route path="/sales" element={<SalesPage />} />
+          <Route path="/import" element={<ImportPage />} />
         </Routes>
       </main>
     </div>
