@@ -17,7 +17,7 @@ function fold(value: string): string {
 }
 
 /** Évite de remplacer le titre par celui d'un film sans rapport avec le produit trouvé. */
-function isSameTitle(a: string, b: string): boolean {
+export function isSameTitle(a: string, b: string): boolean {
   const foldedA = fold(a);
   const foldedB = fold(b);
   if (foldedA.length < 3 || foldedB.length < 3) {

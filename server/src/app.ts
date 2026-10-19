@@ -12,6 +12,7 @@ import { createBarcodesRouter } from './modules/barcodes/barcodes.routes.js';
 import { createDefaultProviders } from './modules/barcodes/providers/index.js';
 import type { BarcodeProvider } from './modules/barcodes/providers/types.js';
 import { createCopiesRouter } from './modules/copies/copies.routes.js';
+import { createImages, type ImagesOptions } from './modules/images/index.js';
 import { createListingsRouter } from './modules/listings/listings.routes.js';
 import { createLlmProvider } from './modules/listings/llm/index.js';
 import type { LlmProvider } from './modules/listings/llm/types.js';
@@ -29,6 +30,11 @@ export interface AppOptions {
   healthExtraCheck?: () => string | null;
   /** Sources de résolution des codes-barres (par défaut : chaîne configurée par l'environnement). */
   barcodeProviders?: readonly BarcodeProvider[];
+  /**
+   * Stockage des images (pochettes, photos). Absent, les routes d'images ne sont pas montées :
+   * `index.ts` le fournit toujours.
+   */
+  images?: ImagesOptions;
   /** Sources de recherche par titre (par défaut : chaîne configurée par l'environnement). */
   titleSearchProviders?: readonly TitleSearchProvider[];
   /** Fournisseur LLM des annonces (`null` : désactivé ; par défaut, celui configuré par l'environnement). */
@@ -113,6 +119,13 @@ export function createApp(db: Database, options: AppOptions = {}) {
     app.use('/api/auth', createAuthRouter(db));
     // /api/health et /api/auth/* sont déclarés avant : tout le reste de l'API exige une session.
     app.use('/api', requireAuth);
+    app.use(['/covers', '/photos'], requireAuth);
+  }
+
+  const images = options.images ? createImages(db, options.images) : null;
+  if (images) {
+    app.use('/covers', images.covers);
+    app.use('/photos', images.photos);
   }
 
   app.use(
@@ -123,7 +136,10 @@ export function createApp(db: Database, options: AppOptions = {}) {
     '/api/titles',
     createTitlesRouter(options.titleSearchProviders ?? createDefaultTitleSearchProviders()),
   );
-  app.use('/api/copies', createCopiesRouter(db));
+  app.use('/api/copies', createCopiesRouter(db, images?.copiesHooks));
+  if (images) {
+    app.use('/api', images.router);
+  }
   app.use('/api', createLoansRouter(db));
   app.use('/api', createSalesRouter(db));
   app.use(

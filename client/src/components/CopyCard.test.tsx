@@ -43,3 +43,21 @@ describe('CopyCard', () => {
     );
   });
 });
+
+describe('CopyCard — pochette', () => {
+  it('affiche la miniature de la pochette quand l’édition en a une', () => {
+    const copy = {
+      ...COPY_TINTIN,
+      edition: { ...COPY_TINTIN.edition, coverPath: '1-aaaaaaaaaa.webp' },
+    };
+    const { container } = renderWithProviders(<CopyCard copy={copy} />);
+
+    expect(container.querySelector('img')).toHaveAttribute('src', '/covers/1-aaaaaaaaaa.webp');
+  });
+
+  it('se contente d’une icône sans pochette', () => {
+    const { container } = renderWithProviders(<CopyCard copy={COPY_TINTIN} />);
+
+    expect(container.querySelector('img')).toBeNull();
+  });
+});

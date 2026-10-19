@@ -7,6 +7,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { ApiError } from '@/api/client';
 import { DeleteCopyConfirmation } from '@/components/DeleteCopyConfirmation';
 import { EditCopyForm } from '@/components/EditCopyForm';
+import { ImagesSection } from '@/components/ImagesSection';
 import { LoanSection } from '@/components/LoanSection';
 import { SaleSection } from '@/components/SaleSection';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -109,6 +110,7 @@ export function CopyPage() {
             {t('detail.delete')}
           </button>
         </div>
+        <ImagesSection copy={copy} />
         <LoanSection copy={copy} />
         <SaleSection copy={copy} />
       </>

@@ -16,6 +16,7 @@ interface CopyRow {
   condition: CopyCondition;
   condition_note: string | null;
   location: string | null;
+  photo_path: string | null;
   created_at: string;
   edition_id: number;
   format: MediaFormat;
@@ -33,7 +34,7 @@ interface CopyRow {
 }
 
 const SELECT_COPIES = `
-  SELECT c.id, cs.status, c.condition, c.condition_note, c.location, c.created_at,
+  SELECT c.id, cs.status, c.condition, c.condition_note, c.location, c.photo_path, c.created_at,
          e.id AS edition_id, e.format, e.barcode, e.publisher, e.release_year, e.language, e.cover_path,
          w.id AS work_id, w.title, w.series, w.volume_number, w.creators, w.year
   FROM copies c
@@ -48,6 +49,7 @@ function toCopyItem(row: CopyRow): CopyItem {
     condition: row.condition,
     conditionNote: row.condition_note,
     location: row.location,
+    photoPath: row.photo_path,
     createdAt: row.created_at,
     edition: {
       id: row.edition_id,
@@ -67,6 +69,12 @@ function toCopyItem(row: CopyRow): CopyItem {
       year: row.year,
     },
   };
+}
+
+/** Fichiers d'image à supprimer après la suppression d'un exemplaire. */
+export interface RemovedFiles {
+  photoPath: string | null;
+  coverPath: string | null;
 }
 
 function escapeLike(value: string) {
@@ -203,12 +211,19 @@ export function createCopiesService(db: Database) {
     /**
      * Supprime l'exemplaire (et ses prêts et ventes, en cascade), puis l'édition et l'œuvre
      * qui n'ont plus d'exemplaire : sinon un code-barres resterait « connu » sans rien posséder.
+     * Renvoie les fichiers d'image devenus orphelins, ou `null` si l'exemplaire n'existe pas.
      */
-    remove: db.transaction((id: number): boolean => {
-      const row = db.prepare('SELECT edition_id FROM copies WHERE id = ?').get(id) as
-        { edition_id: number } | undefined;
+    remove: db.transaction((id: number): RemovedFiles | null => {
+      const row = db
+        .prepare(
+          `SELECT c.edition_id, c.photo_path, e.cover_path
+           FROM copies c JOIN editions e ON e.id = c.edition_id
+           WHERE c.id = ?`,
+        )
+        .get(id) as
+        { edition_id: number; photo_path: string | null; cover_path: string | null } | undefined;
       if (!row) {
-        return false;
+        return null;
       }
       db.prepare('DELETE FROM copies WHERE id = ?').run(id);
       const edition = db
@@ -224,7 +239,8 @@ export function createCopiesService(db: Database) {
            WHERE id = ? AND NOT EXISTS (SELECT 1 FROM editions WHERE work_id = ?)`,
         ).run(edition.work_id, edition.work_id);
       }
-      return true;
+      // La pochette appartient à l'édition : elle ne disparaît qu'avec elle.
+      return { photoPath: row.photo_path, coverPath: edition ? row.cover_path : null };
     }),
   };
 }

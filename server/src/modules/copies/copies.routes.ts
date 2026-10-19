@@ -1,3 +1,4 @@
+import type { CopyItem } from '@shelfctrl/types';
 import type { Database } from 'better-sqlite3';
 import { Router } from 'express';
 
@@ -7,9 +8,15 @@ import {
   listCopiesSchema,
   updateCopySchema,
 } from './copies.schema.js';
-import { createCopiesService } from './copies.service.js';
+import { createCopiesService, type RemovedFiles } from './copies.service.js';
 
-export function createCopiesRouter(db: Database) {
+/** Réactions de modules voisins (images) aux créations et suppressions d'exemplaires. */
+export interface CopiesHooks {
+  onCreated?: (copy: CopyItem) => void;
+  onRemoved?: (files: RemovedFiles) => Promise<void>;
+}
+
+export function createCopiesRouter(db: Database, hooks: CopiesHooks = {}) {
   const router = Router();
   const service = createCopiesService(db);
 
@@ -18,7 +25,9 @@ export function createCopiesRouter(db: Database) {
   });
 
   router.post('/', (req, res) => {
-    res.status(201).json(service.create(createCopySchema.parse(req.body)));
+    const copy = service.create(createCopySchema.parse(req.body));
+    hooks.onCreated?.(copy);
+    res.status(201).json(copy);
   });
 
   router.get('/:id', (req, res) => {
@@ -42,8 +51,10 @@ export function createCopiesRouter(db: Database) {
     }
   });
 
-  router.delete('/:id', (req, res) => {
-    if (service.remove(copyIdSchema.parse(req.params.id))) {
+  router.delete('/:id', async (req, res) => {
+    const files = service.remove(copyIdSchema.parse(req.params.id));
+    if (files) {
+      await hooks.onRemoved?.(files);
       res.status(204).end();
     } else {
       res.status(404).json({ error: 'not_found' });
