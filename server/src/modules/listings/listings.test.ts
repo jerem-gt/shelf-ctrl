@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
 import { createDb, initDatabase } from '../../db/init.js';
 import { createLlmProvider } from './llm/index.js';
+import { createOpenAiCompatibleProvider } from './llm/openAiCompatible.js';
 import type { LlmProvider } from './llm/types.js';
 
 function setup(llmProvider: LlmProvider | null) {
@@ -158,7 +159,7 @@ describe('createLlmProvider', () => {
     });
   });
 
-  it('cible l’API Gemini avec son modèle Flash par défaut', async () => {
+  it('cible l’API Gemini avec son modèle Flash-Lite par défaut', async () => {
     const fetchFn = vi
       .fn()
       .mockResolvedValue(
@@ -170,13 +171,67 @@ describe('createLlmProvider', () => {
 
     const [url, init] = fetchFn.mock.calls[0] as [string, RequestInit];
     expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions');
-    expect(JSON.parse(init.body as string).model).toBe('gemini-flash-latest');
+    expect(JSON.parse(init.body as string).model).toBe('gemini-2.5-flash-lite');
   });
 
   it('lève une erreur sur une réponse HTTP en échec', async () => {
-    const fetchFn = vi.fn().mockResolvedValue(new Response('{}', { status: 429 }));
+    const fetchFn = vi.fn().mockResolvedValue(new Response('{}', { status: 401 }));
     const provider = createLlmProvider({ LLM_PROVIDER: 'groq', LLM_API_KEY: 'k' }, fetchFn);
 
-    await expect(provider?.completeJson('s', 'u')).rejects.toThrow('HTTP 429');
+    await expect(provider?.completeJson('s', 'u')).rejects.toThrow('HTTP 401');
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('nouvelle tentative sur erreur passagère', () => {
+  const config = {
+    name: 'fake',
+    url: 'https://llm.example.test',
+    apiKey: 'k',
+    model: 'm',
+    retryDelayMs: 0,
+  };
+  const ok = () => new Response(JSON.stringify({ choices: [{ message: { content: '{"a":1}' } }] }));
+
+  it.each([429, 503])('retente après un HTTP %s', async (status) => {
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('{}', { status }))
+      .mockResolvedValueOnce(ok());
+
+    const result = await createOpenAiCompatibleProvider(config, fetchFn).completeJson('s', 'u');
+
+    expect(result).toBe('{"a":1}');
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+  });
+
+  it('retente après un délai dépassé', async () => {
+    const timeout = Object.assign(new Error('timeout'), { name: 'TimeoutError' });
+    const fetchFn = vi.fn().mockRejectedValueOnce(timeout).mockResolvedValueOnce(ok());
+
+    const result = await createOpenAiCompatibleProvider(config, fetchFn).completeJson('s', 'u');
+
+    expect(result).toBe('{"a":1}');
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+  });
+
+  it('abandonne après trois tentatives', async () => {
+    const fetchFn = vi
+      .fn()
+      .mockImplementation(() => Promise.resolve(new Response('{}', { status: 503 })));
+
+    await expect(
+      createOpenAiCompatibleProvider(config, fetchFn).completeJson('s', 'u'),
+    ).rejects.toThrow('HTTP 503');
+    expect(fetchFn).toHaveBeenCalledTimes(3);
+  });
+
+  it('ne retente pas une erreur réseau ordinaire', async () => {
+    const fetchFn = vi.fn().mockRejectedValue(new Error('ECONNREFUSED'));
+
+    await expect(
+      createOpenAiCompatibleProvider(config, fetchFn).completeJson('s', 'u'),
+    ).rejects.toThrow('ECONNREFUSED');
+    expect(fetchFn).toHaveBeenCalledTimes(1);
   });
 });

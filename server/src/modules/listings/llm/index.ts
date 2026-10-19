@@ -11,9 +11,12 @@ export interface LlmEnv {
 
 const PROVIDERS = {
   gemini: {
-    // Point d'entrée compatible OpenAI de l'API Gemini ; `-latest` suit la version Flash en cours.
+    // Point d'entrée compatible OpenAI de l'API Gemini. Flash-Lite : rapide (~1 s) et fiable sur
+    // l'offre gratuite, contrairement à Flash (réflexion lente, souvent saturé) et aux alias `-latest`
+    // (versions de prévisualisation qui restaient suspendues). Un nom épinglé finit par être retiré
+    // (404) : surcharger alors avec LLM_MODEL.
     url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
-    model: 'gemini-flash-latest',
+    model: 'gemini-2.5-flash-lite',
   },
   groq: {
     url: 'https://api.groq.com/openai/v1/chat/completions',
