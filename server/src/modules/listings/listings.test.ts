@@ -71,6 +71,16 @@ describe('POST /api/copies/:id/listing-draft', () => {
     expect(res.body.suggestedPriceCents).toBeNull();
   });
 
+  it.each([0, -3])('traite une estimation de %s € comme absente', async (priceEuros) => {
+    const { provider } = fakeLlm(JSON.stringify({ title: 'T', description: 'D', priceEuros }));
+    const app = setup(provider);
+
+    const res = await draft(app, await createCopy(app));
+
+    expect(res.status).toBe(200);
+    expect(res.body.suggestedPriceCents).toBeNull();
+  });
+
   it('répond 503 quand aucun fournisseur LLM n’est configuré', async () => {
     const app = setup(null);
 

@@ -7,8 +7,11 @@ import type { createPhotoService } from './photos.service.js';
 
 const MAX_UPLOAD = '12mb';
 
-/** Corps brut : le fichier est envoyé tel quel, avec son `Content-Type` d'image. */
-const rawImage = express.raw({ type: 'image/*', limit: MAX_UPLOAD });
+/**
+ * Corps brut : le fichier est envoyé tel quel. Un fichier sans type MIME connu arrive en
+ * `application/octet-stream` ; son contenu est de toute façon vérifié par la conversion.
+ */
+const rawImage = express.raw({ type: ['image/*', 'application/octet-stream'], limit: MAX_UPLOAD });
 
 /**
  * Monté sur `/api` : pochette d'une édition (envoi, récupération en ligne, retrait) et photo

@@ -26,7 +26,7 @@ const FORMAT_LABELS: Record<CopyItem['edition']['format'], string> = {
 const draftSchema = z.object({
   title: z.string().trim().min(1).max(200),
   description: z.string().trim().min(1).max(5000),
-  priceEuros: z.number().min(0).max(100_000).nullish(),
+  priceEuros: z.number().max(100_000).nullish(),
 });
 
 export class ListingGenerationError extends Error {}
@@ -69,7 +69,8 @@ function parseDraft(raw: string): ListingDraft {
   return {
     title,
     description,
-    suggestedPriceCents: priceEuros == null ? null : Math.round(priceEuros * 100),
+    // Un modèle qui ne sait pas estimer répond parfois 0 plutôt que null.
+    suggestedPriceCents: priceEuros != null && priceEuros > 0 ? Math.round(priceEuros * 100) : null,
   };
 }
 

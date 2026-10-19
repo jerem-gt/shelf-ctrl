@@ -42,7 +42,7 @@ function parseRecord(record: string): UnimarcFields {
  */
 export function parseUnimarcRecords(xml: string): UnimarcFields[] {
   return xml
-    .split('<mxc:record')
+    .split(/<mxc:record(?=[\s>])/)
     .slice(1)
     .map((chunk) => parseRecord(chunk.split('</mxc:record>')[0]));
 }
