@@ -150,16 +150,46 @@ const FIELD_BY_PATH: Record<string, ImportField> = {
   location: 'location',
 };
 
+/**
+ * Clé d'une édition sans code-barres : titre, série, tome et support, casse ignorée. La
+ * comparaison se fait en JavaScript des deux côtés, car `lower()` de SQLite ne replie que l'ASCII.
+ */
+function titleKey(title: string, series: string | null, volume: number | null, format: string) {
+  return `titre:${title.toLowerCase()}|${series?.toLowerCase() ?? ''}|${volume ?? ''}|${format}`;
+}
+
+/** Résultat de `work`, ou `fallback` s'il échoue : une source en panne ne doit rien interrompre. */
+async function safely<T>(work: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await work();
+  } catch {
+    return fallback;
+  }
+}
+
 export function createImportService(db: Database, deps: ImportDeps) {
   const copies = createCopiesService(db);
   const jobs = new Map<string, ImportJob>();
   let runningId: string | null = null;
 
   const barcodeKnown = db.prepare('SELECT 1 FROM editions WHERE barcode = ?');
-  const workKnown = db.prepare(
-    `SELECT 1 FROM editions e JOIN works w ON w.id = e.work_id
-     WHERE lower(w.title) = ? AND lower(w.series) IS ? AND w.volume_number IS ? AND e.format = ?`,
+  const editionTitles = db.prepare(
+    `SELECT w.title, w.series, w.volume_number AS volume, e.format
+     FROM editions e JOIN works w ON w.id = e.work_id`,
   );
+
+  /** Clés « titre » des éditions de la collection, lues une fois par aperçu. */
+  const loadKnownTitles = (): Set<string> =>
+    new Set(
+      (
+        editionTitles.all() as {
+          title: string;
+          series: string | null;
+          volume: number | null;
+          format: string;
+        }[]
+      ).map((row) => titleKey(row.title, row.series, row.volume, row.format)),
+    );
 
   /** Clé d'identité d'une édition : le code-barres, à défaut titre, série, tome et support. */
   const identityOf = (draft: RowDraft): string | null => {
@@ -169,22 +199,17 @@ export function createImportService(db: Database, deps: ImportDeps) {
     if (draft.title === null || draft.format === null) {
       return null;
     }
-    const series = draft.series?.toLowerCase() ?? '';
-    return `titre:${draft.title.toLowerCase()}|${series}|${draft.volumeNumber ?? ''}|${draft.format}`;
+    return titleKey(draft.title, draft.series, draft.volumeNumber, draft.format);
   };
 
-  const existsInCollection = (draft: RowDraft): boolean => {
-    if (draft.barcode !== null) {
-      return barcodeKnown.get(draft.barcode) !== undefined;
-    }
-    if (draft.title === null || draft.format === null) {
+  const existsInCollection = (draft: RowDraft, knownTitles: ReadonlySet<string>): boolean => {
+    const identity = identityOf(draft);
+    if (identity === null) {
       return false;
     }
-    const series = draft.series?.toLowerCase() ?? null;
-    return (
-      workKnown.get(draft.title.toLowerCase(), series, draft.volumeNumber, draft.format) !==
-      undefined
-    );
+    return draft.barcode === null
+      ? knownTitles.has(identity)
+      : barcodeKnown.get(draft.barcode) !== undefined;
   };
 
   const toFailure = (row: ParsedRow): ImportRowFailure => ({
@@ -197,7 +222,8 @@ export function createImportService(db: Database, deps: ImportDeps) {
     let draft = row.draft;
     let completedOnline = false;
     if (needsCompletion(draft) && draft.barcode !== null) {
-      const found = await deps.resolve(draft.barcode).catch(() => null);
+      const code = draft.barcode;
+      const found = await safely(() => deps.resolve(code), null);
       if (found) {
         draft = fillFromSuggestion(draft, found);
         completedOnline = true;
@@ -233,8 +259,9 @@ export function createImportService(db: Database, deps: ImportDeps) {
     if (completedOnline) {
       job.completed += 1;
     }
-    if (copy.edition.coverPath === null && deps.fetchCover) {
-      const found = await deps.fetchCover(copy.edition.id).catch(() => false);
+    const { fetchCover } = deps;
+    if (copy.edition.coverPath === null && fetchCover) {
+      const found = await safely(() => fetchCover(copy.edition.id), false);
       if (found) {
         job.coversFound += 1;
       }
@@ -244,7 +271,17 @@ export function createImportService(db: Database, deps: ImportDeps) {
   const run = async (rows: ParsedRow[], job: ImportJob): Promise<void> => {
     try {
       for (const row of rows) {
-        await processRow(row, job);
+        try {
+          await processRow(row, job);
+        } catch (error) {
+          // Une ligne inattendue est rapportée, sans arrêter les mille suivantes.
+          console.error('[import] ligne', row.line, error);
+          job.failures.push({
+            line: row.line,
+            title: row.draft.title,
+            issues: [{ code: 'invalid', field: null }],
+          });
+        }
         job.processed += 1;
       }
       job.status = 'done';
@@ -260,11 +297,12 @@ export function createImportService(db: Database, deps: ImportDeps) {
     /** Lit et contrôle le fichier sans rien écrire ni interroger en ligne. */
     preview(buffer: Buffer): ImportPreview {
       const { rows, ignoredColumns } = parseBuffer(buffer);
+      const knownTitles = loadKnownTitles();
       const seen = new Set<string>();
       const previews = rows.map((row): ImportRowPreview => {
         const identity = identityOf(row.draft);
         const duplicate =
-          identity !== null && (seen.has(identity) || existsInCollection(row.draft));
+          identity !== null && (seen.has(identity) || existsInCollection(row.draft, knownTitles));
         if (identity !== null) {
           seen.add(identity);
         }

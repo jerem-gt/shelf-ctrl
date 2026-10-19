@@ -118,18 +118,35 @@ function ImportUpload({ onStarted }: Readonly<{ onStarted: (jobId: string) => vo
   const { t } = useTranslation();
   const errorMessage = useErrorMessage();
   const inputId = useId();
-  const [file, setFile] = useState<File | null>(null);
+  const [file, setFile] = useState<Blob | null>(null);
+  const [unreadable, setUnreadable] = useState(false);
   const preview = usePreviewImport();
   const start = useStartImport();
+
+  /**
+   * Lit le fichier en mémoire une fois pour toutes : l'aperçu et l'import portent sur le même
+   * contenu, même si le fichier est corrigé sur le disque entre-temps (le navigateur refuserait
+   * alors l'envoi, ou enverrait autre chose que ce qui a été contrôlé).
+   */
+  const load = async (chosen: File) => {
+    start.reset();
+    setUnreadable(false);
+    try {
+      const content = new Blob([await chosen.arrayBuffer()], { type: chosen.type });
+      setFile(content);
+      preview.mutate(content);
+    } catch {
+      setFile(null);
+      setUnreadable(true);
+    }
+  };
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const chosen = event.target.files?.[0];
     // Réinitialise le champ pour pouvoir recharger le même fichier après l'avoir corrigé.
     event.target.value = '';
     if (chosen) {
-      setFile(chosen);
-      start.reset();
-      preview.mutate(chosen);
+      void load(chosen);
     }
   };
 
@@ -161,6 +178,11 @@ function ImportUpload({ onStarted }: Readonly<{ onStarted: (jobId: string) => vo
       </div>
 
       {preview.isPending && <p className="text-sm text-slate-500">{t('import.analyzing')}</p>}
+      {unreadable && (
+        <p role="alert" className="text-sm text-red-700">
+          {t('import.errors.unreadable')}
+        </p>
+      )}
       {error && (
         <p role="alert" className="text-sm text-red-700">
           {errorMessage(error)}

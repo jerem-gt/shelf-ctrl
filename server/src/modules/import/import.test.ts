@@ -39,7 +39,7 @@ const suggestion = (title: string, overrides: Partial<BarcodeSuggestion['edition
   }) satisfies BarcodeSuggestion;
 
 /** Source de codes-barres simulée : seuls ces trois codes sont connus. */
-function fakeProvider(delay?: Promise<void>): BarcodeProvider {
+function fakeProvider(delay?: Promise<void>, malformed: string[] = []): BarcodeProvider {
   const known: Record<string, BarcodeSuggestion> = {
     [ISBN_PRINCE]: suggestion('Le Petit Prince', { format: 'book' }),
     [EAN_ALIEN]: suggestion('Alien', { format: 'bluray' }),
@@ -50,6 +50,10 @@ function fakeProvider(delay?: Promise<void>): BarcodeProvider {
     kinds: ['isbn', 'ean'],
     async lookup(code) {
       await delay;
+      if (malformed.includes(code)) {
+        // Une source qui répond n'importe quoi : la ligne échoue, pas tout l'import.
+        return {} as BarcodeSuggestion;
+      }
       return known[code] ?? null;
     },
   };
@@ -60,13 +64,15 @@ const png = () =>
     .png()
     .toBuffer();
 
-function setup(options: { delay?: Promise<void>; covers?: CoverProvider[] } = {}) {
+function setup(
+  options: { delay?: Promise<void>; covers?: CoverProvider[]; malformed?: string[] } = {},
+) {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'shelfctrl-import-'));
   tempDirs.push(dataDir);
   const db = createDb(':memory:');
   initDatabase(db);
   return createApp(db, {
-    barcodeProviders: [fakeProvider(options.delay)],
+    barcodeProviders: [fakeProvider(options.delay, options.malformed)],
     titleSearchProviders: [],
     images: { dataDir, coverProviders: options.covers ?? [] },
   });
@@ -162,6 +168,22 @@ describe('POST /api/import/preview', () => {
       issues: [{ code: 'invalid_format', field: 'format' }],
     });
     expect((await request(app).get('/api/copies')).body.total).toBe(1);
+  });
+
+  it('détecte un doublon sans code-barres malgré les majuscules accentuées', async () => {
+    const app = setup();
+    await request(app)
+      .post('/api/copies')
+      .send({ work: { title: 'Éclipse' }, edition: { format: 'book' } });
+
+    const res = await preview(app, csv('Titre', 'éclipse', 'ÉCLIPSE', 'Autre chose'));
+
+    // `lower()` de SQLite ne replie que l'ASCII : seul un repli en JavaScript les retrouve.
+    expect((res.body as ImportPreview).rows.map((row) => row.duplicate)).toEqual([
+      true,
+      true,
+      false,
+    ]);
   });
 
   it('détecte un doublon sans code-barres par titre, série, tome et support', async () => {
@@ -327,6 +349,19 @@ describe('POST /api/import', () => {
       },
     ]);
     expect(await listCopies(app)).toHaveLength(1);
+  });
+
+  it('rapporte une ligne qui plante et poursuit l’import au lieu de l’abandonner', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const app = setup({ malformed: [ISBN_TINTIN] });
+
+    const job = await runImport(app, csv('Code-barres', ISBN_TINTIN, ISBN_PRINCE, EAN_ALIEN));
+
+    expect(job).toMatchObject({ status: 'done', total: 3, processed: 3, created: 2 });
+    expect(job.failures).toEqual([
+      { line: 2, title: null, issues: [{ code: 'invalid', field: null }] },
+    ]);
+    expect(await listCopies(app)).toHaveLength(2);
   });
 
   it('crée un exemplaire de plus pour un doublon, sur la même édition', async () => {

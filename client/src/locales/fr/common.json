@@ -271,7 +271,8 @@
       "no_columns": "Aucune colonne « titre » ni « code-barres » : vérifie la ligne d'en-tête du fichier.",
       "too_many_rows": "Le fichier a trop de lignes (1000 au maximum) : découpe-le en plusieurs fichiers.",
       "import_running": "Un import est déjà en cours : attends qu'il se termine.",
-      "too_large": "Le fichier est trop lourd (2 Mo au maximum)."
+      "too_large": "Le fichier est trop lourd (2 Mo au maximum).",
+      "unreadable": "Impossible de lire ce fichier : vérifie qu'il existe encore et réessaie."
     },
     "fields": {
       "title": "titre",
