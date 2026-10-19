@@ -222,3 +222,122 @@ describe('AddCopyPage — scan caméra', () => {
     expect(screen.getByLabelText('Code-barres (ISBN / EAN)')).toHaveValue('');
   });
 });
+
+describe('AddCopyPage — recherche par titre', () => {
+  const RESULTS = {
+    results: [
+      {
+        barcode: '9782203001190',
+        source: 'bnf',
+        suggestion: {
+          work: {
+            title: 'Tintin au Tibet',
+            series: 'Tintin',
+            volumeNumber: 20,
+            creators: 'Hergé',
+            year: null,
+          },
+          edition: { format: 'book', publisher: 'Casterman', releaseYear: 2006, language: 'fr' },
+        },
+      },
+      {
+        barcode: null,
+        source: 'tmdb',
+        suggestion: {
+          work: { title: 'Tintin', series: null, volumeNumber: null, creators: null, year: 2011 },
+          edition: { format: null, publisher: null, releaseYear: null, language: null },
+        },
+      },
+    ],
+  };
+
+  it('préremplit le formulaire avec le résultat choisi', async () => {
+    let query: string | null = null;
+    server.use(
+      http.get('/api/titles/search', ({ request }) => {
+        query = new URL(request.url).searchParams.get('q');
+        return HttpResponse.json(RESULTS);
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText('Titre, série ou auteur'), 'tintin tibet{Enter}');
+    await user.click(await screen.findByRole('button', { name: 'Choisir : Tintin au Tibet' }));
+
+    expect(query).toBe('tintin tibet');
+    expect(screen.getByLabelText('Titre')).toHaveValue('Tintin au Tibet');
+    expect(screen.getByLabelText('Série')).toHaveValue('Tintin');
+    expect(screen.getByLabelText('Numéro de tome')).toHaveValue(20);
+    expect(screen.getByLabelText('Éditeur')).toHaveValue('Casterman');
+    expect(screen.getByLabelText('Code-barres (ISBN / EAN)')).toHaveValue('9782203001190');
+    expect(screen.getByText(/Fiche reprise de la BnF/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole('list', { name: 'Résultats de la recherche' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('garde le code-barres et le format saisis quand le résultat n’en fournit pas', async () => {
+    server.use(http.get('/api/titles/search', () => HttpResponse.json(RESULTS)));
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.selectOptions(screen.getByLabelText('Format'), 'bluray');
+    await user.type(screen.getByLabelText('Code-barres (ISBN / EAN)'), '5051889000001');
+    await user.type(screen.getByLabelText('Titre, série ou auteur'), 'tintin');
+    await user.click(screen.getByRole('button', { name: 'Rechercher' }));
+    await user.click(await screen.findByRole('button', { name: 'Choisir : Tintin' }));
+
+    expect(screen.getByLabelText('Titre')).toHaveValue('Tintin');
+    expect(screen.getByLabelText('Format')).toHaveValue('bluray');
+    expect(screen.getByLabelText('Code-barres (ISBN / EAN)')).toHaveValue('5051889000001');
+  });
+
+  it('n’envoie pas le formulaire en validant la recherche avec Entrée', async () => {
+    let created = false;
+    server.use(
+      http.get('/api/titles/search', () => HttpResponse.json(RESULTS)),
+      http.post('/api/copies', () => {
+        created = true;
+        return HttpResponse.json(COPY_TINTIN, { status: 201 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText('Titre'), 'Dune');
+    await user.type(screen.getByLabelText('Titre, série ou auteur'), 'tintin{Enter}');
+
+    await screen.findByRole('list', { name: 'Résultats de la recherche' });
+    expect(created).toBe(false);
+  });
+
+  it('signale une recherche sans résultat', async () => {
+    server.use(http.get('/api/titles/search', () => HttpResponse.json({ results: [] })));
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText('Titre, série ou auteur'), 'zzzz');
+    await user.click(screen.getByRole('button', { name: 'Rechercher' }));
+
+    expect(await screen.findByText(/Aucun résultat/)).toBeInTheDocument();
+  });
+
+  it('demande au moins deux caractères sans appeler le serveur', async () => {
+    let called = false;
+    server.use(
+      http.get('/api/titles/search', () => {
+        called = true;
+        return HttpResponse.json(RESULTS);
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText('Titre, série ou auteur'), 'a');
+    await user.click(screen.getByRole('button', { name: 'Rechercher' }));
+
+    expect(screen.getByText('Saisis au moins 2 caractères.')).toBeInTheDocument();
+    expect(called).toBe(false);
+  });
+});

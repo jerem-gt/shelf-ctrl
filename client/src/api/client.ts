@@ -12,6 +12,7 @@ import type {
   SaleItem,
   SaleListItem,
   SessionResponse,
+  TitleSearchResponse,
 } from '@shelfctrl/types';
 
 import i18n from '@/i18n';
@@ -151,6 +152,10 @@ export const api = {
       request<LoanItem>('POST', `/api/copies/${copyId}/loans`, payload),
     giveBack: (loanId: number, returnedAt?: string) =>
       request<LoanItem>('POST', `/api/loans/${loanId}/return`, { returnedAt }),
+  },
+  titles: {
+    search: (query: string) =>
+      request<TitleSearchResponse>('GET', `/api/titles/search?q=${encodeURIComponent(query)}`),
   },
   barcodes: {
     lookup: (code: string) =>

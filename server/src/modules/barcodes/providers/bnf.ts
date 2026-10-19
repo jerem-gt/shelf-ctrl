@@ -49,7 +49,7 @@ function findCreators(fields: UnimarcFields): string | null {
   return [...new Set(people)].join(', ') || null;
 }
 
-function toSuggestion(fields: UnimarcFields): BarcodeSuggestion | null {
+export function toSuggestion(fields: UnimarcFields): BarcodeSuggestion | null {
   const titleField = fields.get('200')?.[0];
   const main = subfield(titleField, 'a');
   if (!main) {
@@ -66,7 +66,8 @@ function toSuggestion(fields: UnimarcFields): BarcodeSuggestion | null {
   }
 
   const found = findSeries(fields);
-  const publication = fields.get('210')?.[0];
+  // Zone 210 des anciennes notices, 214 des récentes (RDA).
+  const publication = (fields.get('210') ?? fields.get('214'))?.[0];
   const language = subfield(fields.get('101')?.[0], 'a');
 
   return {
