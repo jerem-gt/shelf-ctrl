@@ -2,7 +2,7 @@ import type { ImportJob, ImportPreview } from '@shelfctrl/types';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { server } from '@/tests/msw/server';
 import { renderWithProviders } from '@/tests/renderWithProviders';
@@ -134,6 +134,54 @@ describe('ImportPage — fichier', () => {
     await chooseFile();
 
     expect(await screen.findByRole('alert')).toHaveTextContent('2 Mo au maximum');
+  });
+});
+
+describe('ImportPage — lecture du fichier', () => {
+  it('lit le fichier une seule fois : l’aperçu et l’import portent sur le même contenu', async () => {
+    stubPreview(PREVIEW);
+    let previewed = '';
+    let imported = '';
+    server.use(
+      http.post('/api/import/preview', async ({ request }) => {
+        previewed = await request.text();
+        return HttpResponse.json(PREVIEW);
+      }),
+      http.post('/api/import', async ({ request }) => {
+        imported = await request.text();
+        return HttpResponse.json(JOB, { status: 202 });
+      }),
+    );
+    stubJob(JOB);
+    const file = csvFile('Titre\nTintin\n');
+    const read = vi.spyOn(file, 'arrayBuffer');
+
+    const user = await chooseFile(file);
+    await user.click(await screen.findByRole('button', { name: 'Importer 2 lignes' }));
+    await screen.findByText('Import en cours : 1 / 4');
+
+    // Si le fichier change sur le disque après l'aperçu, c'est quand même ce contenu qui part.
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(imported).toBe('Titre\nTintin\n');
+    expect(previewed).toBe(imported);
+  });
+
+  it('signale un fichier devenu illisible, sans rien envoyer', async () => {
+    let called = false;
+    server.use(
+      http.post('/api/import/preview', () => {
+        called = true;
+        return HttpResponse.json(PREVIEW);
+      }),
+    );
+    const file = csvFile();
+    vi.spyOn(file, 'arrayBuffer').mockRejectedValue(new Error('NotReadableError'));
+
+    await chooseFile(file);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Impossible de lire ce fichier');
+    expect(called).toBe(false);
+    expect(screen.queryByRole('button', { name: /Importer/ })).not.toBeInTheDocument();
   });
 });
 

@@ -7,11 +7,11 @@ const POLL_INTERVAL_MS = 1000;
 
 /** Contrôle le fichier sans rien écrire : à la demande, d'où une mutation. */
 export function usePreviewImport() {
-  return useMutation({ mutationFn: (file: File) => api.import.preview(file) });
+  return useMutation({ mutationFn: (file: Blob) => api.import.preview(file) });
 }
 
 export function useStartImport() {
-  return useMutation({ mutationFn: (file: File) => api.import.start(file) });
+  return useMutation({ mutationFn: (file: Blob) => api.import.start(file) });
 }
 
 /** Suit un import : relu chaque seconde tant qu'il tourne, puis la collection est rechargée. */
