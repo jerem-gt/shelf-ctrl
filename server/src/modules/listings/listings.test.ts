@@ -158,6 +158,21 @@ describe('createLlmProvider', () => {
     });
   });
 
+  it('cible l’API Gemini avec son modèle Flash par défaut', async () => {
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ choices: [{ message: { content: '{}' } }] })),
+      );
+    const provider = createLlmProvider({ LLM_PROVIDER: 'gemini', LLM_API_KEY: 'k' }, fetchFn);
+
+    await provider?.completeJson('s', 'u');
+
+    const [url, init] = fetchFn.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions');
+    expect(JSON.parse(init.body as string).model).toBe('gemini-flash-latest');
+  });
+
   it('lève une erreur sur une réponse HTTP en échec', async () => {
     const fetchFn = vi.fn().mockResolvedValue(new Response('{}', { status: 429 }));
     const provider = createLlmProvider({ LLM_PROVIDER: 'groq', LLM_API_KEY: 'k' }, fetchFn);

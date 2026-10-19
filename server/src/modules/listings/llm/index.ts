@@ -2,7 +2,7 @@ import { createOpenAiCompatibleProvider } from './openAiCompatible.js';
 import type { FetchFn, LlmProvider } from './types.js';
 
 export interface LlmEnv {
-  /** `groq` ou `mistral` ; sans fournisseur ou sans clé, la génération d'annonces est désactivée. */
+  /** `gemini`, `groq` ou `mistral` ; sans fournisseur ou sans clé, la génération d'annonces est désactivée. */
   LLM_PROVIDER?: string;
   LLM_API_KEY?: string;
   /** Remplace le modèle par défaut du fournisseur. */
@@ -10,6 +10,11 @@ export interface LlmEnv {
 }
 
 const PROVIDERS = {
+  gemini: {
+    // Point d'entrée compatible OpenAI de l'API Gemini ; `-latest` suit la version Flash en cours.
+    url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+    model: 'gemini-flash-latest',
+  },
   groq: {
     url: 'https://api.groq.com/openai/v1/chat/completions',
     model: 'llama-3.3-70b-versatile',
