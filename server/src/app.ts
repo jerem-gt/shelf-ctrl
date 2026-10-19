@@ -12,6 +12,9 @@ import { createBarcodesRouter } from './modules/barcodes/barcodes.routes.js';
 import { createDefaultProviders } from './modules/barcodes/providers/index.js';
 import type { BarcodeProvider } from './modules/barcodes/providers/types.js';
 import { createCopiesRouter } from './modules/copies/copies.routes.js';
+import { createListingsRouter } from './modules/listings/listings.routes.js';
+import { createLlmProvider } from './modules/listings/llm/index.js';
+import type { LlmProvider } from './modules/listings/llm/types.js';
 import { createLoansRouter } from './modules/loans/loans.routes.js';
 import { createSalesRouter } from './modules/sales/sales.routes.js';
 import { SQLiteSessionStore } from './session-store.js';
@@ -23,6 +26,8 @@ export interface AppOptions {
   healthExtraCheck?: () => string | null;
   /** Sources de résolution des codes-barres (par défaut : chaîne configurée par l'environnement). */
   barcodeProviders?: readonly BarcodeProvider[];
+  /** Fournisseur LLM des annonces (`null` : désactivé ; par défaut, celui configuré par l'environnement). */
+  llmProvider?: LlmProvider | null;
   /**
    * Authentification par session. Sans elle l'API est ouverte (tests) : `index.ts` la fournit
    * toujours, et refuse de démarrer en production si la configuration est incomplète.
@@ -112,6 +117,13 @@ export function createApp(db: Database, options: AppOptions = {}) {
   app.use('/api/copies', createCopiesRouter(db));
   app.use('/api', createLoansRouter(db));
   app.use('/api', createSalesRouter(db));
+  app.use(
+    '/api',
+    createListingsRouter(
+      db,
+      options.llmProvider === undefined ? createLlmProvider() : options.llmProvider,
+    ),
+  );
 
   app.use(errorHandler);
 
