@@ -1,11 +1,12 @@
 import type { CopyItem, SaleItem } from '@shelfctrl/types';
 import { type SyntheticEvent, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router';
 
-import { useAllSales, useListForSale, useSellCopy, useUpdateSale } from '@/hooks/useSales';
+import { usePlatformChoices } from '@/hooks/usePlatforms';
+import { useListForSale, useSellCopy, useUpdateSale } from '@/hooks/useSales';
 import { localToday } from '@/lib/format';
 import { parsePrice, PRICE_PATTERN, priceToInput } from '@/lib/money';
-import { DEFAULT_PLATFORMS } from '@/lib/platforms';
 
 import { ListingFields } from './ListingDraftPanel';
 
@@ -31,23 +32,20 @@ interface SaleFormProps {
 export function SaleForm({ mode, copy, sale, onDone }: Readonly<SaleFormProps>) {
   const { t } = useTranslation();
   const copyId = copy.id;
-  const listId = useId();
   const hintId = useId();
   const listForSale = useListForSale(copyId);
   const sellCopy = useSellCopy(copyId);
   const updateSale = useUpdateSale(copyId);
-  const { data: sales } = useAllSales();
-  const [platform, setPlatform] = useState(sale?.platform ?? '');
+  const { names, defaultName, unconfigured } = usePlatformChoices(sale?.platform ?? null);
+  // Tant que rien n'est choisi : la plateforme de l'annonce, ou celle par défaut à la mise en vente.
+  const [chosen, setChosen] = useState<string | null>(null);
+  const platform = chosen ?? sale?.platform ?? (mode === 'list' ? (defaultName ?? '') : '');
   const [price, setPrice] = useState(() => priceToInput(sale?.priceCents ?? null));
   const [date, setDate] = useState(localToday);
 
   const mutations = { list: listForSale, sell: sellCopy, edit: updateSale };
   const mutation = mutations[mode];
   const texts = MODE_TEXTS[mode];
-
-  const knownPlatforms = [
-    ...new Set([...DEFAULT_PLATFORMS, ...(sales?.flatMap((item) => item.platform ?? []) ?? [])]),
-  ];
 
   const handleSubmit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -76,27 +74,31 @@ export function SaleForm({ mode, copy, sale, onDone }: Readonly<SaleFormProps>) 
       <div className="flex flex-col gap-1">
         <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
           {t('sale.platform')}
-          <input
+          <select
             // La mise en vente se fait quelque part : la plateforme détermine l'annonce affichée plus bas.
             required={mode === 'list'}
-            maxLength={100}
-            list={listId}
             value={platform}
-            onChange={(event) => setPlatform(event.target.value)}
-            aria-describedby={mode === 'sell' ? undefined : hintId}
+            onChange={(event) => setChosen(event.target.value)}
+            aria-describedby={hintId}
             className={FIELD_CLASS}
-          />
-          <datalist id={listId}>
-            {knownPlatforms.map((name) => (
-              <option key={name} value={name} />
+          >
+            <option value="">
+              {t(mode === 'list' ? 'sale.platformChoose' : 'sale.platformNone')}
+            </option>
+            {names.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
             ))}
-          </datalist>
+          </select>
         </label>
-        {mode !== 'sell' && (
-          <p id={hintId} className="text-xs text-slate-500">
-            {t('sale.platformHint')}
-          </p>
-        )}
+        <p id={hintId} className="text-xs text-slate-500">
+          {mode === 'sell' ? null : `${t('sale.platformHint')} `}
+          {unconfigured && `${t('sale.platformUnconfigured')} `}
+          <Link to="/settings" className="underline underline-offset-2">
+            {t('sale.platformSettings')}
+          </Link>
+        </p>
       </div>
       <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
         {t('sale.price')}

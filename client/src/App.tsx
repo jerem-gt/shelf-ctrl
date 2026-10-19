@@ -13,6 +13,7 @@ import { ImportPage } from '@/pages/ImportPage';
 import { LoansPage } from '@/pages/LoansPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { SalesPage } from '@/pages/SalesPage';
+import { SettingsPage } from '@/pages/SettingsPage';
 
 function navClass({ isActive }: { isActive: boolean }) {
   return isActive ? 'text-slate-900 underline underline-offset-4' : 'text-slate-500';
@@ -25,27 +26,31 @@ export function AppRoutes() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3">
-          <div className="flex items-center gap-4 sm:gap-6">
-            <Link to="/" className="text-xl font-bold">
-              <h1>{t('appName')}</h1>
-            </Link>
-            <nav aria-label={t('nav.main')} className="flex gap-3 text-sm font-medium sm:gap-4">
-              <NavLink to="/" end className={navClass}>
-                {t('nav.collection')}
-              </NavLink>
-              <NavLink to="/loans" className={navClass}>
-                {t('nav.loans')}
-              </NavLink>
-              <NavLink to="/sales" className={navClass}>
-                {t('nav.sales')}
-              </NavLink>
-              <NavLink to="/import" className={navClass}>
-                {t('nav.import')}
-              </NavLink>
-            </nav>
-          </div>
-          <div className="flex items-center gap-3">
+        <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 sm:gap-x-6">
+          <Link to="/" className="order-1 text-xl font-bold">
+            <h1>{t('appName')}</h1>
+          </Link>
+          <nav
+            aria-label={t('nav.main')}
+            className="order-3 flex w-full flex-wrap gap-x-3 gap-y-1 text-sm font-medium sm:order-2 sm:w-auto sm:gap-x-4"
+          >
+            <NavLink to="/" end className={navClass}>
+              {t('nav.collection')}
+            </NavLink>
+            <NavLink to="/loans" className={navClass}>
+              {t('nav.loans')}
+            </NavLink>
+            <NavLink to="/sales" className={navClass}>
+              {t('nav.sales')}
+            </NavLink>
+            <NavLink to="/import" className={navClass}>
+              {t('nav.import')}
+            </NavLink>
+            <NavLink to="/settings" className={navClass}>
+              {t('nav.settings')}
+            </NavLink>
+          </nav>
+          <div className="order-2 ml-auto flex items-center gap-3 sm:order-3">
             <p className="hidden text-sm text-slate-500 lg:block">{t('tagline')}</p>
             <button
               type="button"
@@ -68,6 +73,7 @@ export function AppRoutes() {
           <Route path="/loans" element={<LoansPage />} />
           <Route path="/sales" element={<SalesPage />} />
           <Route path="/import" element={<ImportPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </main>
     </div>

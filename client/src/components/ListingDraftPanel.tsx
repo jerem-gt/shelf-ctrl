@@ -3,6 +3,7 @@ import { ExternalLink } from 'lucide-react';
 import { useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { usePlatforms } from '@/hooks/usePlatforms';
 import { buildListingDraft } from '@/lib/listing';
 import { publishUrl } from '@/lib/platforms';
 
@@ -51,7 +52,8 @@ function CopyField({
 /** Lien vers la page de dépôt de la plateforme, quand on la connaît. */
 function PublishLink({ platform }: Readonly<{ platform: string | null }>) {
   const { t } = useTranslation();
-  const url = publishUrl(platform);
+  const { data } = usePlatforms();
+  const url = publishUrl(platform, data?.items);
   if (url === null || platform === null) {
     return null;
   }

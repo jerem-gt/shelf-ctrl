@@ -4,7 +4,7 @@ import { http, HttpResponse, type JsonBodyType } from 'msw';
 import { describe, expect, it } from 'vitest';
 
 import { localToday } from '@/lib/format';
-import { COPY_TINTIN, SALE_LIST_SOLD, SALE_LISTED, SALE_SOLD } from '@/tests/fixtures';
+import { COPY_TINTIN, SALE_LISTED, SALE_SOLD } from '@/tests/fixtures';
 import { server } from '@/tests/msw/server';
 import { renderWithProviders } from '@/tests/renderWithProviders';
 
@@ -26,6 +26,15 @@ function captureBody(method: 'post' | 'patch', path: string, response: JsonBodyT
   return captured;
 }
 
+const stubPlatforms = (items: object[]) =>
+  server.use(http.get('/api/platforms', () => HttpResponse.json({ items })));
+
+/** Libellés du menu « Plateforme », dans l'ordre. */
+const platformOptions = () =>
+  [...screen.getByLabelText('Plateforme').querySelectorAll('option')].map(
+    (option) => option.textContent,
+  );
+
 describe('SaleSection — sans vente', () => {
   it('propose de mettre en vente ou de vendre directement', async () => {
     renderWithProviders(<SaleSection copy={COPY_TINTIN} />);
@@ -42,7 +51,7 @@ describe('SaleSection — sans vente', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Mettre en vente' }));
     expect(screen.getByLabelText('Date de mise en vente')).toHaveValue(localToday());
-    await user.type(screen.getByLabelText('Plateforme'), ' Vinted ');
+    await user.selectOptions(screen.getByLabelText('Plateforme'), 'Vinted');
     await user.type(screen.getByLabelText('Prix (€)'), '12,5');
     await user.click(screen.getByRole('button', { name: 'Mettre en vente' }));
 
@@ -73,7 +82,7 @@ describe('SaleSection — sans vente', () => {
     renderWithProviders(<SaleSection copy={COPY_TINTIN} />);
 
     await user.click(await screen.findByRole('button', { name: 'Mettre en vente' }));
-    await user.type(screen.getByLabelText('Plateforme'), 'Vinted');
+    await user.selectOptions(screen.getByLabelText('Plateforme'), 'Vinted');
     await user.click(screen.getByRole('button', { name: 'Mettre en vente' }));
 
     await waitFor(() => expect(captured.called).toBe(1));
@@ -90,7 +99,7 @@ describe('SaleSection — sans vente', () => {
       'Tome 20 - Tintin au Tibet - Très bon état - Hergé',
     );
 
-    await user.type(screen.getByLabelText('Plateforme'), 'Leboncoin');
+    await user.selectOptions(screen.getByLabelText('Plateforme'), 'Leboncoin');
 
     expect(
       screen.getByRole('link', { name: "Ouvrir Leboncoin pour publier l'annonce" }),
@@ -106,10 +115,9 @@ describe('SaleSection — sans vente', () => {
     renderWithProviders(<SaleSection copy={copy} />);
 
     await user.click(await screen.findByRole('button', { name: 'Mettre en vente' }));
-    await user.type(screen.getByLabelText('Plateforme'), 'Vinted');
+    await user.selectOptions(screen.getByLabelText('Plateforme'), 'Vinted');
     const onVinted = screen.getByLabelText<HTMLInputElement>('Titre').value;
-    await user.clear(screen.getByLabelText('Plateforme'));
-    await user.type(screen.getByLabelText('Plateforme'), 'eBay');
+    await user.selectOptions(screen.getByLabelText('Plateforme'), 'eBay');
 
     expect(onVinted).not.toContain('Très bon état');
     expect(screen.getByLabelText<HTMLInputElement>('Titre').value).toContain('Très bon état');
@@ -124,32 +132,72 @@ describe('SaleSection — sans vente', () => {
     renderWithProviders(<SaleSection copy={copy} />);
 
     await user.click(await screen.findByRole('button', { name: 'Mettre en vente' }));
-    await user.type(screen.getByLabelText('Plateforme'), 'Vinted');
+    await user.selectOptions(screen.getByLabelText('Plateforme'), 'Vinted');
     await user.click(screen.getAllByRole('button', { name: 'Copier' })[0]);
     expect(screen.getByRole('button', { name: 'Copié' })).toBeInTheDocument();
 
-    await user.clear(screen.getByLabelText('Plateforme'));
-    await user.type(screen.getByLabelText('Plateforme'), 'eBay');
+    await user.selectOptions(screen.getByLabelText('Plateforme'), 'eBay');
 
     expect(screen.queryByRole('button', { name: 'Copié' })).not.toBeInTheDocument();
   });
 
-  it('suggère les plateformes connues et celles déjà utilisées', async () => {
-    server.use(
-      http.get('/api/sales', () =>
-        HttpResponse.json([{ ...SALE_LIST_SOLD, platform: 'BDfugue' }, SALE_LIST_SOLD]),
-      ),
-    );
+  it('propose les plateformes connues tant qu’aucune n’est réglée, avec un lien vers les réglages', async () => {
     const user = userEvent.setup();
     renderWithProviders(<SaleSection copy={COPY_TINTIN} />);
 
     await user.click(await screen.findByRole('button', { name: 'Mettre en vente' }));
-    await waitFor(() => expect(document.querySelectorAll('datalist option')).toHaveLength(7));
 
-    const names = [...document.querySelectorAll('datalist option')].map((option) =>
-      option.getAttribute('value'),
+    expect(platformOptions()).toEqual([
+      'Choisir une plateforme',
+      'Vinted',
+      'Leboncoin',
+      'eBay',
+      'Momox',
+      'Rakuten',
+      'Amazon',
+    ]);
+    expect(screen.getByText(/Aucune plateforme réglée/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Régler mes plateformes' })).toHaveAttribute(
+      'href',
+      '/settings',
     );
-    expect(names).toEqual(['Vinted', 'Leboncoin', 'eBay', 'Momox', 'Rakuten', 'Amazon', 'BDfugue']);
+  });
+
+  it('ne propose que les plateformes du compte, la plateforme par défaut présélectionnée', async () => {
+    stubPlatforms([
+      // Dans l'ordre où le serveur les renvoie : par nom.
+      { id: 2, name: 'BDfugue', publishUrl: 'https://www.bdfugue.com/vendre', isDefault: true },
+      { id: 1, name: 'Vinted', publishUrl: null, isDefault: false },
+    ]);
+    const captured = captureBody('post', '/api/copies/:id/sale', SALE_LISTED);
+    const user = userEvent.setup();
+    renderWithProviders(<SaleSection copy={COPY_TINTIN} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Mettre en vente' }));
+
+    await waitFor(() => expect(screen.getByLabelText('Plateforme')).toHaveValue('BDfugue'));
+    expect(platformOptions()).toEqual(['Choisir une plateforme', 'BDfugue', 'Vinted']);
+    expect(screen.queryByText(/Aucune plateforme réglée/)).not.toBeInTheDocument();
+    // L'adresse de dépôt d'une plateforme personnalisée vient des réglages.
+    expect(
+      screen.getByRole('link', { name: "Ouvrir BDfugue pour publier l'annonce" }),
+    ).toHaveAttribute('href', 'https://www.bdfugue.com/vendre');
+
+    await user.click(screen.getByRole('button', { name: 'Mettre en vente' }));
+    await waitFor(() => expect(captured.called).toBe(1));
+    expect(captured.body).toMatchObject({ platform: 'BDfugue' });
+  });
+
+  it('exige de choisir quand aucune plateforme par défaut n’est réglée', async () => {
+    stubPlatforms([{ id: 1, name: 'Vinted', publishUrl: null, isDefault: false }]);
+    const user = userEvent.setup();
+    renderWithProviders(<SaleSection copy={COPY_TINTIN} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Mettre en vente' }));
+
+    await waitFor(() => expect(platformOptions()).toEqual(['Choisir une plateforme', 'Vinted']));
+    expect(screen.getByLabelText('Plateforme')).toHaveValue('');
+    expect(screen.getByLabelText('Plateforme')).toBeRequired();
   });
 
   it('vend directement sans annonce', async () => {
@@ -173,7 +221,7 @@ describe('SaleSection — sans vente', () => {
     renderWithProviders(<SaleSection copy={COPY_TINTIN} />);
 
     await user.click(await screen.findByRole('button', { name: 'Mettre en vente' }));
-    await user.type(screen.getByLabelText('Plateforme'), 'Vinted');
+    await user.selectOptions(screen.getByLabelText('Plateforme'), 'Vinted');
     await user.type(screen.getByLabelText('Prix (€)'), 'douze');
     await user.click(screen.getByRole('button', { name: 'Mettre en vente' }));
 
@@ -198,7 +246,7 @@ describe('SaleSection — sans vente', () => {
     renderWithProviders(<SaleSection copy={COPY_TINTIN} />);
 
     await user.click(await screen.findByRole('button', { name: 'Mettre en vente' }));
-    await user.type(screen.getByLabelText('Plateforme'), 'Vinted');
+    await user.selectOptions(screen.getByLabelText('Plateforme'), 'Vinted');
     await user.click(screen.getByRole('button', { name: 'Mettre en vente' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent("Cette action n'est plus possible");
@@ -271,13 +319,29 @@ describe('SaleSection — en vente', () => {
 
     await user.click(await screen.findByRole('button', { name: "Modifier l'annonce" }));
     expect(screen.queryByLabelText('Date de vente')).not.toBeInTheDocument();
-    await user.clear(screen.getByLabelText('Plateforme'));
+    await user.selectOptions(screen.getByLabelText('Plateforme'), '');
     await user.clear(screen.getByLabelText('Prix (€)'));
     await user.type(screen.getByLabelText('Prix (€)'), '9,9');
     await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
 
     await waitFor(() => expect(captured.called).toBe(1));
     expect(captured.body).toEqual({ platform: null, priceCents: 990 });
+  });
+
+  it('garde dans le menu la plateforme d’une annonce retirée des réglages', async () => {
+    stubPlatforms([{ id: 1, name: 'Vinted', publishUrl: null, isDefault: true }]);
+    stubSale({ ...SALE_LISTED, platform: 'Ancien site' });
+    const captured = captureBody('patch', '/api/copies/:id/sale', SALE_LISTED);
+    const user = userEvent.setup();
+    renderWithProviders(<SaleSection copy={listedCopy} />);
+
+    await user.click(await screen.findByRole('button', { name: "Modifier l'annonce" }));
+
+    await waitFor(() => expect(platformOptions()).toContain('Ancien site'));
+    expect(screen.getByLabelText('Plateforme')).toHaveValue('Ancien site');
+    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    await waitFor(() => expect(captured.called).toBe(1));
+    expect(captured.body).toMatchObject({ platform: 'Ancien site' });
   });
 
   it('retire l’annonce directement', async () => {

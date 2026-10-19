@@ -10,6 +10,7 @@ import type {
   LoanItem,
   MediaFormat,
   OpenLoanItem,
+  PlatformItem,
   SaleItem,
   SaleListItem,
   SessionResponse,
@@ -145,6 +146,15 @@ export interface LoginPayload {
 }
 
 export const api = {
+  platforms: {
+    list: () => request<{ items: PlatformItem[] }>('GET', '/api/platforms'),
+    add: (payload: { name: string; publishUrl?: string }) =>
+      request<PlatformItem>('POST', '/api/platforms', payload),
+    setUrl: (id: number, publishUrl: string | null) =>
+      request<PlatformItem>('PATCH', `/api/platforms/${id}`, { publishUrl }),
+    remove: (id: number) => request<undefined>('DELETE', `/api/platforms/${id}`),
+    setDefault: (id: number | null) => request<undefined>('PUT', '/api/platforms/default', { id }),
+  },
   import: {
     templateUrl: '/api/import/template',
     preview: (file: Blob) => request<ImportPreview>('POST', '/api/import/preview', file),

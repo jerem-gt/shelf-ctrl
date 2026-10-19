@@ -39,6 +39,7 @@ export const handlers = [
   http.post('/api/editions/:id/cover/fetch', () => HttpResponse.json({ fetched: true })),
   http.put('/api/copies/:id/photo', () => HttpResponse.json({ photoPath: '1-bbbbbbbbbb.webp' })),
   http.delete('/api/copies/:id/photo', () => new HttpResponse(null, { status: 204 })),
+  http.get('/api/platforms', () => HttpResponse.json({ items: [] })),
   http.get('/api/loans', () => HttpResponse.json([])),
   http.post('/api/loans/:id/return', ({ params }) =>
     HttpResponse.json({ ...LOAN_OPEN, id: Number(params.id), returnedAt: '2026-10-14' }),
