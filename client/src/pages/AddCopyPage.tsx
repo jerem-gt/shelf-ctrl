@@ -7,7 +7,7 @@ import {
   type TitleSearchResult,
 } from '@shelfctrl/types';
 import { Camera, Search } from 'lucide-react';
-import { type SyntheticEvent, useState } from 'react';
+import { type SyntheticEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
 
@@ -123,6 +123,9 @@ export function AddCopyPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchMessage, setSearchMessage] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
+  // Dernier code-barres venu d'une source (recherche de fiche ou résultat) : il décrit le produit
+  // trouvé, contrairement à un code saisi ou scanné que personne ne connaît encore.
+  const sourcedBarcodeRef = useRef<string | null>(null);
   const scanSupported = isScanSupported();
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
@@ -142,6 +145,7 @@ export function AddCopyPage() {
     setLookupMessage(null);
     lookup.mutate(code, {
       onSuccess: (result) => {
+        sourcedBarcodeRef.current = result.barcode;
         setForm((current) => applySuggestion(current, result.barcode, result.suggestion));
         setLookupMessage(
           result.known
@@ -171,7 +175,13 @@ export function AddCopyPage() {
   };
 
   const chooseResult = (result: TitleSearchResult) => {
-    setForm((current) => applySuggestion(current, result.barcode, result.suggestion));
+    const replaced = sourcedBarcodeRef.current;
+    sourcedBarcodeRef.current = result.barcode;
+    setForm((current) => {
+      // Sans code-barres, un code issu d'une autre fiche ne doit pas rester sur ce produit.
+      const barcode = result.barcode ?? (current.barcode === replaced ? '' : null);
+      return applySuggestion(current, barcode, result.suggestion);
+    });
     setSearchMessage(t('add.titleSearch.applied', { source: t(`sources.${result.source}`) }));
     titleSearch.reset();
   };

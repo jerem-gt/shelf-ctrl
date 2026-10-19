@@ -76,6 +76,37 @@ describe('GET /api/titles/search', () => {
     ).toEqual(['A', 'B', 'C']);
   });
 
+  it('laisse une place à chaque source quand la liste est tronquée', async () => {
+    const many = Array.from({ length: 25 }, (_, index) =>
+      result(`book-${index}`, `Livre ${index}`),
+    );
+    const app = setup([
+      stubProvider('bnf', () => Promise.resolve(many)),
+      stubProvider('tmdb', () => Promise.resolve([result(null, 'Film 1'), result(null, 'Film 2')])),
+    ]);
+
+    const res = await request(app).get('/api/titles/search').query({ q: 'tintin' });
+
+    const titles = res.body.results.map(
+      (r: { suggestion: { work: { title: string } } }) => r.suggestion.work.title,
+    );
+    expect(titles).toHaveLength(20);
+    expect(titles.slice(0, 4)).toEqual(['Livre 0', 'Film 1', 'Livre 1', 'Film 2']);
+  });
+
+  it('retire les doublons sans code-barres de même titre et de même année', async () => {
+    const app = setup([
+      stubProvider('openlibrary', () =>
+        Promise.resolve([result(null, 'Alien'), result(null, 'Alien 2')]),
+      ),
+      stubProvider('tmdb', () => Promise.resolve([result(null, ' alien ')])),
+    ]);
+
+    const res = await request(app).get('/api/titles/search').query({ q: 'alien' });
+
+    expect(res.body.results).toHaveLength(2);
+  });
+
   it('ignore une source en erreur', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const app = setup([
@@ -127,6 +158,13 @@ describe('providers de recherche par titre', () => {
     expect(results[1].barcode).toBeNull();
     expect(results[2].barcode).toBeNull();
     expect(results[2].suggestion.work.title).toBe('Tintin & Milou');
+  });
+
+  it('BnF : une saisie réduite à des guillemets n’appelle pas la BnF', async () => {
+    const fetchFn = fakeFetch(BNF_XML);
+
+    expect(await createBnfTitleSearch(fetchFn).search('""')).toEqual([]);
+    expect(fetchFn).not.toHaveBeenCalled();
   });
 
   it('BnF : aucune notice → liste vide', async () => {

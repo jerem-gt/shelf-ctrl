@@ -17,12 +17,16 @@ export function createBnfTitleSearch(fetchFn: FetchFn = fetch): TitleSearchProvi
   return {
     source: 'bnf',
     async search(query) {
+      const terms = toCqlTerms(query);
+      if (terms === '') {
+        return [];
+      }
       const params = new URLSearchParams({
         version: '1.2',
         operation: 'searchRetrieve',
         maximumRecords: String(MAX_RECORDS),
         recordSchema: 'unimarcxchange',
-        query: `bib.title all "${toCqlTerms(query)}" and bib.doctype any "a"`,
+        query: `bib.title all "${terms}" and bib.doctype any "a"`,
       });
       const records = parseUnimarcRecords(await fetchText(fetchFn, `${SRU_URL}?${params}`));
 
