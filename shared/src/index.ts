@@ -127,6 +127,16 @@ export interface TitleSearchResponse {
   results: TitleSearchResult[];
 }
 
+/** Plateforme de vente du compte (réglages). */
+export interface PlatformItem {
+  id: number;
+  name: string;
+  /** Adresse de dépôt d'une plateforme personnalisée ; `null` pour une plateforme connue. */
+  publishUrl: string | null;
+  /** La plateforme présélectionnée à la mise en vente (au plus une). */
+  isDefault: boolean;
+}
+
 /** Colonnes reconnues d'un fichier CSV d'import. */
 export const IMPORT_FIELDS = [
   'title',

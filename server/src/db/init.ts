@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import Database, { type Database as DatabaseType } from 'better-sqlite3';
 
+import { runMigrations } from './migrations.js';
 import { initSchema } from './schema.js';
 
 export const DATA_DIR = process.env.DATA_DIR ?? path.join(import.meta.dirname, '../../data');
@@ -25,4 +26,5 @@ export function createDb(filePath?: string) {
 
 export function initDatabase(db: DatabaseType) {
   initSchema(db);
+  runMigrations(db);
 }
