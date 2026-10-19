@@ -13,9 +13,6 @@ import { createDefaultProviders } from './modules/barcodes/providers/index.js';
 import type { BarcodeProvider } from './modules/barcodes/providers/types.js';
 import { createCopiesRouter } from './modules/copies/copies.routes.js';
 import { createImages, type ImagesOptions } from './modules/images/index.js';
-import { createListingsRouter } from './modules/listings/listings.routes.js';
-import { createLlmProvider } from './modules/listings/llm/index.js';
-import type { LlmProvider } from './modules/listings/llm/types.js';
 import { createLoansRouter } from './modules/loans/loans.routes.js';
 import { createSalesRouter } from './modules/sales/sales.routes.js';
 import { createDefaultTitleSearchProviders } from './modules/titles/providers/index.js';
@@ -37,8 +34,6 @@ export interface AppOptions {
   images?: ImagesOptions;
   /** Sources de recherche par titre (par défaut : chaîne configurée par l'environnement). */
   titleSearchProviders?: readonly TitleSearchProvider[];
-  /** Fournisseur LLM des annonces (`null` : désactivé ; par défaut, celui configuré par l'environnement). */
-  llmProvider?: LlmProvider | null;
   /**
    * Authentification par session. Sans elle l'API est ouverte (tests) : `index.ts` la fournit
    * toujours, et refuse de démarrer en production si la configuration est incomplète.
@@ -142,13 +137,6 @@ export function createApp(db: Database, options: AppOptions = {}) {
   }
   app.use('/api', createLoansRouter(db));
   app.use('/api', createSalesRouter(db));
-  app.use(
-    '/api',
-    createListingsRouter(
-      db,
-      options.llmProvider === undefined ? createLlmProvider() : options.llmProvider,
-    ),
-  );
 
   app.use(errorHandler);
 

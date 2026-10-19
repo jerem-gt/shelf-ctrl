@@ -5,7 +5,6 @@ import type {
   CopyItem,
   CopyListResponse,
   CopyStatus,
-  ListingDraft,
   LoanItem,
   MediaFormat,
   OpenLoanItem,
@@ -33,8 +32,6 @@ const ERROR_KEYS: Record<number, string> = {
   413: 'errors.imageTooLarge',
   415: 'errors.invalidImage',
   429: 'errors.tooManyAttempts',
-  502: 'errors.llmFailed',
-  503: 'errors.llmNotConfigured',
 };
 
 function errorMessage(status: number): string {
@@ -141,10 +138,6 @@ export const api = {
     uploadPhoto: (copyId: number, file: Blob) =>
       request<{ photoPath: string }>('PUT', `/api/copies/${copyId}/photo`, file),
     removePhoto: (copyId: number) => request<undefined>('DELETE', `/api/copies/${copyId}/photo`),
-  },
-  listings: {
-    draft: (copyId: number, platform?: string) =>
-      request<ListingDraft>('POST', `/api/copies/${copyId}/listing-draft`, { platform }),
   },
   auth: {
     me: () => request<SessionResponse>('GET', '/api/auth/me'),

@@ -43,7 +43,6 @@ function setup(providers: TitleSearchProvider[]) {
   initDatabase(db);
   return createApp(db, {
     barcodeProviders: [],
-    llmProvider: null,
     titleSearchProviders: providers,
   });
 }

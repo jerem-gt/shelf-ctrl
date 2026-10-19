@@ -1,84 +1,71 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
-import { SALE_LISTED } from '@/tests/fixtures';
-import { server } from '@/tests/msw/server';
+import { COPY_TINTIN, SALE_LISTED } from '@/tests/fixtures';
 import { renderWithProviders } from '@/tests/renderWithProviders';
 
 import { ListingDraftPanel } from './ListingDraftPanel';
 
-const DRAFT = {
-  title: 'Tintin au Tibet',
-  description: 'BD en bon état.',
-  suggestedPriceCents: 850,
-};
-
-function stubDraft(captured: { body?: unknown } = {}) {
-  server.use(
-    http.post('/api/copies/:id/listing-draft', async ({ request }) => {
-      captured.body = await request.json();
-      return HttpResponse.json(DRAFT);
-    }),
-  );
-  return captured;
-}
-
 describe('ListingDraftPanel', () => {
-  it('génère un brouillon pour la plateforme de l’annonce', async () => {
-    const captured = stubDraft();
-    const user = userEvent.setup();
-    renderWithProviders(<ListingDraftPanel copyId={1} sale={SALE_LISTED} />);
+  it('reste replié tant qu’on ne demande rien', () => {
+    renderWithProviders(<ListingDraftPanel copy={COPY_TINTIN} sale={null} />);
 
-    await user.click(screen.getByRole('button', { name: 'Générer une annonce' }));
-
-    expect(await screen.findByLabelText('Titre')).toHaveValue('Tintin au Tibet');
-    expect(screen.getByLabelText('Description')).toHaveValue('BD en bon état.');
-    expect(screen.getByText(/Prix suggéré : 8,50/)).toBeInTheDocument();
-    expect(captured.body).toEqual({ platform: SALE_LISTED.platform ?? undefined });
+    expect(screen.getByRole('button', { name: 'Préparer une annonce' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Titre')).not.toBeInTheDocument();
   });
 
-  it('applique le prix suggéré à l’annonce', async () => {
-    stubDraft();
-    let patched: unknown;
-    server.use(
-      http.patch('/api/copies/:id/sale', async ({ request }) => {
-        patched = await request.json();
-        return HttpResponse.json(SALE_LISTED);
-      }),
+  it('affiche titre et description issus de la fiche de l’exemplaire', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<ListingDraftPanel copy={COPY_TINTIN} sale={null} />);
+
+    await user.click(screen.getByRole('button', { name: 'Préparer une annonce' }));
+
+    expect(screen.getByLabelText('Titre')).toHaveValue(
+      'Tome 20 - Tintin au Tibet - Très bon état - Hergé',
     );
-    const user = userEvent.setup();
-    renderWithProviders(<ListingDraftPanel copyId={1} sale={SALE_LISTED} />);
-
-    await user.click(screen.getByRole('button', { name: 'Générer une annonce' }));
-    await user.click(await screen.findByRole('button', { name: 'Utiliser ce prix' }));
-
-    await waitFor(() => expect(patched).toEqual({ priceCents: 850 }));
-  });
-
-  it('ne propose pas d’appliquer le prix sans annonce', async () => {
-    stubDraft();
-    const user = userEvent.setup();
-    renderWithProviders(<ListingDraftPanel copyId={1} sale={null} />);
-
-    await user.click(screen.getByRole('button', { name: 'Générer une annonce' }));
-
-    expect(await screen.findByLabelText('Titre')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Utiliser ce prix' })).not.toBeInTheDocument();
-  });
-
-  it('signale un serveur sans fournisseur LLM', async () => {
-    server.use(
-      http.post('/api/copies/:id/listing-draft', () =>
-        HttpResponse.json({ error: 'llm_not_configured' }, { status: 503 }),
-      ),
+    expect(screen.getByLabelText<HTMLTextAreaElement>('Description').value).toContain(
+      'Éditeur : Casterman',
     );
+  });
+
+  it('adapte le titre à la plateforme choisie', async () => {
+    const copy = {
+      ...COPY_TINTIN,
+      work: { ...COPY_TINTIN.work, title: 'Les Aventures extraordinaires de Tintin au Tibet' },
+    };
     const user = userEvent.setup();
-    renderWithProviders(<ListingDraftPanel copyId={1} sale={null} />);
+    renderWithProviders(<ListingDraftPanel copy={copy} sale={null} />);
 
-    await user.click(screen.getByRole('button', { name: 'Générer une annonce' }));
+    await user.click(screen.getByRole('button', { name: 'Préparer une annonce' }));
+    expect(screen.getByLabelText('Titre')).toHaveValue(
+      'Tome 20 - Les Aventures extraordinaires de Tintin au Tibet',
+    );
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('pas configurée');
+    await user.selectOptions(screen.getByLabelText('Plateforme visée'), 'eBay');
+
+    expect(screen.getByLabelText('Titre')).toHaveValue(
+      'Tome 20 - Les Aventures extraordinaires de Tintin au Tibet - Très bon état',
+    );
+  });
+
+  it('propose d’abord la plateforme de l’annonce en cours', async () => {
+    const sale = { ...SALE_LISTED, platform: 'Autre site' };
+    const user = userEvent.setup();
+    renderWithProviders(<ListingDraftPanel copy={COPY_TINTIN} sale={sale} />);
+
+    await user.click(screen.getByRole('button', { name: 'Préparer une annonce' }));
+
+    expect(screen.getByLabelText('Plateforme visée')).toHaveValue('Autre site');
+  });
+
+  it('se replie', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<ListingDraftPanel copy={COPY_TINTIN} sale={null} />);
+
+    await user.click(screen.getByRole('button', { name: 'Préparer une annonce' }));
+    await user.click(screen.getByRole('button', { name: "Masquer l'annonce" }));
+
+    expect(screen.queryByLabelText('Titre')).not.toBeInTheDocument();
   });
 });
