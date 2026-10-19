@@ -267,6 +267,18 @@ describe('BnF', () => {
     expect(suggestion?.work.title).toBe('Tom & Jerry é é <3> "ok"');
   });
 
+  it('ne prend pas pour une notice une balise dont le nom commence par mxc:record', async () => {
+    const xml = sru([['200', [['a', 'Tintin au Tibet']]]]).replace(
+      '<srw:records>',
+      '<srw:records><mxc:recordPosition>1</mxc:recordPosition>',
+    );
+    const { fetchFn } = fakeFetch(xml);
+
+    const suggestion = await createBnfProvider(fetchFn).lookup('9782203001190');
+
+    expect(suggestion?.work.title).toBe('Tintin au Tibet');
+  });
+
   it('renvoie null sans notice, ou sans titre', async () => {
     expect(await lookup(null)).toBeNull();
     expect(await lookup([['210', [['c', 'Dargaud']]]])).toBeNull();

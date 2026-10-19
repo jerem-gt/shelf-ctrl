@@ -112,6 +112,19 @@ describe('pochette d’une édition', () => {
     expect(files('covers')).toEqual([second.body.coverPath]);
   });
 
+  it('accepte un fichier sans type MIME connu et en vérifie le contenu', async () => {
+    const { app, files } = setup();
+    const copy = await createCopy(app);
+    const url = `/api/editions/${copy.edition.id}/cover`;
+
+    const valid = await putImage(app, url, await png('#f00'), 'application/octet-stream');
+    const garbage = await putImage(app, url, Buffer.from('x'), 'application/octet-stream');
+
+    expect(valid.status).toBe(200);
+    expect(garbage.status).toBe(415);
+    expect(files('covers')).toEqual([valid.body.coverPath]);
+  });
+
   it('rejette un contenu qui n’est pas une image', async () => {
     const { app, files } = setup();
     const copy = await createCopy(app);

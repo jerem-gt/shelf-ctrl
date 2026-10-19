@@ -47,7 +47,7 @@ function toRequestInit(method: string, body: unknown): RequestInit {
     return { method };
   }
   if (body instanceof Blob) {
-    return { method, headers: { 'Content-Type': body.type }, body };
+    return { method, headers: { 'Content-Type': body.type || 'application/octet-stream' }, body };
   }
   return { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
 }

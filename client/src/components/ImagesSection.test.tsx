@@ -59,6 +59,22 @@ describe('ImagesSection', () => {
     await waitFor(() => expect(received).toEqual({ type: 'image/png', size: 1 }));
   });
 
+  it('envoie un fichier sans type MIME en application/octet-stream', async () => {
+    let type: string | null = null;
+    server.use(
+      http.put('/api/editions/:id/cover', ({ request }) => {
+        type = request.headers.get('content-type');
+        return HttpResponse.json({ coverPath: '1-aaaaaaaaaa.webp' });
+      }),
+    );
+    const user = userEvent.setup({ applyAccept: false });
+    renderWithProviders(<ImagesSection copy={COPY_TINTIN} />);
+
+    await user.upload(screen.getAllByLabelText('Ajouter')[0], image('photo', ''));
+
+    await waitFor(() => expect(type).toBe('application/octet-stream'));
+  });
+
   it('envoie la photo à l’exemplaire', async () => {
     let called = false;
     server.use(
