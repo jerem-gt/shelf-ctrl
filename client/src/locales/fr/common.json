@@ -27,6 +27,8 @@
     "conflict": "Cette action n'est plus possible : l'état de l'exemplaire a changé.",
     "unauthorized": "Identifiant ou mot de passe incorrect.",
     "tooManyAttempts": "Trop de tentatives : réessaie dans quelques minutes.",
+    "invalidImage": "Ce fichier n'est pas une image exploitable (JPEG, PNG, WebP…).",
+    "imageTooLarge": "Cette image est trop lourde (12 Mo au maximum).",
     "llmNotConfigured": "La génération d'annonces n'est pas configurée sur le serveur.",
     "llmFailed": "Le modèle n'a pas pu rédiger l'annonce : réessaie dans un instant."
   },
@@ -125,6 +127,23 @@
     "deleteWarning": "Son historique de prêts et de ventes sera supprimé aussi. L'action est définitive.",
     "deleteConfirm": "Supprimer définitivement",
     "deleting": "Suppression…"
+  },
+  "images": {
+    "section": "Images",
+    "cover": "Pochette",
+    "coverHint": "Partagée par tous les exemplaires de cette édition.",
+    "photo": "Photo de l'exemplaire",
+    "photoHint": "Montre l'état réel de ton exemplaire, utile pour une annonce.",
+    "none": "Aucune image",
+    "add": "Ajouter",
+    "replace": "Remplacer",
+    "remove": "Retirer",
+    "uploading": "Envoi…",
+    "findOnline": "Chercher en ligne",
+    "searching": "Recherche…",
+    "coverAlt": "Pochette de {{title}}",
+    "photoAlt": "Photo de l'exemplaire de {{title}}",
+    "notFoundOnline": "Aucune pochette trouvée en ligne : envoie ton image."
   },
   "nav": {
     "main": "Navigation",

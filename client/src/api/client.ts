@@ -30,6 +30,8 @@ const ERROR_KEYS: Record<number, string> = {
   400: 'errors.validation',
   401: 'errors.unauthorized',
   409: 'errors.conflict',
+  413: 'errors.imageTooLarge',
+  415: 'errors.invalidImage',
   429: 'errors.tooManyAttempts',
   502: 'errors.llmFailed',
   503: 'errors.llmNotConfigured',
@@ -39,14 +41,21 @@ function errorMessage(status: number): string {
   return i18n.t(ERROR_KEYS[status] ?? 'errors.generic');
 }
 
+/** Un fichier part tel quel avec son type MIME ; tout le reste est envoyé en JSON. */
+function toRequestInit(method: string, body: unknown): RequestInit {
+  if (body === undefined) {
+    return { method };
+  }
+  if (body instanceof Blob) {
+    return { method, headers: { 'Content-Type': body.type }, body };
+  }
+  return { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
+}
+
 async function request<T>(method: string, url: string, body?: unknown): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(url, {
-      method,
-      headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
+    res = await fetch(url, toRequestInit(method, body));
   } catch {
     throw new ApiError(i18n.t('errors.network'), 0);
   }
@@ -122,6 +131,17 @@ export interface LoginPayload {
 }
 
 export const api = {
+  images: {
+    uploadCover: (editionId: number, file: Blob) =>
+      request<{ coverPath: string }>('PUT', `/api/editions/${editionId}/cover`, file),
+    removeCover: (editionId: number) =>
+      request<undefined>('DELETE', `/api/editions/${editionId}/cover`),
+    fetchCover: (editionId: number) =>
+      request<{ fetched: true }>('POST', `/api/editions/${editionId}/cover/fetch`),
+    uploadPhoto: (copyId: number, file: Blob) =>
+      request<{ photoPath: string }>('PUT', `/api/copies/${copyId}/photo`, file),
+    removePhoto: (copyId: number) => request<undefined>('DELETE', `/api/copies/${copyId}/photo`),
+  },
   listings: {
     draft: (copyId: number, platform?: string) =>
       request<ListingDraft>('POST', `/api/copies/${copyId}/listing-draft`, { platform }),

@@ -26,6 +26,7 @@ export interface EditionSummary {
   publisher: string | null;
   releaseYear: number | null;
   language: string | null;
+  /** Nom du fichier de la pochette (servi par `/covers/<nom>`). */
   coverPath: string | null;
 }
 
@@ -36,6 +37,8 @@ export interface CopyItem {
   condition: CopyCondition;
   conditionNote: string | null;
   location: string | null;
+  /** Nom du fichier de la photo de l'exemplaire (servi par `/photos/<nom>`). */
+  photoPath: string | null;
   createdAt: string;
   edition: EditionSummary;
   work: WorkSummary;

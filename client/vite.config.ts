@@ -10,7 +10,7 @@ export default defineConfig({
       includeAssets: ['favicon.svg'],
       workbox: {
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api/, /^\/covers/],
+        navigateFallbackDenylist: [/^\/api/, /^\/covers/, /^\/photos/],
       },
       manifest: {
         name: 'ShelfCtrl',
@@ -40,6 +40,10 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/covers': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+      '/photos': {
         target: 'http://localhost:3001',
         changeOrigin: true,
       },

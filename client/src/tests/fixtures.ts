@@ -14,6 +14,7 @@ export const COPY_TINTIN: CopyItem = {
   condition: 'very_good',
   conditionNote: null,
   location: 'Salon',
+  photoPath: null,
   createdAt: '2026-10-14 10:00:00',
   edition: {
     id: 1,
@@ -40,6 +41,7 @@ export const COPY_ALIEN: CopyItem = {
   condition: 'good',
   conditionNote: null,
   location: null,
+  photoPath: null,
   createdAt: '2026-10-14 11:00:00',
   edition: {
     id: 2,
