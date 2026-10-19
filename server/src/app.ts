@@ -17,6 +17,7 @@ import { createCopiesRouter } from './modules/copies/copies.routes.js';
 import { createImages, type ImagesOptions } from './modules/images/index.js';
 import { createImportRouter } from './modules/import/import.routes.js';
 import { createLoansRouter } from './modules/loans/loans.routes.js';
+import { createPlatformsRouter } from './modules/platforms/platforms.routes.js';
 import { createSalesRouter } from './modules/sales/sales.routes.js';
 import { createDefaultTitleSearchProviders } from './modules/titles/providers/index.js';
 import type { TitleSearchProvider } from './modules/titles/providers/types.js';
@@ -149,6 +150,7 @@ export function createApp(db: Database, options: AppOptions = {}) {
   );
   app.use('/api', createLoansRouter(db));
   app.use('/api', createSalesRouter(db));
+  app.use('/api/platforms', createPlatformsRouter(db));
 
   app.use(errorHandler);
 
