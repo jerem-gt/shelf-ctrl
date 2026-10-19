@@ -49,7 +49,7 @@ export function SaleSection({ copy }: Readonly<{ copy: CopyItem }>) {
   if (sale === undefined) {
     body = null;
   } else if (mode === 'list' || mode === 'sell' || mode === 'edit') {
-    body = <SaleForm mode={mode} copyId={copy.id} sale={sale} onDone={backToView} />;
+    body = <SaleForm mode={mode} copy={copy} sale={sale} onDone={backToView} />;
   } else if (mode === 'cancel') {
     body = (
       <div
@@ -131,8 +131,8 @@ export function SaleSection({ copy }: Readonly<{ copy: CopyItem }>) {
     >
       <h3 className="font-semibold">{t('sale.section')}</h3>
       {body}
-      {sale !== undefined && !sale?.soldAt && mode === 'view' && (
-        <ListingDraftPanel copy={copy} sale={sale} />
+      {sale && !sale.soldAt && mode === 'view' && (
+        <ListingDraftPanel copy={copy} platform={sale.platform} />
       )}
       {remove.error && (
         <p role="alert" className="text-sm text-red-700">

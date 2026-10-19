@@ -1,9 +1,10 @@
-import type { CopyItem, SaleItem } from '@shelfctrl/types';
+import type { CopyItem } from '@shelfctrl/types';
+import { ExternalLink } from 'lucide-react';
 import { useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { buildListingDraft } from '@/lib/listing';
-import { DEFAULT_PLATFORMS } from '@/lib/platforms';
+import { publishUrl } from '@/lib/platforms';
 
 const BUTTON_CLASS =
   'rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium disabled:opacity-60';
@@ -47,55 +48,68 @@ function CopyField({
   );
 }
 
-/** Brouillon d'annonce (gabarit) à copier sur la plateforme ; rien n'est enregistré. */
+/** Lien vers la page de dépôt de la plateforme, quand on la connaît. */
+function PublishLink({ platform }: Readonly<{ platform: string | null }>) {
+  const { t } = useTranslation();
+  const url = publishUrl(platform);
+  if (url === null || platform === null) {
+    return null;
+  }
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1 self-start text-sm font-medium text-slate-900 underline underline-offset-4"
+    >
+      <ExternalLink aria-hidden className="size-4" />
+      {t('listingDraft.publishOn', { platform: platform.trim() })}
+    </a>
+  );
+}
+
+/**
+ * Titre et description à copier sur la plateforme, calculés d'après la fiche de l'exemplaire :
+ * le titre s'adapte à la limite de la plateforme (`null` : longueur par défaut).
+ */
+export function ListingFields({
+  copy,
+  platform,
+}: Readonly<{ copy: CopyItem; platform: string | null }>) {
+  const { t } = useTranslation();
+  const draft = useMemo(() => buildListingDraft(copy, platform, t), [copy, platform, t]);
+
+  return (
+    <div className="flex flex-col gap-3">
+      <PublishLink platform={platform} />
+      <CopyField label={t('listingDraft.title')} value={draft.title} />
+      <CopyField label={t('listingDraft.description')} value={draft.description} multiline />
+      <p className="text-xs text-slate-500">{t('listingDraft.hint')}</p>
+    </div>
+  );
+}
+
+/** Annonce d'un exemplaire déjà en vente, repliée jusqu'à ce qu'on la demande. */
 export function ListingDraftPanel({
   copy,
-  sale,
-}: Readonly<{ copy: CopyItem; sale: SaleItem | null }>) {
+  platform,
+}: Readonly<{ copy: CopyItem; platform: string | null }>) {
   const { t } = useTranslation();
-  const platformId = useId();
   const [open, setOpen] = useState(false);
-  const [platform, setPlatform] = useState(sale?.platform ?? DEFAULT_PLATFORMS[0]);
-
-  // La plateforme de l'annonce en cours reste proposée même si elle n'est pas dans la liste.
-  const platforms = [
-    ...new Set([...(sale?.platform ? [sale.platform] : []), ...DEFAULT_PLATFORMS]),
-  ];
-  const draft = useMemo(() => buildListingDraft(copy, platform, t), [copy, platform, t]);
 
   return (
     <div className="flex flex-col gap-3">
       <div>
         <button
           type="button"
+          aria-expanded={open}
           onClick={() => setOpen((current) => !current)}
           className={BUTTON_CLASS}
         >
-          {t(open ? 'listingDraft.hide' : 'listingDraft.generate')}
+          {t(open ? 'listingDraft.hide' : 'listingDraft.show')}
         </button>
       </div>
-      {open && (
-        <div className="flex flex-col gap-3">
-          <label htmlFor={platformId} className="flex flex-col gap-1 text-sm font-medium">
-            {t('listingDraft.platform')}
-            <select
-              id={platformId}
-              value={platform}
-              onChange={(event) => setPlatform(event.target.value)}
-              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm sm:w-64"
-            >
-              {platforms.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <CopyField label={t('listingDraft.title')} value={draft.title} />
-          <CopyField label={t('listingDraft.description')} value={draft.description} multiline />
-          <p className="text-xs text-slate-500">{t('listingDraft.hint')}</p>
-        </div>
-      )}
+      {open && <ListingFields copy={copy} platform={platform} />}
     </div>
   );
 }

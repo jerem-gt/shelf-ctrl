@@ -12,6 +12,24 @@ const TITLE_LIMITS = new Map([
 ]);
 const DEFAULT_TITLE_LIMIT = 80;
 
+/**
+ * Page où publier une annonce, par plateforme (en minuscules). Ces sites se protègent des robots :
+ * les adresses n'ont pas pu être vérifiées automatiquement (eBay et Amazon seulement).
+ */
+const PUBLISH_URLS = new Map([
+  ['vinted', 'https://www.vinted.fr/items/new'],
+  ['leboncoin', 'https://www.leboncoin.fr/deposer-une-annonce'],
+  ['ebay', 'https://www.ebay.fr/sl/sell'],
+  ['momox', 'https://www.momox.fr/'],
+  ['rakuten', 'https://fr.shopping.rakuten.com/'],
+  ['amazon', 'https://sell.amazon.fr/'],
+]);
+
+/** Page de dépôt d'annonce d'une plateforme connue ; `null` pour une plateforme libre. */
+export function publishUrl(platform: string | null): string | null {
+  return PUBLISH_URLS.get(platform?.trim().toLowerCase() ?? '') ?? null;
+}
+
 export function titleLimit(platform: string | null): number {
   return TITLE_LIMITS.get(platform?.trim().toLowerCase() ?? '') ?? DEFAULT_TITLE_LIMIT;
 }
