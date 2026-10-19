@@ -6,6 +6,7 @@ import { useCopySale, useRemoveSale } from '@/hooks/useSales';
 import { formatIsoDate } from '@/lib/format';
 import { formatPrice } from '@/lib/money';
 
+import { ListingDraftPanel } from './ListingDraftPanel';
 import { SaleForm, type SaleFormMode } from './SaleForm';
 
 type Mode = 'view' | SaleFormMode | 'cancel';
@@ -130,6 +131,9 @@ export function SaleSection({ copy }: Readonly<{ copy: CopyItem }>) {
     >
       <h3 className="font-semibold">{t('sale.section')}</h3>
       {body}
+      {sale !== undefined && !sale?.soldAt && mode === 'view' && (
+        <ListingDraftPanel copyId={copy.id} sale={sale} />
+      )}
       {remove.error && (
         <p role="alert" className="text-sm text-red-700">
           {remove.error.message}

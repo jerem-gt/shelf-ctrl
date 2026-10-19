@@ -5,6 +5,7 @@ import type {
   CopyItem,
   CopyListResponse,
   CopyStatus,
+  ListingDraft,
   LoanItem,
   MediaFormat,
   OpenLoanItem,
@@ -29,6 +30,8 @@ const ERROR_KEYS: Record<number, string> = {
   401: 'errors.unauthorized',
   409: 'errors.conflict',
   429: 'errors.tooManyAttempts',
+  502: 'errors.llmFailed',
+  503: 'errors.llmNotConfigured',
 };
 
 function errorMessage(status: number): string {
@@ -118,6 +121,10 @@ export interface LoginPayload {
 }
 
 export const api = {
+  listings: {
+    draft: (copyId: number, platform?: string) =>
+      request<ListingDraft>('POST', `/api/copies/${copyId}/listing-draft`, { platform }),
+  },
   auth: {
     me: () => request<SessionResponse>('GET', '/api/auth/me'),
     login: (payload: LoginPayload) => request<SessionResponse>('POST', '/api/auth/login', payload),

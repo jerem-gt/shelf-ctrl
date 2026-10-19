@@ -26,7 +26,9 @@
     "generic": "Une erreur est survenue.",
     "conflict": "Cette action n'est plus possible : l'état de l'exemplaire a changé.",
     "unauthorized": "Identifiant ou mot de passe incorrect.",
-    "tooManyAttempts": "Trop de tentatives : réessaie dans quelques minutes."
+    "tooManyAttempts": "Trop de tentatives : réessaie dans quelques minutes.",
+    "llmNotConfigured": "La génération d'annonces n'est pas configurée sur le serveur.",
+    "llmFailed": "Le modèle n'a pas pu rédiger l'annonce : réessaie dans un instant."
   },
   "collection": {
     "title": "Ma collection",
@@ -170,6 +172,17 @@
     "cancelSaleTitle": "Annuler cette vente ?",
     "cancelSaleText": "L'exemplaire redeviendra « en rayon ».",
     "keep": "Garder la vente"
+  },
+  "listingDraft": {
+    "generate": "Générer une annonce",
+    "regenerate": "Régénérer",
+    "generating": "Rédaction…",
+    "title": "Titre",
+    "description": "Description",
+    "copy": "Copier",
+    "copied": "Copié",
+    "suggestedPrice": "Prix suggéré : {{price}} (estimation indicative, à vérifier sur la plateforme)",
+    "useSuggestedPrice": "Utiliser ce prix"
   },
   "salesPage": {
     "title": "Ventes",
