@@ -293,6 +293,25 @@ describe('AddCopyPage — recherche par titre', () => {
     expect(screen.getByLabelText('Code-barres (ISBN / EAN)')).toHaveValue('5051889000001');
   });
 
+  it('retire le code-barres venu d’une autre fiche quand le résultat n’en a pas', async () => {
+    server.use(
+      http.get('/api/barcodes/:code', () => HttpResponse.json(BARCODE_TINTIN)),
+      http.get('/api/titles/search', () => HttpResponse.json(RESULTS)),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText('Code-barres (ISBN / EAN)'), '9782203001190');
+    await user.click(screen.getByRole('button', { name: 'Rechercher la fiche' }));
+    await screen.findByText(/Fiche trouvée/);
+    await user.type(screen.getByLabelText('Titre, série ou auteur'), 'tintin');
+    await user.click(screen.getByRole('button', { name: 'Rechercher' }));
+    await user.click(await screen.findByRole('button', { name: 'Choisir : Tintin' }));
+
+    expect(screen.getByLabelText('Titre')).toHaveValue('Tintin');
+    expect(screen.getByLabelText('Code-barres (ISBN / EAN)')).toHaveValue('');
+  });
+
   it('n’envoie pas le formulaire en validant la recherche avec Entrée', async () => {
     let created = false;
     server.use(

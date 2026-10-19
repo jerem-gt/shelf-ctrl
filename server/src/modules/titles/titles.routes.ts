@@ -8,17 +8,38 @@ const MAX_RESULTS = 20;
 
 const querySchema = z.object({ q: z.string().trim().min(2).max(100) });
 
-/** Garde la première occurrence de chaque code-barres ; les résultats sans code sont conservés. */
+/** Un résultat de chaque source à tour de rôle : aucune ne monopolise la liste tronquée. */
+function interleave(lists: TitleSearchResult[][]): TitleSearchResult[] {
+  const merged: TitleSearchResult[] = [];
+  const longest = Math.max(0, ...lists.map((list) => list.length));
+  for (let index = 0; index < longest; index++) {
+    for (const list of lists) {
+      if (index < list.length) {
+        merged.push(list[index]);
+      }
+    }
+  }
+  return merged;
+}
+
+/** Même édition : même code-barres. Sans code, même titre et même année (casse ignorée). */
+function identityOf({ barcode, suggestion }: TitleSearchResult): string {
+  if (barcode !== null) {
+    return `code:${barcode}`;
+  }
+  const { title, year } = suggestion.work;
+  return `titre:${title.trim().toLowerCase()}|${year ?? ''}`;
+}
+
+/** Garde la première occurrence de chaque édition. */
 function dedupe(results: TitleSearchResult[]): TitleSearchResult[] {
   const seen = new Set<string>();
-  return results.filter(({ barcode }) => {
-    if (barcode === null) {
-      return true;
-    }
-    if (seen.has(barcode)) {
+  return results.filter((result) => {
+    const identity = identityOf(result);
+    if (seen.has(identity)) {
       return false;
     }
-    seen.add(barcode);
+    seen.add(identity);
     return true;
   });
 }
@@ -34,17 +55,17 @@ export function createTitlesRouter(providers: readonly TitleSearchProvider[]) {
     const { q } = querySchema.parse(req.query);
     const settled = await Promise.allSettled(providers.map((provider) => provider.search(q)));
 
-    const results: TitleSearchResult[] = [];
+    const lists: TitleSearchResult[][] = [];
     settled.forEach((outcome, index) => {
       if (outcome.status === 'fulfilled') {
-        results.push(...outcome.value);
+        lists.push(outcome.value);
       } else {
         const reason = outcome.reason instanceof Error ? outcome.reason.message : 'erreur inconnue';
         console.warn(`[titles] ${providers[index].source} : ${reason}`);
       }
     });
 
-    const body: TitleSearchResponse = { results: dedupe(results).slice(0, MAX_RESULTS) };
+    const body: TitleSearchResponse = { results: dedupe(interleave(lists)).slice(0, MAX_RESULTS) };
     res.json(body);
   });
 
