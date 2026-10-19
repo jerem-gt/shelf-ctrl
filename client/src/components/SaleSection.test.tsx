@@ -55,16 +55,83 @@ describe('SaleSection — sans vente', () => {
     expect(await screen.findByRole('button', { name: 'Mettre en vente' })).toBeInTheDocument();
   });
 
-  it('n’envoie ni plateforme ni prix quand ils sont laissés vides', async () => {
+  it('exige une plateforme pour mettre en vente', async () => {
     const captured = captureBody('post', '/api/copies/:id/sale', SALE_LISTED);
     const user = userEvent.setup();
     renderWithProviders(<SaleSection copy={COPY_TINTIN} />);
 
     await user.click(await screen.findByRole('button', { name: 'Mettre en vente' }));
+    expect(screen.getByLabelText('Plateforme')).toBeRequired();
+    await user.click(screen.getByRole('button', { name: 'Mettre en vente' }));
+
+    expect(captured.called).toBe(0);
+  });
+
+  it('n’envoie pas de prix quand il est laissé vide', async () => {
+    const captured = captureBody('post', '/api/copies/:id/sale', SALE_LISTED);
+    const user = userEvent.setup();
+    renderWithProviders(<SaleSection copy={COPY_TINTIN} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Mettre en vente' }));
+    await user.type(screen.getByLabelText('Plateforme'), 'Vinted');
     await user.click(screen.getByRole('button', { name: 'Mettre en vente' }));
 
     await waitFor(() => expect(captured.called).toBe(1));
-    expect(captured.body).toEqual({ listedAt: localToday() });
+    expect(captured.body).toEqual({ platform: 'Vinted', listedAt: localToday() });
+  });
+
+  it('affiche l’annonce de la plateforme saisie, avec un lien pour la publier', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<SaleSection copy={COPY_TINTIN} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Mettre en vente' }));
+    expect(screen.queryByRole('link', { name: /Ouvrir/ })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Titre')).toHaveValue(
+      'Tome 20 - Tintin au Tibet - Très bon état - Hergé',
+    );
+
+    await user.type(screen.getByLabelText('Plateforme'), 'Leboncoin');
+
+    expect(
+      screen.getByRole('link', { name: "Ouvrir Leboncoin pour publier l'annonce" }),
+    ).toHaveAttribute('href', 'https://www.leboncoin.fr/deposer-une-annonce');
+  });
+
+  it('adapte le titre de l’annonce à la plateforme pendant la saisie', async () => {
+    const copy = {
+      ...COPY_TINTIN,
+      work: { ...COPY_TINTIN.work, title: 'Les Aventures extraordinaires de Tintin au Tibet' },
+    };
+    const user = userEvent.setup();
+    renderWithProviders(<SaleSection copy={copy} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Mettre en vente' }));
+    await user.type(screen.getByLabelText('Plateforme'), 'Vinted');
+    const onVinted = screen.getByLabelText<HTMLInputElement>('Titre').value;
+    await user.clear(screen.getByLabelText('Plateforme'));
+    await user.type(screen.getByLabelText('Plateforme'), 'eBay');
+
+    expect(onVinted).not.toContain('Très bon état');
+    expect(screen.getByLabelText<HTMLInputElement>('Titre').value).toContain('Très bon état');
+  });
+
+  it('ne laisse pas « Copié » quand le titre change avec la plateforme', async () => {
+    const copy = {
+      ...COPY_TINTIN,
+      work: { ...COPY_TINTIN.work, title: 'Les Aventures extraordinaires de Tintin au Tibet' },
+    };
+    const user = userEvent.setup();
+    renderWithProviders(<SaleSection copy={copy} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Mettre en vente' }));
+    await user.type(screen.getByLabelText('Plateforme'), 'Vinted');
+    await user.click(screen.getAllByRole('button', { name: 'Copier' })[0]);
+    expect(screen.getByRole('button', { name: 'Copié' })).toBeInTheDocument();
+
+    await user.clear(screen.getByLabelText('Plateforme'));
+    await user.type(screen.getByLabelText('Plateforme'), 'eBay');
+
+    expect(screen.queryByRole('button', { name: 'Copié' })).not.toBeInTheDocument();
   });
 
   it('suggère les plateformes connues et celles déjà utilisées', async () => {
@@ -91,6 +158,8 @@ describe('SaleSection — sans vente', () => {
     renderWithProviders(<SaleSection copy={COPY_TINTIN} />);
 
     await user.click(await screen.findByRole('button', { name: 'Marquer comme vendu' }));
+    expect(screen.getByLabelText('Plateforme')).not.toBeRequired();
+    expect(screen.queryByLabelText('Titre')).not.toBeInTheDocument();
     await user.type(screen.getByLabelText('Prix (€)'), '4');
     await user.click(screen.getByRole('button', { name: 'Enregistrer la vente' }));
 
@@ -104,6 +173,7 @@ describe('SaleSection — sans vente', () => {
     renderWithProviders(<SaleSection copy={COPY_TINTIN} />);
 
     await user.click(await screen.findByRole('button', { name: 'Mettre en vente' }));
+    await user.type(screen.getByLabelText('Plateforme'), 'Vinted');
     await user.type(screen.getByLabelText('Prix (€)'), 'douze');
     await user.click(screen.getByRole('button', { name: 'Mettre en vente' }));
 
@@ -128,6 +198,7 @@ describe('SaleSection — sans vente', () => {
     renderWithProviders(<SaleSection copy={COPY_TINTIN} />);
 
     await user.click(await screen.findByRole('button', { name: 'Mettre en vente' }));
+    await user.type(screen.getByLabelText('Plateforme'), 'Vinted');
     await user.click(screen.getByRole('button', { name: 'Mettre en vente' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent("Cette action n'est plus possible");
@@ -158,6 +229,21 @@ describe('SaleSection — en vente', () => {
     expect(screen.getByRole('button', { name: 'Marquer comme vendu' })).toBeEnabled();
     expect(screen.getByRole('button', { name: "Modifier l'annonce" })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Retirer de la vente' })).toBeInTheDocument();
+  });
+
+  it('rouvre l’annonce de la plateforme où l’exemplaire est en vente, avec son lien', async () => {
+    stubSale(SALE_LISTED);
+    const user = userEvent.setup();
+    renderWithProviders(<SaleSection copy={listedCopy} />);
+
+    await user.click(await screen.findByRole('button', { name: "Voir l'annonce à publier" }));
+
+    expect(
+      screen.getByRole('link', { name: "Ouvrir Vinted pour publier l'annonce" }),
+    ).toHaveAttribute('href', 'https://www.vinted.fr/items/new');
+    expect(screen.getByLabelText('Titre')).toHaveValue(
+      'Tome 20 - Tintin au Tibet - Très bon état - Hergé',
+    );
   });
 
   it('vend en gardant plateforme et prix de l’annonce, préremplis dans le formulaire', async () => {

@@ -192,6 +192,7 @@
     "cancelSaleButton": "Annuler la vente",
     "loanedNote": "Rends d'abord l'exemplaire prêté pour le vendre.",
     "platform": "Plateforme",
+    "platformHint": "L'annonce ci-dessous s'adapte à la plateforme (longueur du titre).",
     "price": "Prix (€)",
     "listDate": "Date de mise en vente",
     "soldDate": "Date de vente",
@@ -205,9 +206,10 @@
     "keep": "Garder la vente"
   },
   "listingDraft": {
-    "generate": "Préparer une annonce",
+    "section": "Annonce à publier",
+    "show": "Voir l'annonce à publier",
+    "publishOn": "Ouvrir {{platform}} pour publier l'annonce",
     "hide": "Masquer l'annonce",
-    "platform": "Plateforme visée",
     "title": "Titre",
     "description": "Description",
     "copy": "Copier",
