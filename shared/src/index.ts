@@ -90,14 +90,6 @@ export interface SaleListItem extends SaleItem {
   format: MediaFormat;
 }
 
-/** Brouillon d'annonce généré par un LLM : à relire avant de le coller sur la plateforme. */
-export interface ListingDraft {
-  title: string;
-  description: string;
-  /** Estimation en centimes, indicative : le modèle ne connaît pas les prix du marché du jour. */
-  suggestedPriceCents: number | null;
-}
-
 /** `isbn` : livre (préfixe 978/979) ; `ean` : tout autre code (vidéo). */
 export type BarcodeKind = 'isbn' | 'ean';
 

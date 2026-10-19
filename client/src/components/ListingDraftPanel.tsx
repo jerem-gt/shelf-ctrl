@@ -1,10 +1,9 @@
-import type { SaleItem } from '@shelfctrl/types';
-import { useState } from 'react';
+import type { CopyItem, SaleItem } from '@shelfctrl/types';
+import { useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useListingDraft } from '@/hooks/useListingDraft';
-import { useUpdateSale } from '@/hooks/useSales';
-import { formatPrice } from '@/lib/money';
+import { buildListingDraft } from '@/lib/listing';
+import { DEFAULT_PLATFORMS } from '@/lib/platforms';
 
 const BUTTON_CLASS =
   'rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium disabled:opacity-60';
@@ -32,7 +31,7 @@ function CopyField({
     <label className="flex flex-col gap-1 text-sm font-medium">
       {label}
       {multiline ? (
-        <textarea readOnly rows={8} value={value} className={FIELD_CLASS} />
+        <textarea readOnly rows={10} value={value} className={FIELD_CLASS} />
       ) : (
         <input readOnly value={value} className={FIELD_CLASS} />
       )}
@@ -43,66 +42,53 @@ function CopyField({
   );
 }
 
-/** Brouillon d'annonce rédigé par le LLM, à copier sur la plateforme (rien n'est enregistré). */
+/** Brouillon d'annonce (gabarit) à copier sur la plateforme ; rien n'est enregistré. */
 export function ListingDraftPanel({
-  copyId,
+  copy,
   sale,
-}: Readonly<{ copyId: number; sale: SaleItem | null }>) {
+}: Readonly<{ copy: CopyItem; sale: SaleItem | null }>) {
   const { t } = useTranslation();
-  const draft = useListingDraft(copyId);
-  const updateSale = useUpdateSale(copyId);
-  const platform = sale?.platform ?? undefined;
-  const suggested = draft.data?.suggestedPriceCents ?? null;
+  const platformId = useId();
+  const [open, setOpen] = useState(false);
+  const [platform, setPlatform] = useState(sale?.platform ?? DEFAULT_PLATFORMS[0]);
 
-  let generateLabel = 'listingDraft.generate';
-  if (draft.isPending) {
-    generateLabel = 'listingDraft.generating';
-  } else if (draft.data) {
-    generateLabel = 'listingDraft.regenerate';
-  }
+  // La plateforme de l'annonce en cours reste proposée même si elle n'est pas dans la liste.
+  const platforms = [
+    ...new Set([...(sale?.platform ? [sale.platform] : []), ...DEFAULT_PLATFORMS]),
+  ];
+  const draft = useMemo(() => buildListingDraft(copy, platform, t), [copy, platform, t]);
 
   return (
     <div className="flex flex-col gap-3">
       <div>
         <button
           type="button"
-          disabled={draft.isPending}
-          onClick={() => draft.mutate(platform)}
+          onClick={() => setOpen((current) => !current)}
           className={BUTTON_CLASS}
         >
-          {t(generateLabel)}
+          {t(open ? 'listingDraft.hide' : 'listingDraft.generate')}
         </button>
       </div>
-      {draft.error && (
-        <p role="alert" className="text-sm text-red-700">
-          {draft.error.message}
-        </p>
-      )}
-      {draft.data && (
+      {open && (
         <div className="flex flex-col gap-3">
-          <CopyField label={t('listingDraft.title')} value={draft.data.title} />
-          <CopyField
-            label={t('listingDraft.description')}
-            value={draft.data.description}
-            multiline
-          />
-          {suggested !== null && (
-            <div className="flex flex-col items-start gap-2">
-              <p className="text-sm text-slate-700">
-                {t('listingDraft.suggestedPrice', { price: formatPrice(suggested) })}
-              </p>
-              {sale && (
-                <button
-                  type="button"
-                  disabled={updateSale.isPending}
-                  onClick={() => updateSale.mutate({ priceCents: suggested })}
-                  className={BUTTON_CLASS}
-                >
-                  {t('listingDraft.useSuggestedPrice')}
-                </button>
-              )}
-            </div>
-          )}
+          <label htmlFor={platformId} className="flex flex-col gap-1 text-sm font-medium">
+            {t('listingDraft.platform')}
+            <select
+              id={platformId}
+              value={platform}
+              onChange={(event) => setPlatform(event.target.value)}
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm sm:w-64"
+            >
+              {platforms.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <CopyField label={t('listingDraft.title')} value={draft.title} />
+          <CopyField label={t('listingDraft.description')} value={draft.description} multiline />
+          <p className="text-xs text-slate-500">{t('listingDraft.hint')}</p>
         </div>
       )}
     </div>

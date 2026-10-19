@@ -28,9 +28,7 @@
     "unauthorized": "Identifiant ou mot de passe incorrect.",
     "tooManyAttempts": "Trop de tentatives : réessaie dans quelques minutes.",
     "invalidImage": "Ce fichier n'est pas une image exploitable (JPEG, PNG, WebP…).",
-    "imageTooLarge": "Cette image est trop lourde (12 Mo au maximum).",
-    "llmNotConfigured": "La génération d'annonces n'est pas configurée sur le serveur.",
-    "llmFailed": "Le modèle n'a pas pu rédiger l'annonce : réessaie dans un instant."
+    "imageTooLarge": "Cette image est trop lourde (12 Mo au maximum)."
   },
   "collection": {
     "title": "Ma collection",
@@ -206,15 +204,35 @@
     "keep": "Garder la vente"
   },
   "listingDraft": {
-    "generate": "Générer une annonce",
-    "regenerate": "Régénérer",
-    "generating": "Rédaction…",
+    "generate": "Préparer une annonce",
+    "hide": "Masquer l'annonce",
+    "platform": "Plateforme visée",
     "title": "Titre",
     "description": "Description",
     "copy": "Copier",
     "copied": "Copié",
-    "suggestedPrice": "Prix suggéré : {{price}} (estimation indicative, à vérifier sur la plateforme)",
-    "useSuggestedPrice": "Utiliser ce prix"
+    "hint": "Texte généré à partir de la fiche : relis-le et ajoute ce qui manque (défauts, envoi, prix) avant de le publier."
+  },
+  "listing": {
+    "seriesWithVolume": "Série : {{series}}, tome {{number}}",
+    "series": "Série : {{series}}",
+    "volume": "Tome : {{number}}",
+    "creators": "Auteurs / réalisateurs : {{creators}}",
+    "publisherWithYear": "Éditeur : {{publisher}} ({{year}})",
+    "publisher": "Éditeur : {{publisher}}",
+    "year": "Année : {{year}}",
+    "format": "Support : {{format}}",
+    "language": "Langue : {{language}}",
+    "barcode": "Code-barres : {{barcode}}",
+    "condition": "État : {{condition}}",
+    "conditionNote": "Précisions : {{note}}",
+    "languages": {
+      "fr": "français",
+      "en": "anglais",
+      "ja": "japonais",
+      "de": "allemand",
+      "es": "espagnol"
+    }
   },
   "salesPage": {
     "title": "Ventes",

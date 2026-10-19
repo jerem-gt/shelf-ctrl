@@ -28,7 +28,6 @@ function setup(coverProviders: CoverProvider[] = []) {
   initDatabase(db);
   const app = createApp(db, {
     barcodeProviders: [],
-    llmProvider: null,
     titleSearchProviders: [],
     images: { dataDir, coverProviders },
   });
@@ -412,7 +411,6 @@ describe('accès aux fichiers', () => {
     initDatabase(db);
     const app = createApp(db, {
       barcodeProviders: [],
-      llmProvider: null,
       titleSearchProviders: [],
       images: { dataDir, coverProviders: [] },
       auth: { sessionSecret: 'x'.repeat(32), secureCookies: false },

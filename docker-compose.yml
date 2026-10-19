@@ -23,9 +23,6 @@ services:
       - LOG_LEVEL=INFO
       - GOOGLE_BOOKS_API_KEY=${GOOGLE_BOOKS_API_KEY:-}
       - TMDB_API_KEY=${TMDB_API_KEY:-}
-      - LLM_PROVIDER=${LLM_PROVIDER:-}
-      - LLM_API_KEY=${LLM_API_KEY:-}
-      - LLM_MODEL=${LLM_MODEL:-}
     networks:
       mynet:
         ipv4_address: 172.27.0.2
@@ -51,9 +48,6 @@ services:
       - LOG_LEVEL=INFO
       - GOOGLE_BOOKS_API_KEY=${GOOGLE_BOOKS_API_KEY:-}
       - TMDB_API_KEY=${TMDB_API_KEY:-}
-      - LLM_PROVIDER=${LLM_PROVIDER:-}
-      - LLM_API_KEY=${LLM_API_KEY:-}
-      - LLM_MODEL=${LLM_MODEL:-}
     networks:
       mynet:
         ipv4_address: 172.27.0.3

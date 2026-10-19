@@ -5,11 +5,10 @@ import { useTranslation } from 'react-i18next';
 import { useAllSales, useListForSale, useSellCopy, useUpdateSale } from '@/hooks/useSales';
 import { localToday } from '@/lib/format';
 import { parsePrice, PRICE_PATTERN, priceToInput } from '@/lib/money';
+import { DEFAULT_PLATFORMS } from '@/lib/platforms';
 
 const FIELD_CLASS =
   'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-slate-500 focus:outline-none';
-
-const DEFAULT_PLATFORMS = ['Vinted', 'Leboncoin', 'eBay', 'Momox', 'Rakuten', 'Amazon'];
 
 export type SaleFormMode = 'list' | 'sell' | 'edit';
 

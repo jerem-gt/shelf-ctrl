@@ -132,7 +132,7 @@ export function SaleSection({ copy }: Readonly<{ copy: CopyItem }>) {
       <h3 className="font-semibold">{t('sale.section')}</h3>
       {body}
       {sale !== undefined && !sale?.soldAt && mode === 'view' && (
-        <ListingDraftPanel copyId={copy.id} sale={sale} />
+        <ListingDraftPanel copy={copy} sale={sale} />
       )}
       {remove.error && (
         <p role="alert" className="text-sm text-red-700">

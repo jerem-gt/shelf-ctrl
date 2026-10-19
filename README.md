@@ -16,7 +16,7 @@ Client : http://localhost:5173 (proxy `/api` vers le serveur sur le port 3001).
 
 **v1** — scan d'un code-barres, fiche récupérée par API, création d'un exemplaire avec son état, recherche et liste, prêts, statut de vente.
 
-**v2** — annonces générées (texte et prix suggéré, à coller sur la plateforme), import CSV, tomes manquants d'une série.
+**v2** — annonces préparées par gabarit (titre et description à coller sur la plateforme), import CSV, tomes manquants d'une série.
 
 ## Stack
 
