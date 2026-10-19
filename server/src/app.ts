@@ -17,6 +17,9 @@ import { createLlmProvider } from './modules/listings/llm/index.js';
 import type { LlmProvider } from './modules/listings/llm/types.js';
 import { createLoansRouter } from './modules/loans/loans.routes.js';
 import { createSalesRouter } from './modules/sales/sales.routes.js';
+import { createDefaultTitleSearchProviders } from './modules/titles/providers/index.js';
+import type { TitleSearchProvider } from './modules/titles/providers/types.js';
+import { createTitlesRouter } from './modules/titles/titles.routes.js';
 import { SQLiteSessionStore } from './session-store.js';
 
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -26,6 +29,8 @@ export interface AppOptions {
   healthExtraCheck?: () => string | null;
   /** Sources de résolution des codes-barres (par défaut : chaîne configurée par l'environnement). */
   barcodeProviders?: readonly BarcodeProvider[];
+  /** Sources de recherche par titre (par défaut : chaîne configurée par l'environnement). */
+  titleSearchProviders?: readonly TitleSearchProvider[];
   /** Fournisseur LLM des annonces (`null` : désactivé ; par défaut, celui configuré par l'environnement). */
   llmProvider?: LlmProvider | null;
   /**
@@ -113,6 +118,10 @@ export function createApp(db: Database, options: AppOptions = {}) {
   app.use(
     '/api/barcodes',
     createBarcodesRouter(db, options.barcodeProviders ?? createDefaultProviders()),
+  );
+  app.use(
+    '/api/titles',
+    createTitlesRouter(options.titleSearchProviders ?? createDefaultTitleSearchProviders()),
   );
   app.use('/api/copies', createCopiesRouter(db));
   app.use('/api', createLoansRouter(db));

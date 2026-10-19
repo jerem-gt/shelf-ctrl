@@ -98,7 +98,7 @@ export interface ListingDraft {
 /** `isbn` : livre (préfixe 978/979) ; `ean` : tout autre code (vidéo). */
 export type BarcodeKind = 'isbn' | 'ean';
 
-export type BarcodeSource = 'local' | 'bnf' | 'openlibrary' | 'googlebooks' | 'upcitemdb';
+export type BarcodeSource = 'local' | 'bnf' | 'openlibrary' | 'googlebooks' | 'upcitemdb' | 'tmdb';
 
 /** Fiche proposée pour un code-barres : à relire par l'utilisateur avant enregistrement. */
 export interface BarcodeSuggestion {
@@ -119,6 +119,17 @@ export interface BarcodeLookupResponse {
   /** Une édition portant ce code existe déjà dans la collection. */
   known: boolean;
   suggestion: BarcodeSuggestion;
+}
+
+/** Une œuvre ou édition trouvée par titre ; `barcode` est `null` quand la source n'en donne pas. */
+export interface TitleSearchResult {
+  barcode: string | null;
+  source: BarcodeSource;
+  suggestion: BarcodeSuggestion;
+}
+
+export interface TitleSearchResponse {
+  results: TitleSearchResult[];
 }
 
 /** Utilisateur connecté (réponse de `/api/auth/me` et de la connexion). */

@@ -1,9 +1,10 @@
 import {
-  type BarcodeLookupResponse,
+  type BarcodeSuggestion,
   COPY_CONDITIONS,
   type CopyCondition,
   MEDIA_FORMATS,
   type MediaFormat,
+  type TitleSearchResult,
 } from '@shelfctrl/types';
 import { Camera, Search } from 'lucide-react';
 import { type SyntheticEvent, useState } from 'react';
@@ -14,6 +15,7 @@ import { ApiError, type CreateCopyPayload } from '@/api/client';
 import { BarcodeScanner } from '@/components/BarcodeScanner';
 import { useBarcodeLookup } from '@/hooks/useBarcodeLookup';
 import { useCreateCopy } from '@/hooks/useCopies';
+import { useTitleSearch } from '@/hooks/useTitleSearch';
 import { isScanSupported } from '@/lib/scanner';
 
 const FIELD_CLASS =
@@ -72,11 +74,15 @@ function toPayload(form: FormState): CreateCopyPayload {
 }
 
 /** Reporte la fiche trouvée dans le formulaire ; une valeur absente laisse la saisie en place. */
-function applySuggestion(form: FormState, result: BarcodeLookupResponse): FormState {
-  const { work, edition } = result.suggestion;
+function applySuggestion(
+  form: FormState,
+  barcode: string | null,
+  suggestion: BarcodeSuggestion,
+): FormState {
+  const { work, edition } = suggestion;
   return {
     ...form,
-    barcode: result.barcode,
+    barcode: barcode ?? form.barcode,
     title: work.title,
     series: work.series ?? form.series,
     volumeNumber: work.volumeNumber?.toString() ?? form.volumeNumber,
@@ -84,6 +90,17 @@ function applySuggestion(form: FormState, result: BarcodeLookupResponse): FormSt
     format: edition.format ?? form.format,
     publisher: edition.publisher ?? form.publisher,
   };
+}
+
+/** « Tintin, tome 20 », « Hergé · Casterman 2006 » : de quoi distinguer deux résultats voisins. */
+function describeResult(result: TitleSearchResult, volumeLabel: (number: number) => string) {
+  const { work, edition } = result.suggestion;
+  const heading = [work.series, work.volumeNumber === null ? null : volumeLabel(work.volumeNumber)]
+    .filter(Boolean)
+    .join(', ');
+  const publisher = [edition.publisher, edition.releaseYear ?? work.year].filter(Boolean).join(' ');
+  const details = [work.creators, publisher].filter(Boolean).join(' · ');
+  return { title: work.title, heading, details };
 }
 
 function Field({ label, children }: Readonly<{ label: string; children: React.ReactNode }>) {
@@ -102,6 +119,9 @@ export function AddCopyPage() {
   const lookup = useBarcodeLookup();
   const [form, setForm] = useState<FormState>(INITIAL_STATE);
   const [lookupMessage, setLookupMessage] = useState<string | null>(null);
+  const titleSearch = useTitleSearch();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchMessage, setSearchMessage] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
   const scanSupported = isScanSupported();
 
@@ -122,7 +142,7 @@ export function AddCopyPage() {
     setLookupMessage(null);
     lookup.mutate(code, {
       onSuccess: (result) => {
-        setForm((current) => applySuggestion(current, result));
+        setForm((current) => applySuggestion(current, result.barcode, result.suggestion));
         setLookupMessage(
           result.known
             ? t('add.lookup.known')
@@ -131,6 +151,29 @@ export function AddCopyPage() {
       },
       onError: (error) => setLookupMessage(lookupErrorMessage(error)),
     });
+  };
+
+  const runTitleSearch = () => {
+    const query = searchQuery.trim();
+    setSearchMessage(null);
+    if (query.length < 2) {
+      setSearchMessage(t('add.titleSearch.tooShort'));
+      return;
+    }
+    titleSearch.mutate(query, {
+      onSuccess: (response) => {
+        if (response.results.length === 0) {
+          setSearchMessage(t('add.titleSearch.none'));
+        }
+      },
+      onError: (error) => setSearchMessage(error.message),
+    });
+  };
+
+  const chooseResult = (result: TitleSearchResult) => {
+    setForm((current) => applySuggestion(current, result.barcode, result.suggestion));
+    setSearchMessage(t('add.titleSearch.applied', { source: t(`sources.${result.source}`) }));
+    titleSearch.reset();
   };
 
   const handleScan = (code: string) => {
@@ -149,6 +192,71 @@ export function AddCopyPage() {
       <h2 className="text-xl font-semibold">{t('add.title')}</h2>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1 font-semibold">{t('add.titleSearch.section')}</legend>
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <Field label={t('add.titleSearch.label')}>
+                <input
+                  value={searchQuery}
+                  maxLength={100}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  onKeyDown={(event) => {
+                    // Entrée lance la recherche au lieu d'envoyer tout le formulaire.
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      runTitleSearch();
+                    }
+                  }}
+                  className={FIELD_CLASS}
+                />
+              </Field>
+            </div>
+            <button
+              type="button"
+              onClick={runTitleSearch}
+              disabled={titleSearch.isPending}
+              className="flex items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium disabled:opacity-60"
+            >
+              <Search aria-hidden className="size-4" />
+              {titleSearch.isPending ? t('add.titleSearch.searching') : t('add.titleSearch.button')}
+            </button>
+          </div>
+          {searchMessage && <output className="text-sm text-slate-600">{searchMessage}</output>}
+          {titleSearch.data && titleSearch.data.results.length > 0 && (
+            <ul
+              aria-label={t('add.titleSearch.results')}
+              className="flex flex-col divide-y divide-slate-200 rounded-md border border-slate-200"
+            >
+              {titleSearch.data.results.map((result) => {
+                const { title, heading, details } = describeResult(result, (number) =>
+                  t('add.titleSearch.volume', { number }),
+                );
+                return (
+                  <li
+                    key={`${result.source}|${result.barcode}|${title}|${details}`}
+                    className="flex items-center justify-between gap-3 p-3"
+                  >
+                    <div className="min-w-0 text-sm">
+                      <p className="font-medium">{title}</p>
+                      {heading && <p className="text-slate-600">{heading}</p>}
+                      {details && <p className="truncate text-xs text-slate-500">{details}</p>}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => chooseResult(result)}
+                      aria-label={`${t('add.titleSearch.choose')} : ${title}`}
+                      className="shrink-0 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium"
+                    >
+                      {t('add.titleSearch.choose')}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </fieldset>
+
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-1 font-semibold">{t('add.barcodeSection')}</legend>
           <div className="flex items-end gap-2">

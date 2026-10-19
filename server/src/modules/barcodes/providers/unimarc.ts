@@ -21,18 +21,7 @@ function decodeXml(value: string): string {
     .replaceAll('&amp;', '&');
 }
 
-/**
- * Lit la première notice d'une réponse SRU au format `unimarcxchange` (catalogue de la BnF).
- * Un découpage simple suffit : la structure est fixe, et on évite une dépendance XML.
- */
-export function parseUnimarc(xml: string): UnimarcFields | null {
-  const start = xml.indexOf('<mxc:record');
-  if (start === -1) {
-    return null;
-  }
-  const end = xml.indexOf('</mxc:record>', start);
-  const record = end === -1 ? xml.slice(start) : xml.slice(start, end);
-
+function parseRecord(record: string): UnimarcFields {
   const fields: UnimarcFields = new Map();
   for (const chunk of record.split('<mxc:datafield ').slice(1)) {
     const tag = /^tag="(\d{3})"/.exec(chunk)?.[1];
@@ -45,6 +34,22 @@ export function parseUnimarc(xml: string): UnimarcFields | null {
     fields.set(tag, [...(fields.get(tag) ?? []), subfields]);
   }
   return fields;
+}
+
+/**
+ * Lit les notices d'une réponse SRU au format `unimarcxchange` (catalogue de la BnF).
+ * Un découpage simple suffit : la structure est fixe, et on évite une dépendance XML.
+ */
+export function parseUnimarcRecords(xml: string): UnimarcFields[] {
+  return xml
+    .split('<mxc:record')
+    .slice(1)
+    .map((chunk) => parseRecord(chunk.split('</mxc:record>')[0]));
+}
+
+/** Première notice de la réponse, ou `null` si elle n'en contient aucune. */
+export function parseUnimarc(xml: string): UnimarcFields | null {
+  return parseUnimarcRecords(xml)[0] ?? null;
 }
 
 export function subfield(field: Subfield[] | undefined, code: string): string | undefined {
