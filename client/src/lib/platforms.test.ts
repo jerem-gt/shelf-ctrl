@@ -1,6 +1,7 @@
+import type { PlatformItem } from '@shelfctrl/types';
 import { describe, expect, it } from 'vitest';
 
-import { publishUrl, titleLimit } from './platforms';
+import { findKnownPlatform, publishUrl, titleLimit } from './platforms';
 
 describe('titleLimit', () => {
   it('donne la limite de chaque plateforme, casse et espaces ignorés', () => {
@@ -41,4 +42,37 @@ describe('publishUrl', () => {
       expect(publishUrl(name)).toBeNull();
     },
   );
+});
+
+describe('publishUrl avec les réglages du compte', () => {
+  const custom: PlatformItem = {
+    id: 1,
+    name: 'BDfugue',
+    publishUrl: 'https://www.bdfugue.com/vendre',
+    isDefault: false,
+  };
+
+  it('utilise l’adresse d’une plateforme personnalisée, casse ignorée', () => {
+    expect(publishUrl('bdfugue', [custom])).toBe('https://www.bdfugue.com/vendre');
+  });
+
+  it('retombe sur l’adresse intégrée pour une plateforme connue sans adresse en base', () => {
+    const vinted: PlatformItem = { id: 2, name: 'Vinted', publishUrl: null, isDefault: true };
+
+    expect(publishUrl('Vinted', [vinted])).toBe('https://www.vinted.fr/items/new');
+  });
+
+  it('ne renvoie rien pour une plateforme personnalisée sans adresse', () => {
+    expect(publishUrl('BDfugue', [{ ...custom, publishUrl: null }])).toBeNull();
+    expect(publishUrl('BDfugue')).toBeNull();
+  });
+});
+
+describe('findKnownPlatform', () => {
+  it('reconnaît une plateforme connue, casse et espaces ignorés', () => {
+    expect(findKnownPlatform(' VINTED ')?.name).toBe('Vinted');
+    expect(findKnownPlatform('BDfugue')).toBeUndefined();
+    expect(findKnownPlatform(null)).toBeUndefined();
+    expect(findKnownPlatform('constructor')).toBeUndefined();
+  });
 });

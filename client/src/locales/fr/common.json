@@ -149,6 +149,7 @@
     "loans": "Prêts",
     "sales": "Ventes",
     "import": "Import",
+    "settings": "Réglages",
     "logout": "Se déconnecter"
   },
   "loan": {
@@ -193,6 +194,10 @@
     "loanedNote": "Rends d'abord l'exemplaire prêté pour le vendre.",
     "platform": "Plateforme",
     "platformHint": "L'annonce ci-dessous s'adapte à la plateforme (longueur du titre).",
+    "platformNone": "—",
+    "platformChoose": "Choisir une plateforme",
+    "platformUnconfigured": "Aucune plateforme réglée : toutes les plateformes connues sont proposées.",
+    "platformSettings": "Régler mes plateformes",
     "price": "Prix (€)",
     "listDate": "Date de mise en vente",
     "soldDate": "Date de vente",
@@ -301,6 +306,30 @@
       "too_long": "Texte trop long",
       "not_found_online": "Code-barres inconnu en ligne et aucun titre dans le fichier",
       "invalid": "Ligne invalide"
+    }
+  },
+  "settings": {
+    "title": "Réglages",
+    "platformsTitle": "Mes plateformes de vente",
+    "platformsIntro": "Coche les plateformes sur lesquelles tu as un compte : ce sont les seules proposées quand tu mets un exemplaire en vente. Tant que tu n'en as coché aucune, toutes les plateformes connues sont proposées.",
+    "known": "Plateformes connues",
+    "custom": "Autres plateformes",
+    "noCustom": "Aucune autre plateforme.",
+    "addTitle": "Ajouter une plateforme",
+    "name": "Nom",
+    "publishUrl": "Adresse de la page de dépôt d'annonce (facultative)",
+    "publishUrlHint": "Sert au lien « Ouvrir … pour publier l'annonce ». Adresse complète, en http ou https.",
+    "add": "Ajouter",
+    "adding": "Ajout…",
+    "saveUrl": "Enregistrer l'adresse",
+    "remove": "Retirer {{name}}",
+    "default": "Plateforme par défaut",
+    "defaultHint": "Présélectionnée quand tu mets un exemplaire en vente.",
+    "noDefault": "Aucune",
+    "loading": "Chargement des plateformes…",
+    "errors": {
+      "duplicate": "Cette plateforme existe déjà.",
+      "invalid": "Nom ou adresse invalide : l'adresse doit commencer par http:// ou https://."
     }
   },
   "salesPage": {
