@@ -15,7 +15,8 @@ Même stack et mêmes conventions que `cash-ctrl` (monorepo npm workspaces, CI G
 - `npm run dev` : serveur (`tsx watch`, port 3001) + client (Vite, port 5173, proxy `/api` et `/covers`).
 - `npm run build`, `npm run lint`, `npm run format`.
 - `npm run test` / `test:coverage` : Vitest (client et serveur).
-- `npm run typecheck:test --workspace=client` : types des tests client (`tsconfig.json` exclut les `*.test.ts(x)`).
+- `npm run typecheck:test --workspace=client` : types des tests client (`tsconfig.json` exclut les `*.test.ts(x)`) ; `npm run typecheck --workspace=server` : types du serveur (tsup ne les vérifie pas).
+- CI (`.github/workflows/ci.yml`) : alignée sur cash-ctrl, seul le smoke test de l'image diffère (variables obligatoires, `sharp`, pas de `/api/docs`). L'image n'est construite que si une release est publiée (push sur `main` ou `develop` avec un commit `feat`/`fix`).
 - Hook pre-commit : Husky + lint-staged (ESLint + Prettier sur les fichiers stagés).
 
 ## Modèle de données
