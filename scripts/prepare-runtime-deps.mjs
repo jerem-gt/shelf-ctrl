@@ -24,6 +24,18 @@ const { values: target } = parseArgs({
   },
 });
 
+// Les valeurs servent à composer des chemins supprimés ou copiés : listes fermées
+const ALLOWED = {
+  platform: ['linux', 'darwin', 'win32'],
+  arch: ['x64', 'arm64'],
+  libc: ['musl', 'glibc'],
+};
+for (const [option, values] of Object.entries(ALLOWED)) {
+  if (!values.includes(target[option])) {
+    throw new Error(`--${option} invalide : ${target[option]} (attendu : ${values.join(', ')})`);
+  }
+}
+
 // Liste partagée avec server/tsup.config.ts (modules laissés hors du bundle)
 const externals = JSON.parse(readFileSync(join(root, 'server', 'runtime-externals.json'), 'utf8'));
 
