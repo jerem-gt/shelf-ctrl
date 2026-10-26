@@ -1,4 +1,5 @@
-// Extrait dans deploy/node_modules les deps runtime du serveur bundlé (cible Docker linux/x64/musl, voir --platform/--arch/--libc).
+// Extrait dans deploy/node_modules les deps runtime du serveur bundlé (cible Docker linux/x64/musl).
+// Fichier identique dans cash-ctrl et shelf-ctrl : les différences passent par server/runtime-externals.json.
 import {
   cpSync,
   existsSync,
@@ -11,30 +12,12 @@ import {
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { stdout } from 'node:process';
-import { parseArgs } from 'node:util';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = join(root, 'deploy', 'node_modules');
 
-const { values: target } = parseArgs({
-  options: {
-    platform: { type: 'string', default: 'linux' },
-    arch: { type: 'string', default: 'x64' },
-    libc: { type: 'string', default: 'musl' },
-  },
-});
-
-// Les valeurs servent à composer des chemins supprimés ou copiés : listes fermées
-const ALLOWED = {
-  platform: ['linux', 'darwin', 'win32'],
-  arch: ['x64', 'arm64'],
-  libc: ['musl', 'glibc'],
-};
-for (const [option, values] of Object.entries(ALLOWED)) {
-  if (!values.includes(target[option])) {
-    throw new Error(`--${option} invalide : ${target[option]} (attendu : ${values.join(', ')})`);
-  }
-}
+// Cible figée (image Docker Alpine) : aucune entrée externe ne compose les chemins copiés ou supprimés
+const target = { platform: 'linux', arch: 'x64', libc: 'musl' };
 
 // Liste partagée avec server/tsup.config.ts (modules laissés hors du bundle)
 const externals = JSON.parse(readFileSync(join(root, 'server', 'runtime-externals.json'), 'utf8'));
@@ -43,7 +26,7 @@ const externals = JSON.parse(readFileSync(join(root, 'server', 'runtime-external
 const nativePlatform =
   target.platform === 'linux' && target.libc === 'musl' ? 'linuxmusl' : target.platform;
 
-// sharp charge son binaire depuis @img/sharp-<plateforme>-<arch>, qui tire libvips en optionalDependencies.
+// sharp (si externe) charge son binaire depuis @img/sharp-<plateforme>-<arch>, qui tire libvips en optionalDependencies.
 // npm n'installe que ceux de l'hôte : le script doit tourner sur la plateforme cible (CI Alpine).
 const sharpBinary = `@img/sharp-${nativePlatform}-${target.arch}`;
 
@@ -78,7 +61,7 @@ function collect(name, fromDir) {
     collect(dep, dir);
 }
 externals.forEach((name) => collect(name, join(root, 'server')));
-collect(sharpBinary, packages.get('sharp'));
+if (packages.has('sharp')) collect(sharpBinary, packages.get('sharp'));
 
 // Parcours récursif : visit(cheminComplet) pour chaque fichier
 function walkFiles(dir, visit) {

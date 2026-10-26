@@ -31,7 +31,8 @@ function stubServer(initial: PlatformItem[] = []) {
       if (items.some((item) => item.name.toLowerCase() === body.name.toLowerCase())) {
         return HttpResponse.json({ error: 'duplicate' }, { status: 409 });
       }
-      if (body.publishUrl?.startsWith('javascript:')) {
+      // Comme le serveur : adresse de dépôt en http/https seulement
+      if (body.publishUrl !== undefined && !/^https?:\/\//i.test(body.publishUrl)) {
         return HttpResponse.json({ error: 'validation' }, { status: 400 });
       }
       const created = {
