@@ -37,7 +37,7 @@ Titre → édition → exemplaire :
 - **Strict Mode** : jamais `any`, préférer `unknown`.
 - **Path Aliases** : `@/*` pour les imports dans `src/`.
 - Interdiction des variables/paramètres inutilisés et des fallthrough dans les switchs.
-- **Target** : client ES2023 / serveur ES2024.
+- **Target** : client ES2023 / serveur ES2025.
 - **Ternaires imbriqués** (Sonar) : interdits ; extraire dans une variable `let` avec `if/else` ou une fonction nommée.
 - **Conditions négatives** (Sonar) : mettre la branche positive en premier dans un `if/else`.
 
