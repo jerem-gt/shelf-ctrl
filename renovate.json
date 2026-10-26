@@ -3,13 +3,19 @@
   "baseBranchPatterns": ["develop"],
   "semanticCommits": "enabled",
   "rangeStrategy": "bump",
+  "timezone": "Europe/Paris",
   "labels": ["dependencies"],
   "lockFileMaintenance": {
     "enabled": true,
-    "schedule": ["before 5am on monday"],
-    "automerge": false
+    "schedule": ["on monday"],
+    "automerge": true
   },
   "packageRules": [
+    {
+      "description": "Mineures/patchs automergées une fois la CI verte (check requis sur develop)",
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": true
+    },
     {
       "description": "Dockerfile et ci.yml (container) montent de version Node ensemble",
       "matchPackageNames": ["node"],
