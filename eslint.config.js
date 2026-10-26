@@ -20,7 +20,8 @@ export default [
     languageOptions: {
       parserOptions: {
         projectService: {
-          allowDefaultProject: ['*.config.ts', '*/*.config.ts'],
+          // server/*.config.ts est couvert par server/tsconfig.json
+          allowDefaultProject: ['*.config.ts', 'client/*.config.ts'],
         },
         tsconfigRootDir: import.meta.dirname,
       },
