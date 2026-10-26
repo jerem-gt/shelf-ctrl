@@ -4,15 +4,13 @@ on:
   push:
     branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
   workflow_dispatch:
 
-# Annule le run précédent du même groupe quand un nouveau démarre.
-# Pour un push sur develop avec une PR ouverte, les deux événements partagent
-# la même clé (head_ref=develop ou ref_name=develop) → un seul run actif à la fois.
+# Groupes séparés push / PR : seuls les runs de PR sont annulés (un run push peut être en pleine release)
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   REGISTRY: ghcr.io
