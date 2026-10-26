@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch --no-cache src/index.ts",
-    "build": "tsup src/index.ts --clean --minify --format esm",
+    "build": "tsup",
     "start": "node dist/index.js",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",

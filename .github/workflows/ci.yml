@@ -75,8 +75,9 @@ jobs:
           npm run build --workspace=server
           npm run build --workspace=client
 
-      - name: Prune dev deps
-        run: npm prune --omit=dev
+      # Extrait les seules deps runtime (natifs musl/x64) dans deploy/node_modules
+      - name: Prepare runtime deps
+        run: node scripts/prepare-runtime-deps.mjs
 
       # Artifact léger pour Sonar : uniquement les rapports de coverage
       - name: Upload coverage
@@ -93,7 +94,7 @@ jobs:
         with:
           name: build-assets
           path: |
-            node_modules
+            deploy/node_modules
             server/dist
             client/dist
 
@@ -196,6 +197,35 @@ jobs:
       - name: Compute Dozzle icon
         id: dozzle_icon
         run: echo "value=data:image/svg+xml;base64,$(base64 -w0 client/public/favicon.svg)" >> "$GITHUB_OUTPUT"
+
+      # Build local pour le smoke test ; le build de push réutilise le cache du builder
+      - name: Build image (smoke test)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: .
+          load: true
+          push: false
+          tags: shelfctrl:smoke
+          provenance: false
+          build-args: |
+            APP_VERSION=${{ needs.release.outputs.new_release_version || 'dev' }}
+            DOZZLE_ICON=${{ steps.dozzle_icon.outputs.value }}
+          cache-from: type=gha
+
+      # Démarre l'image et exerce santé, front, login (bcrypt + SQLite) et sharp avant le push
+      - name: Smoke test image
+        run: |
+          docker run -d --name smoke -p 3000:3000             -e SESSION_SECRET=smoke-secret-smoke-secret-smoke-secret             -e ADMIN_PASSWORD=smoke-password             shelfctrl:smoke
+          fail() { echo "Smoke test KO : $1"; docker logs smoke; exit 1; }
+          for _ in $(seq 1 30); do
+            curl -fsS http://localhost:3000/api/health && break
+            sleep 1
+          done
+          curl -fsS http://localhost:3000/api/health > /dev/null || fail "/api/health"
+          curl -fsS -o /dev/null http://localhost:3000/ || fail "/"
+          curl -fsS -o /dev/null -X POST -H 'Content-Type: application/json'             -d '{"username":"admin","password":"smoke-password"}'             http://localhost:3000/api/auth/login || fail "/api/auth/login"
+          docker exec smoke node -e "require('sharp')({create:{width:1,height:1,channels:3,background:'#000'}}).webp().toBuffer()"             || fail "sharp"
+          docker rm -f smoke
 
       - name: Build and push
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
