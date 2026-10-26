@@ -80,13 +80,7 @@ function pathInt(name: string) {
 const pId = [pathInt('id')];
 
 const IMAGE_TYPES = ['image/*', 'application/octet-stream'] as const;
-const CSV_TYPES = [
-  'text/csv',
-  'text/plain',
-  'application/csv',
-  'application/vnd.ms-excel',
-  'application/octet-stream',
-] as const;
+const CSV_TYPES = ['application/octet-stream'] as const;
 
 // ─── spec ──────────────────────────────────────────────────────────────────
 

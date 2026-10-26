@@ -55,6 +55,11 @@ function toRequestInit(method: string, body: unknown): RequestInit {
   return { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
 }
 
+// Type non « simple » au sens CORS : un formulaire d'un autre site ne peut pas l'envoyer (anti-CSRF).
+function asOctetStream(file: Blob): Blob {
+  return file.slice(0, file.size, 'application/octet-stream');
+}
+
 async function readErrorCode(res: Response): Promise<string | null> {
   try {
     const body: unknown = await res.json();
@@ -157,8 +162,9 @@ export const api = {
   },
   import: {
     templateUrl: '/api/import/template',
-    preview: (file: Blob) => request<ImportPreview>('POST', '/api/import/preview', file),
-    start: (file: Blob) => request<ImportJob>('POST', '/api/import', file),
+    preview: (file: Blob) =>
+      request<ImportPreview>('POST', '/api/import/preview', asOctetStream(file)),
+    start: (file: Blob) => request<ImportJob>('POST', '/api/import', asOctetStream(file)),
     job: (id: string) => request<ImportJob>('GET', `/api/import/${encodeURIComponent(id)}`),
   },
   images: {

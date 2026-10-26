@@ -81,9 +81,9 @@ function setup(
 type TestApp = ReturnType<typeof setup>;
 
 const csv = (...lines: string[]) => `${lines.join('\n')}\n`;
-const preview = (app: TestApp, body: string | Buffer, type = 'text/csv') =>
+const preview = (app: TestApp, body: string | Buffer, type = 'application/octet-stream') =>
   request(app).post('/api/import/preview').set('Content-Type', type).send(body);
-const start = (app: TestApp, body: string, type = 'text/csv') =>
+const start = (app: TestApp, body: string, type = 'application/octet-stream') =>
   request(app).post('/api/import').set('Content-Type', type).send(body);
 
 async function runImport(app: TestApp, body: string): Promise<ImportJob> {
@@ -235,6 +235,18 @@ describe('POST /api/import/preview', () => {
 
     expect(res.status).toBe(400);
     expect(res.body).toEqual({ error: 'empty_file' });
+  });
+
+  it('ignore un corps text/plain, envoyable par un formulaire cross-site (anti-CSRF)', async () => {
+    const body = csv('Titre;Auteurs', 'Le Lotus bleu;Hergé');
+
+    for (const res of [
+      await preview(setup(), body, 'text/plain'),
+      await start(setup(), body, 'text/plain'),
+    ]) {
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ error: 'empty_file' });
+    }
   });
 
   it('lit un fichier Windows-1252 et un fichier sans type MIME', async () => {

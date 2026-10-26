@@ -11,11 +11,8 @@ import {
 } from './import.service.js';
 import { MAX_ROWS, NoColumnsError } from './rows.js';
 
-/** Corps brut : le fichier est envoyé tel quel (CSV, texte ou type inconnu selon le navigateur). */
-const rawFile = express.raw({
-  type: ['text/*', 'application/csv', 'application/vnd.ms-excel', 'application/octet-stream'],
-  limit: '2mb',
-});
+/** Corps brut en octet-stream uniquement : text/plain, envoyable par un formulaire cross-site, est ignoré (anti-CSRF). */
+const rawFile = express.raw({ type: 'application/octet-stream', limit: '2mb' });
 
 /**
  * Monté sur `/api/import` : modèle de fichier, aperçu sans écriture, import en tâche de fond

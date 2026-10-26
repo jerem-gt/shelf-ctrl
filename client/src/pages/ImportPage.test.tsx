@@ -82,7 +82,7 @@ describe('ImportPage — fichier', () => {
     expect(
       await screen.findByText('3 lignes lues : 2 importables, 1 à corriger.'),
     ).toBeInTheDocument();
-    expect(received).toEqual({ type: 'text/csv', text: 'Titre\nTintin\n' });
+    expect(received).toEqual({ type: 'application/octet-stream', text: 'Titre\nTintin\n' });
     expect(screen.getByText(/2 lignes seront complétées en ligne/)).toBeInTheDocument();
     expect(
       screen.getByText(/1 lignes correspondent à une édition déjà présente/),
