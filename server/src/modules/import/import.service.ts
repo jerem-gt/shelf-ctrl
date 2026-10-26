@@ -270,9 +270,10 @@ export function createImportService(db: Database, deps: ImportDeps) {
 
   const run = async (rows: ParsedRow[], job: ImportJob): Promise<void> => {
     try {
-      // Séquentiel voulu : sources en ligne limitées en débit, doublons du fichier rattachés aux
-      // éditions créées par les lignes précédentes, progression dans l'ordre du fichier.
-      for (const row of rows) {
+      // Séquentiel (reduce chaîné) : sources en ligne limitées en débit, doublons du fichier
+      // rattachés aux éditions créées par les lignes précédentes, progression dans l'ordre.
+      await rows.reduce(async (previous, row) => {
+        await previous;
         try {
           await processRow(row, job);
         } catch (error) {
@@ -285,7 +286,7 @@ export function createImportService(db: Database, deps: ImportDeps) {
           });
         }
         job.processed += 1;
-      }
+      }, Promise.resolve());
       job.status = 'done';
     } catch (error) {
       console.error('[import]', error);
