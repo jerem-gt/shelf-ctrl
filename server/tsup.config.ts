@@ -1,0 +1,23 @@
+import { defineConfig } from 'tsup';
+
+import externals from './runtime-externals.json' with { type: 'json' };
+
+// Modules natifs (better-sqlite3, bcrypt, sharp) : non bundlables, livrés par scripts/prepare-runtime-deps.mjs
+const bundled = new RegExp(`^(?!(${externals.join('|')})(/|$))`);
+
+export default defineConfig({
+  entry: ['src/index.ts'],
+  format: 'esm',
+  platform: 'node',
+  target: 'node24',
+  clean: true,
+  minify: true,
+  splitting: false,
+  external: externals,
+  // noExternal est évalué avant external : on bundle tout sauf les externes
+  noExternal: [bundled],
+  // Les deps CJS bundlées font des require() de builtins
+  banner: {
+    js: "import { createRequire as __cjsCreateRequire } from 'node:module'; const require = __cjsCreateRequire(import.meta.url);",
+  },
+});
