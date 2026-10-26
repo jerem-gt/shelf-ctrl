@@ -6,7 +6,7 @@ import type { TitleSearchProvider } from './providers/types.js';
 
 const MAX_RESULTS = 20;
 
-const querySchema = z.object({ q: z.string().trim().min(2).max(100) });
+export const querySchema = z.object({ q: z.string().trim().min(2).max(100) });
 
 /** Un résultat de chaque source à tour de rôle : aucune ne monopolise la liste tronquée. */
 function interleave(lists: TitleSearchResult[][]): TitleSearchResult[] {

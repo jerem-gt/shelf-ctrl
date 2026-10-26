@@ -215,7 +215,7 @@ jobs:
             DOZZLE_ICON=${{ steps.dozzle_icon.outputs.value }}
           cache-from: type=gha
 
-      # Démarre l'image et exerce santé, front, login (bcrypt + SQLite) et sharp avant le push
+      # Démarre l'image et exerce santé, front, docs, login (bcrypt + SQLite) et sharp avant le push
       - name: Smoke test image
         run: |
           docker run -d --name smoke -p 3000:3000 \
@@ -229,6 +229,7 @@ jobs:
           done
           curl -fsS http://localhost:3000/api/health > /dev/null || fail "/api/health"
           curl -fsS -o /dev/null http://localhost:3000/ || fail "/"
+          curl -fsS -o /dev/null http://localhost:3000/api/docs/ || fail "/api/docs/"
           curl -fsS -o /dev/null -X POST -H 'Content-Type: application/json' \
             -d '{"username":"admin","password":"smoke-password"}' \
             http://localhost:3000/api/auth/login || fail "/api/auth/login"

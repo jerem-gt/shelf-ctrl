@@ -22,6 +22,7 @@ import { createSalesRouter } from './modules/sales/sales.routes.js';
 import { createDefaultTitleSearchProviders } from './modules/titles/providers/index.js';
 import type { TitleSearchProvider } from './modules/titles/providers/types.js';
 import { createTitlesRouter } from './modules/titles/titles.routes.js';
+import { createDocsRouter } from './openapi/router.js';
 import { SQLiteSessionStore } from './session-store.js';
 
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -97,6 +98,9 @@ export function createApp(db: Database, options: AppOptions = {}) {
     res.json(body);
   });
 
+  // Documentation de l'API (Swagger UI et spec), publique comme dans cash-ctrl : aucune donnée.
+  app.use('/api/docs', createDocsRouter());
+
   if (options.auth) {
     app.use(
       session({
@@ -116,7 +120,7 @@ export function createApp(db: Database, options: AppOptions = {}) {
       }),
     );
     app.use('/api/auth', createAuthRouter(db));
-    // /api/health et /api/auth/* sont déclarés avant : tout le reste de l'API exige une session.
+    // /api/health, /api/docs et /api/auth/* sont déclarés avant : tout le reste de l'API exige une session.
     app.use('/api', requireAuth);
     app.use(['/covers', '/photos'], requireAuth);
   }

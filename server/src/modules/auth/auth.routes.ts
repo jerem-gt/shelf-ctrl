@@ -9,7 +9,7 @@ import { BCRYPT_COST, createAuthRepo } from './auth.repo.js';
 
 export const SESSION_COOKIE = 'shelfctrl.sid';
 
-const loginSchema = z.object({
+export const loginSchema = z.object({
   username: z.string().min(1).max(200),
   password: z.string().min(1).max(200),
 });

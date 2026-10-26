@@ -1,1 +1,1 @@
-["better-sqlite3", "bcrypt", "sharp"]
+["better-sqlite3", "bcrypt", "sharp", "swagger-ui-express", "swagger-ui-dist"]

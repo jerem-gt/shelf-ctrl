@@ -45,6 +45,7 @@
   "allowScripts": {
     "bcrypt": false,
     "better-sqlite3": false,
-    "esbuild": false
+    "esbuild": false,
+    "@scarf/scarf": false
   }
 }
