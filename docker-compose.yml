@@ -41,7 +41,8 @@ services:
       - NODE_ENV=production
       - PORT=4101
       - DATA_DIR=/data
-      - SESSION_SECRET=${SESSION_SECRET}
+      # Secret distinct de la prod : les cookies ne sont pas isolés par port sur le même hôte
+      - SESSION_SECRET=${SESSION_SECRET_DEV}
       - ADMIN_USER=admin
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - SECURE_COOKIE=true
