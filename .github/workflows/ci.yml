@@ -18,7 +18,7 @@ jobs:
   # CI, Sonar, release, image Docker et ménage : workflow commun à cash-ctrl et shelf-ctrl.
   # Même tag que la devDependency @jerem-gt/ctrl-shared (package.json).
   app:
-    uses: jerem-gt/ctrl-shared/.github/workflows/app.yml@1fe45c074a20746df9d8c7ca222050699e3591f6 # v1.1.0
+    uses: jerem-gt/ctrl-shared/.github/workflows/app.yml@39159a155580e92ad9ab1ad99defa60f1ff5689a # v1.1.1
     # Maximum accordé au workflow commun ; chacun de ses jobs n'en demande qu'une partie
     permissions:
       contents: write
