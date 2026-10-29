@@ -24,6 +24,12 @@ services:
       - LOG_LEVEL=INFO
       - GOOGLE_BOOKS_API_KEY=${GOOGLE_BOOKS_API_KEY:-}
       - TMDB_API_KEY=${TMDB_API_KEY:-}
+      # E-mails « mot de passe oublié » : variables de la stack, facultatives (sans SMTP, le lien est dans les logs)
+      - APP_URL=${APP_URL:-}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
     networks:
       mynet:
         ipv4_address: 172.27.0.2
@@ -50,6 +56,12 @@ services:
       - LOG_LEVEL=INFO
       - GOOGLE_BOOKS_API_KEY=${GOOGLE_BOOKS_API_KEY:-}
       - TMDB_API_KEY=${TMDB_API_KEY:-}
+      # Même SMTP que la prod, seule l'URL publique change
+      - APP_URL=${APP_URL_DEV:-}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
     networks:
       mynet:
         ipv4_address: 172.27.0.3
