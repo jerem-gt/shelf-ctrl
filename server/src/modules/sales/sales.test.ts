@@ -2,11 +2,10 @@ import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 
 import { createApp } from '../../app.js';
-import { createDb, initDatabase } from '../../db/init.js';
+import { createTestDbWithUser } from '../../tests/testDb.js';
 
 function setup() {
-  const db = createDb(':memory:');
-  initDatabase(db);
+  const { db } = createTestDbWithUser();
   return { db, app: createApp(db, { barcodeProviders: [] }) };
 }
 
@@ -259,7 +258,9 @@ describe('GET, PATCH et DELETE /api/copies/:id/sale', () => {
     await listForSale(app, copyId);
 
     expect(() =>
-      db.prepare("INSERT INTO sales (copy_id, listed_at) VALUES (?, date('now'))").run(copyId),
+      db
+        .prepare("INSERT INTO sales (user_id, copy_id, listed_at) VALUES (1, ?, date('now'))")
+        .run(copyId),
     ).toThrow();
   });
 });

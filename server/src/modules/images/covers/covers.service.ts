@@ -24,6 +24,7 @@ export function createDefaultCoverProviders(
 
 interface EditionRow {
   id: number;
+  user_id: number;
   format: MediaFormat;
   barcode: string | null;
   cover_path: string | null;
@@ -41,22 +42,29 @@ export function createCoverService(
   /** Recherches en cours par édition : une seconde demande s'y rattache au lieu de la doubler. */
   const inFlight = new Map<number, Promise<FetchCoverOutcome>>();
 
-  const findEdition = (id: number): EditionRow | undefined =>
+  const findEdition = (userId: number, id: number): EditionRow | undefined =>
     db
       .prepare(
-        `SELECT e.id, e.format, e.barcode, e.cover_path, w.title, w.year
+        `SELECT e.id, e.user_id, e.format, e.barcode, e.cover_path, w.title, w.year
          FROM editions e JOIN works w ON w.id = e.work_id
-         WHERE e.id = ?`,
+         WHERE e.id = ? AND e.user_id = ?`,
       )
-      .get(id) as EditionRow | undefined;
+      .get(id, userId) as EditionRow | undefined;
 
   /** Enregistre l'image et retire l'ancienne ; `null` si l'édition a disparu entre-temps. */
-  const setCover = async (editionId: number, image: Buffer): Promise<string | null> => {
+  const setCover = async (
+    userId: number,
+    editionId: number,
+    image: Buffer,
+  ): Promise<string | null> => {
+    if (!findEdition(userId, editionId)) {
+      return null;
+    }
     const name = await store.save('covers', editionId, image);
-    const previous = findEdition(editionId)?.cover_path ?? null;
+    const previous = findEdition(userId, editionId)?.cover_path ?? null;
     const changed = db
-      .prepare('UPDATE editions SET cover_path = ? WHERE id = ?')
-      .run(name, editionId);
+      .prepare('UPDATE editions SET cover_path = ? WHERE id = ? AND user_id = ?')
+      .run(name, editionId, userId);
     if (changed.changes === 0) {
       await store.remove('covers', name);
       return null;
@@ -78,10 +86,10 @@ export function createCoverService(
       try {
         const image = await provider.find(query);
         // La recherche dure plusieurs secondes : une pochette envoyée entre-temps l'emporte.
-        if (!replace && findEdition(edition.id)?.cover_path) {
+        if (!replace && findEdition(edition.user_id, edition.id)?.cover_path) {
           return 'has_cover';
         }
-        if (image && (await setCover(edition.id, image)) !== null) {
+        if (image && (await setCover(edition.user_id, edition.id, image)) !== null) {
           return 'fetched';
         }
       } catch (error) {
@@ -96,8 +104,8 @@ export function createCoverService(
     setCover,
 
     /** `false` : édition inconnue. */
-    async clearCover(editionId: number): Promise<boolean> {
-      const edition = findEdition(editionId);
+    async clearCover(userId: number, editionId: number): Promise<boolean> {
+      const edition = findEdition(userId, editionId);
       if (!edition) {
         return false;
       }
@@ -110,8 +118,12 @@ export function createCoverService(
      * Cherche la pochette en ligne, source après source. Sans `replace`, une pochette existante
      * est conservée. Une source en erreur ou qui renvoie une image illisible est ignorée.
      */
-    async fetchForEdition(editionId: number, replace: boolean): Promise<FetchCoverOutcome> {
-      const edition = findEdition(editionId);
+    async fetchForEdition(
+      userId: number,
+      editionId: number,
+      replace: boolean,
+    ): Promise<FetchCoverOutcome> {
+      const edition = findEdition(userId, editionId);
       if (!edition) {
         return 'unknown_edition';
       }

@@ -1,6 +1,7 @@
 import type { Database } from 'better-sqlite3';
 import { Router } from 'express';
 
+import { currentUserId } from '../../middleware.js';
 import { parseBarcode } from './barcode.js';
 import { createBarcodesService } from './barcodes.service.js';
 import type { BarcodeProvider } from './providers/types.js';
@@ -15,7 +16,7 @@ export function createBarcodesRouter(db: Database, providers: readonly BarcodePr
       res.status(400).json({ error: 'invalid_barcode' });
       return;
     }
-    const result = await service.resolve(barcode);
+    const result = await service.resolve(currentUserId(res), barcode);
     if (result) {
       res.json(result);
     } else {

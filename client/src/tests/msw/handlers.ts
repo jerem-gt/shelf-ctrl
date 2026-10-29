@@ -1,12 +1,43 @@
 import type { CopyItem } from '@shelfctrl/types';
 import { http, HttpResponse } from 'msw';
 
-import { BORROWERS, COPIES, COPY_TINTIN, LOAN_OPEN, SALE_LISTED, SALE_SOLD } from '../fixtures';
+import {
+  BORROWERS,
+  COPIES,
+  COPY_TINTIN,
+  LOAN_OPEN,
+  SALE_LISTED,
+  SALE_SOLD,
+  SESSION_ADMIN,
+  USER_ADMIN,
+  USER_BOB,
+} from '../fixtures';
 
 export const handlers = [
-  http.get('/api/auth/me', () => HttpResponse.json({ username: 'admin' })),
-  http.post('/api/auth/login', () => HttpResponse.json({ username: 'admin' })),
+  http.get('/api/auth/me', () => HttpResponse.json(SESSION_ADMIN)),
+  http.post('/api/auth/login', () => HttpResponse.json(SESSION_ADMIN)),
   http.post('/api/auth/logout', () => new HttpResponse(null, { status: 204 })),
+  http.get('/api/auth/setup', () => HttpResponse.json({ required: false })),
+  http.post('/api/auth/setup', () => HttpResponse.json(SESSION_ADMIN)),
+  http.patch('/api/auth/profile', async ({ request }) => {
+    const { username, email } = (await request.json()) as { username?: string; email?: string };
+    return HttpResponse.json({
+      ...SESSION_ADMIN,
+      ...(username === undefined ? {} : { username }),
+      ...(email === undefined ? {} : { email }),
+    });
+  }),
+  http.post('/api/auth/change-password', () => new HttpResponse(null, { status: 204 })),
+  http.post('/api/auth/password/forgot', () => new HttpResponse(null, { status: 204 })),
+  http.post('/api/auth/password/reset', () => new HttpResponse(null, { status: 204 })),
+  http.post('/api/auth/test-email', () => new HttpResponse(null, { status: 204 })),
+  http.get('/api/users', () => HttpResponse.json({ items: [USER_ADMIN, USER_BOB] })),
+  http.post('/api/users', async ({ request }) => {
+    const body = (await request.json()) as { username: string };
+    return HttpResponse.json({ ...USER_BOB, id: 3, username: body.username }, { status: 201 });
+  }),
+  http.patch('/api/users/:id', () => HttpResponse.json(USER_BOB)),
+  http.delete('/api/users/:id', () => new HttpResponse(null, { status: 204 })),
   http.get('/api/copies', () => HttpResponse.json({ items: COPIES, total: COPIES.length })),
   http.post('/api/copies', () => HttpResponse.json(COPY_TINTIN, { status: 201 })),
   http.get('/api/copies/:id', ({ params }) => {

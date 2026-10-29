@@ -2,7 +2,7 @@ import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 
 import { createApp } from '../../app.js';
-import { createDb, initDatabase } from '../../db/init.js';
+import { createTestDbWithUser } from '../../tests/testDb.js';
 import { createBnfTitleSearch } from './providers/bnf.js';
 import { createDefaultTitleSearchProviders } from './providers/index.js';
 import { createOpenLibraryTitleSearch } from './providers/openLibrary.js';
@@ -39,8 +39,7 @@ const stubProvider = (
 ): TitleSearchProvider => ({ source, search });
 
 function setup(providers: TitleSearchProvider[]) {
-  const db = createDb(':memory:');
-  initDatabase(db);
+  const { db } = createTestDbWithUser();
   return createApp(db, {
     barcodeProviders: [],
     titleSearchProviders: providers,

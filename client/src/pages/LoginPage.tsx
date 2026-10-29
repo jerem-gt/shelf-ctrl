@@ -1,10 +1,10 @@
 import { type SyntheticEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router';
 
+import { AUTH_LINK_CLASS, AuthCard } from '@/components/AuthCard';
 import { useLogin } from '@/hooks/useAuth';
-
-const FIELD_CLASS =
-  'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-slate-500 focus:outline-none';
+import { FIELD_CLASS, LABEL_CLASS, PRIMARY_BUTTON_CLASS } from '@/lib/formClasses';
 
 export function LoginPage() {
   const { t } = useTranslation();
@@ -18,15 +18,9 @@ export function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <form
-        onSubmit={handleSubmit}
-        className="flex w-full max-w-sm flex-col gap-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
-      >
-        <h1 className="text-xl font-bold">{t('appName')}</h1>
-        <h2 className="text-sm font-semibold text-slate-600">{t('login.title')}</h2>
-
-        <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+    <AuthCard subtitle={t('login.title')} error={login.error?.message}>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <label className={LABEL_CLASS}>
           {t('login.username')}
           <input
             required
@@ -37,7 +31,7 @@ export function LoginPage() {
             className={FIELD_CLASS}
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+        <label className={LABEL_CLASS}>
           {t('login.password')}
           <input
             required
@@ -49,21 +43,13 @@ export function LoginPage() {
             className={FIELD_CLASS}
           />
         </label>
-
-        {login.error && (
-          <p role="alert" className="text-sm text-red-700">
-            {login.error.message}
-          </p>
-        )}
-
-        <button
-          type="submit"
-          disabled={login.isPending}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
-        >
+        <button type="submit" disabled={login.isPending} className={PRIMARY_BUTTON_CLASS}>
           {login.isPending ? t('login.submitting') : t('login.submit')}
         </button>
       </form>
-    </main>
+      <Link to="/forgot-password" className={AUTH_LINK_CLASS}>
+        {t('login.forgotLink')}
+      </Link>
+    </AuthCard>
   );
 }

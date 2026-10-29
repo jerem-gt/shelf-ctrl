@@ -7,8 +7,8 @@ import express from 'express';
 
 import { createApp } from './app.js';
 import { createDb, DATA_DIR, initDatabase } from './db/init.js';
-import { syncAdminUser } from './modules/auth/auth.repo.js';
 import { loadAuthConfig } from './modules/auth/config.js';
+import { announceSetupToken, SetupToken } from './modules/auth/setup.js';
 import { createDefaultCoverProviders } from './modules/images/covers/covers.service.js';
 
 const PORT = Number.parseInt(process.env.PORT ?? '3001');
@@ -19,12 +19,22 @@ const auth = loadAuthConfig(process.env);
 
 const db = createDb();
 initDatabase(db);
-console.log(
-  `[auth] compte « ${auth.adminUser} » : ${syncAdminUser(db, auth.adminUser, auth.adminPassword)}`,
-);
+if (auth.obsoleteAdminVariables) {
+  console.warn(
+    '[auth] ADMIN_USER / ADMIN_PASSWORD sont obsolètes et ignorées : les comptes se gèrent dans l’application.',
+  );
+}
+
+const setupToken = new SetupToken();
+announceSetupToken(db, setupToken, (message) => console.log(`[auth] ${message}`));
 
 const app = createApp(db, {
-  auth: { sessionSecret: auth.sessionSecret, secureCookies: auth.secureCookies },
+  auth: {
+    sessionSecret: auth.sessionSecret,
+    secureCookies: auth.secureCookies,
+    appUrl: auth.appUrl,
+    setupToken,
+  },
   images: { dataDir: DATA_DIR, coverProviders: createDefaultCoverProviders() },
   healthExtraCheck: IS_PROD
     ? () => (fs.existsSync(path.join(CLIENT_DIST, 'index.html')) ? null : 'frontend')

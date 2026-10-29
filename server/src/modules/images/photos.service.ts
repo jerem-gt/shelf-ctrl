@@ -4,19 +4,24 @@ import type { ImageStore } from './imageStore.js';
 
 /** Photo d'un exemplaire (état réel de l'objet, utile pour une annonce). */
 export function createPhotoService(db: Database, store: ImageStore) {
-  const currentPhoto = (copyId: number): { photo_path: string | null } | undefined =>
-    db.prepare('SELECT photo_path FROM copies WHERE id = ?').get(copyId) as
+  const currentPhoto = (
+    userId: number,
+    copyId: number,
+  ): { photo_path: string | null } | undefined =>
+    db.prepare('SELECT photo_path FROM copies WHERE id = ? AND user_id = ?').get(copyId, userId) as
       { photo_path: string | null } | undefined;
 
   return {
     /** Nom du nouveau fichier, ou `null` si l'exemplaire est inconnu. */
-    async set(copyId: number, image: Buffer): Promise<string | null> {
-      if (!currentPhoto(copyId)) {
+    async set(userId: number, copyId: number, image: Buffer): Promise<string | null> {
+      if (!currentPhoto(userId, copyId)) {
         return null;
       }
       const name = await store.save('photos', copyId, image);
-      const previous = currentPhoto(copyId);
-      const changed = db.prepare('UPDATE copies SET photo_path = ? WHERE id = ?').run(name, copyId);
+      const previous = currentPhoto(userId, copyId);
+      const changed = db
+        .prepare('UPDATE copies SET photo_path = ? WHERE id = ? AND user_id = ?')
+        .run(name, copyId, userId);
       if (changed.changes === 0) {
         // L'exemplaire a été supprimé pendant la conversion.
         await store.remove('photos', name);
@@ -29,8 +34,8 @@ export function createPhotoService(db: Database, store: ImageStore) {
     },
 
     /** `false` : exemplaire inconnu. */
-    async clear(copyId: number): Promise<boolean> {
-      const row = currentPhoto(copyId);
+    async clear(userId: number, copyId: number): Promise<boolean> {
+      const row = currentPhoto(userId, copyId);
       if (!row) {
         return false;
       }

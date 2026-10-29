@@ -14,7 +14,9 @@ import type {
   SaleItem,
   SaleListItem,
   SessionResponse,
+  SetupStatusResponse,
   TitleSearchResponse,
+  UserItem,
 } from '@shelfctrl/types';
 
 import i18n from '@/i18n';
@@ -40,7 +42,12 @@ const ERROR_KEYS: Record<number, string> = {
   429: 'errors.tooManyAttempts',
 };
 
-function errorMessage(status: number): string {
+/** Message propre au code d'erreur du serveur s'il est traduit, sinon celui du statut HTTP. */
+function errorMessage(status: number, code: string | null): string {
+  const codeKey = `errors.codes.${code}`;
+  if (code !== null && i18n.exists(codeKey)) {
+    return i18n.t(codeKey);
+  }
   return i18n.t(ERROR_KEYS[status] ?? 'errors.generic');
 }
 
@@ -80,7 +87,8 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
     throw new ApiError(i18n.t('errors.network'), 0);
   }
   if (!res.ok) {
-    throw new ApiError(errorMessage(res.status), res.status, await readErrorCode(res));
+    const code = await readErrorCode(res);
+    throw new ApiError(errorMessage(res.status, code), res.status, code);
   }
   if (res.status === 204) {
     return undefined as T;
@@ -150,6 +158,31 @@ export interface LoginPayload {
   password: string;
 }
 
+export interface SetupPayload extends LoginPayload {
+  token: string;
+}
+
+/** Nom et e-mail du compte connecté ; `email: null` l'efface. */
+export interface ProfilePayload {
+  currentPassword: string;
+  username?: string;
+  email?: string | null;
+}
+
+export interface CreateUserPayload {
+  username: string;
+  password: string;
+  email?: string | null;
+  isAdmin?: boolean;
+}
+
+export interface UpdateUserPayload {
+  username?: string;
+  password?: string;
+  email?: string | null;
+  isAdmin?: boolean;
+}
+
 export const api = {
   platforms: {
     list: () => request<{ items: PlatformItem[] }>('GET', '/api/platforms'),
@@ -182,6 +215,24 @@ export const api = {
     me: () => request<SessionResponse>('GET', '/api/auth/me'),
     login: (payload: LoginPayload) => request<SessionResponse>('POST', '/api/auth/login', payload),
     logout: () => request<undefined>('POST', '/api/auth/logout'),
+    setupStatus: () => request<SetupStatusResponse>('GET', '/api/auth/setup'),
+    setup: (payload: SetupPayload) => request<SessionResponse>('POST', '/api/auth/setup', payload),
+    updateProfile: (payload: ProfilePayload) =>
+      request<SessionResponse>('PATCH', '/api/auth/profile', payload),
+    changePassword: (current: string, next: string) =>
+      request<undefined>('POST', '/api/auth/change-password', { current, next }),
+    forgotPassword: (identifier: string) =>
+      request<undefined>('POST', '/api/auth/password/forgot', { identifier }),
+    resetPassword: (token: string, password: string) =>
+      request<undefined>('POST', '/api/auth/password/reset', { token, password }),
+    testEmail: () => request<undefined>('POST', '/api/auth/test-email'),
+  },
+  users: {
+    list: () => request<{ items: UserItem[] }>('GET', '/api/users'),
+    create: (payload: CreateUserPayload) => request<UserItem>('POST', '/api/users', payload),
+    update: (id: number, payload: UpdateUserPayload) =>
+      request<UserItem>('PATCH', `/api/users/${id}`, payload),
+    remove: (id: number) => request<undefined>('DELETE', `/api/users/${id}`),
   },
   sales: {
     all: () => request<SaleListItem[]>('GET', '/api/sales'),

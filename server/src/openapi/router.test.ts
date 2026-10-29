@@ -2,11 +2,10 @@ import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 
 import { createApp } from '../app.js';
-import { createDb, initDatabase } from '../db/init.js';
+import { createTestDbWithUser } from '../tests/testDb.js';
 
 function setup(auth?: { sessionSecret: string; secureCookies: boolean }) {
-  const db = createDb(':memory:');
-  initDatabase(db);
+  const { db } = createTestDbWithUser();
   return createApp(db, { barcodeProviders: [], titleSearchProviders: [], auth });
 }
 

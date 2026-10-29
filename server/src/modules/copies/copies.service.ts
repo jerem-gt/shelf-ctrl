@@ -82,44 +82,50 @@ function escapeLike(value: string) {
 }
 
 export function createCopiesService(db: Database) {
-  const findById = (id: number): CopyItem | null => {
-    const row = db.prepare(`${SELECT_COPIES} WHERE c.id = ?`).get(id) as CopyRow | undefined;
+  const findById = (userId: number, id: number): CopyItem | null => {
+    const row = db.prepare(`${SELECT_COPIES} WHERE c.id = ? AND c.user_id = ?`).get(id, userId) as
+      CopyRow | undefined;
     return row ? toCopyItem(row) : null;
   };
 
-  const findOrCreateWork = (work: CreateCopyInput['work']): number => {
+  const findOrCreateWork = (userId: number, work: CreateCopyInput['work']): number => {
     const series = work.series ?? null;
     const volumeNumber = work.volumeNumber ?? null;
     const existing = db
-      .prepare('SELECT id FROM works WHERE title = ? AND series IS ? AND volume_number IS ?')
-      .get(work.title, series, volumeNumber) as { id: number } | undefined;
+      .prepare(
+        'SELECT id FROM works WHERE user_id = ? AND title = ? AND series IS ? AND volume_number IS ?',
+      )
+      .get(userId, work.title, series, volumeNumber) as { id: number } | undefined;
     if (existing) {
       return existing.id;
     }
     const result = db
       .prepare(
-        'INSERT INTO works (title, series, volume_number, creators, year) VALUES (?, ?, ?, ?, ?)',
+        `INSERT INTO works (user_id, title, series, volume_number, creators, year)
+         VALUES (?, ?, ?, ?, ?, ?)`,
       )
-      .run(work.title, series, volumeNumber, work.creators ?? null, work.year ?? null);
+      .run(userId, work.title, series, volumeNumber, work.creators ?? null, work.year ?? null);
     return Number(result.lastInsertRowid);
   };
 
-  const findOrCreateEdition = (input: CreateCopyInput): number => {
+  const findOrCreateEdition = (userId: number, input: CreateCopyInput): number => {
     const barcode = input.edition.barcode ? normalizeBarcode(input.edition.barcode) : null;
     if (barcode) {
-      const existing = db.prepare('SELECT id FROM editions WHERE barcode = ?').get(barcode) as
-        { id: number } | undefined;
+      const existing = db
+        .prepare('SELECT id FROM editions WHERE user_id = ? AND barcode = ?')
+        .get(userId, barcode) as { id: number } | undefined;
       if (existing) {
         return existing.id;
       }
     }
     const result = db
       .prepare(
-        `INSERT INTO editions (work_id, format, barcode, publisher, release_year, language)
-         VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO editions (user_id, work_id, format, barcode, publisher, release_year, language)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
-        findOrCreateWork(input.work),
+        userId,
+        findOrCreateWork(userId, input.work),
         input.edition.format,
         barcode,
         input.edition.publisher ?? null,
@@ -129,27 +135,29 @@ export function createCopiesService(db: Database) {
     return Number(result.lastInsertRowid);
   };
 
-  const create = db.transaction((input: CreateCopyInput): CopyItem => {
+  const create = db.transaction((userId: number, input: CreateCopyInput): CopyItem => {
     const result = db
       .prepare(
-        'INSERT INTO copies (edition_id, condition, condition_note, location) VALUES (?, ?, ?, ?)',
+        `INSERT INTO copies (user_id, edition_id, condition, condition_note, location)
+         VALUES (?, ?, ?, ?, ?)`,
       )
       .run(
-        findOrCreateEdition(input),
+        userId,
+        findOrCreateEdition(userId, input),
         input.condition,
         input.conditionNote ?? null,
         input.location ?? null,
       );
-    return findById(Number(result.lastInsertRowid)) as CopyItem;
+    return findById(userId, Number(result.lastInsertRowid)) as CopyItem;
   });
 
   return {
     create,
     findById,
 
-    list(query: ListCopiesQuery): CopyListResponse {
-      const clauses: string[] = [];
-      const params: (string | number)[] = [];
+    list(userId: number, query: ListCopiesQuery): CopyListResponse {
+      const clauses = ['c.user_id = ?'];
+      const params: (string | number)[] = [userId];
 
       if (query.q) {
         const like = `%${escapeLike(query.q)}%`;
@@ -167,7 +175,7 @@ export function createCopiesService(db: Database) {
         params.push(query.status);
       }
 
-      const where = clauses.length > 0 ? ` WHERE ${clauses.join(' AND ')}` : '';
+      const where = ` WHERE ${clauses.join(' AND ')}`;
       const rows = db
         .prepare(
           `${SELECT_COPIES}${where}
@@ -187,7 +195,7 @@ export function createCopiesService(db: Database) {
       return { items: rows.map(toCopyItem), total: count.total };
     },
 
-    update(id: number, input: UpdateCopyInput): CopyItem | null {
+    update(userId: number, id: number, input: UpdateCopyInput): CopyItem | null {
       const fields: string[] = [];
       const params: (string | number | null)[] = [];
       if (input.condition !== undefined) {
@@ -203,9 +211,9 @@ export function createCopiesService(db: Database) {
         params.push(input.location);
       }
       const result = db
-        .prepare(`UPDATE copies SET ${fields.join(', ')} WHERE id = ?`)
-        .run(...params, id);
-      return result.changes > 0 ? findById(id) : null;
+        .prepare(`UPDATE copies SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`)
+        .run(...params, id, userId);
+      return result.changes > 0 ? findById(userId, id) : null;
     },
 
     /**
@@ -213,14 +221,14 @@ export function createCopiesService(db: Database) {
      * qui n'ont plus d'exemplaire : sinon un code-barres resterait « connu » sans rien posséder.
      * Renvoie les fichiers d'image devenus orphelins, ou `null` si l'exemplaire n'existe pas.
      */
-    remove: db.transaction((id: number): RemovedFiles | null => {
+    remove: db.transaction((userId: number, id: number): RemovedFiles | null => {
       const row = db
         .prepare(
           `SELECT c.edition_id, c.photo_path, e.cover_path
            FROM copies c JOIN editions e ON e.id = c.edition_id
-           WHERE c.id = ?`,
+           WHERE c.id = ? AND c.user_id = ?`,
         )
-        .get(id) as
+        .get(id, userId) as
         { edition_id: number; photo_path: string | null; cover_path: string | null } | undefined;
       if (!row) {
         return null;

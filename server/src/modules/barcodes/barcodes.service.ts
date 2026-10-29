@@ -17,15 +17,15 @@ interface KnownEditionRow {
 }
 
 export function createBarcodesService(db: Database, providers: readonly BarcodeProvider[]) {
-  const findKnown = (barcode: ParsedBarcode): BarcodeLookupResponse | null => {
+  const findKnown = (userId: number, barcode: ParsedBarcode): BarcodeLookupResponse | null => {
     const row = db
       .prepare(
         `SELECT e.format, e.publisher, e.release_year, e.language,
                 w.title, w.series, w.volume_number, w.creators, w.year
          FROM editions e JOIN works w ON w.id = e.work_id
-         WHERE e.barcode = ?`,
+         WHERE e.user_id = ? AND e.barcode = ?`,
       )
-      .get(barcode.code) as KnownEditionRow | undefined;
+      .get(userId, barcode.code) as KnownEditionRow | undefined;
     if (!row) {
       return null;
     }
@@ -54,12 +54,12 @@ export function createBarcodesService(db: Database, providers: readonly BarcodeP
 
   return {
     /**
-     * Cherche d'abord dans la collection, puis dans chaque source adaptée au type de code.
+     * Cherche d'abord dans la collection du compte, puis dans chaque source adaptée au type de code.
      * Une source en erreur (réseau, quota) est ignorée : on passe à la suivante.
      * `null` quand personne ne connaît le code → saisie manuelle côté client.
      */
-    async resolve(barcode: ParsedBarcode): Promise<BarcodeLookupResponse | null> {
-      const known = findKnown(barcode);
+    async resolve(userId: number, barcode: ParsedBarcode): Promise<BarcodeLookupResponse | null> {
+      const known = findKnown(userId, barcode);
       if (known) {
         return known;
       }

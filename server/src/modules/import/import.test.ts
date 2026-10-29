@@ -8,7 +8,7 @@ import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createApp } from '../../app.js';
-import { createDb, initDatabase } from '../../db/init.js';
+import { createTestDbWithUser } from '../../tests/testDb.js';
 import type { BarcodeProvider } from '../barcodes/providers/types.js';
 import type { CoverProvider } from '../images/covers/types.js';
 import { MAX_ROWS } from './rows.js';
@@ -69,8 +69,7 @@ function setup(
 ) {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'shelfctrl-import-'));
   tempDirs.push(dataDir);
-  const db = createDb(':memory:');
-  initDatabase(db);
+  const { db } = createTestDbWithUser();
   return createApp(db, {
     barcodeProviders: [fakeProvider(options.delay, options.malformed)],
     titleSearchProviders: [],

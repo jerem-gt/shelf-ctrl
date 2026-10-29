@@ -28,7 +28,22 @@
     "unauthorized": "Identifiant ou mot de passe incorrect.",
     "tooManyAttempts": "Trop de tentatives : réessaie dans quelques minutes.",
     "invalidImage": "Ce fichier n'est pas une image exploitable (JPEG, PNG, WebP…).",
-    "imageTooLarge": "Cette image est trop lourde (12 Mo au maximum)."
+    "imageTooLarge": "Cette image est trop lourde (12 Mo au maximum).",
+    "forbidden": "Action réservée aux administrateurs.",
+    "codes": {
+      "invalid_credentials": "Identifiant ou mot de passe incorrect.",
+      "current_password_incorrect": "Mot de passe actuel incorrect.",
+      "username_taken": "Ce nom d'utilisateur est déjà pris.",
+      "email_taken": "Cette adresse e-mail est déjà utilisée par un autre compte.",
+      "last_admin": "Il faut garder au moins un administrateur.",
+      "cannot_delete_self": "Tu ne peux pas supprimer ton propre compte.",
+      "setup_token_invalid": "Jeton d'installation incorrect.",
+      "setup_done": "Le premier compte a déjà été créé : connecte-toi.",
+      "reset_token_invalid": "Ce lien est invalide ou a expiré.",
+      "email_missing": "Renseigne d'abord ton adresse e-mail dans ton profil (Réglages).",
+      "smtp_not_configured": "L'envoi d'e-mails n'est pas configuré sur le serveur (variables SMTP_*).",
+      "email_send_failed": "L'envoi de l'e-mail a échoué : vérifie la configuration SMTP et les logs du serveur."
+    }
   },
   "collection": {
     "title": "Ma collection",
@@ -150,7 +165,8 @@
     "sales": "Ventes",
     "import": "Import",
     "settings": "Réglages",
-    "logout": "Se déconnecter"
+    "logout": "Se déconnecter",
+    "users": "Utilisateurs"
   },
   "loan": {
     "section": "Prêts",
@@ -348,6 +364,88 @@
     "username": "Identifiant",
     "password": "Mot de passe",
     "submit": "Se connecter",
-    "submitting": "Connexion…"
+    "submitting": "Connexion…",
+    "forgotLink": "Mot de passe oublié ?"
+  },
+  "passwordRules": {
+    "tooShort": "8 caractères au minimum.",
+    "mismatch": "Les mots de passe ne correspondent pas."
+  },
+  "setup": {
+    "subtitle": "Bienvenue ! Crée le premier compte (administrateur) pour démarrer.",
+    "token": "Jeton d'installation",
+    "tokenHelp": "Le jeton est écrit dans les logs du serveur au démarrage (docker logs shelf-ctrl).",
+    "username": "Nom d'utilisateur",
+    "password": "Mot de passe",
+    "confirm": "Confirmer le mot de passe",
+    "submit": "Créer le compte",
+    "submitting": "Création…"
+  },
+  "forgot": {
+    "subtitle": "Indique ton identifiant ou ton e-mail pour recevoir un lien de réinitialisation.",
+    "identifier": "Identifiant ou e-mail",
+    "submit": "Envoyer le lien",
+    "submitting": "Envoi…",
+    "sent": "Si un compte correspond, un lien de réinitialisation vient d'être envoyé par e-mail. Sans e-mail configuré, demande-le à l'administrateur : le lien est écrit dans les logs du serveur.",
+    "back": "Retour à la connexion"
+  },
+  "reset": {
+    "subtitle": "Choisis un nouveau mot de passe.",
+    "password": "Nouveau mot de passe",
+    "confirm": "Confirmer le mot de passe",
+    "submit": "Réinitialiser",
+    "submitting": "Réinitialisation…",
+    "success": "Mot de passe réinitialisé : tu peux te connecter.",
+    "toLogin": "Aller à la connexion",
+    "invalidToken": "Ce lien est invalide ou a expiré.",
+    "requestNew": "Refaire une demande"
+  },
+  "profile": {
+    "title": "Mon compte",
+    "username": "Nom d'utilisateur",
+    "email": "Adresse e-mail (facultative)",
+    "emailHint": "Sert à recevoir un lien si tu oublies ton mot de passe.",
+    "currentPassword": "Mot de passe actuel",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "saved": "Profil enregistré.",
+    "passwordTitle": "Changer de mot de passe",
+    "newPassword": "Nouveau mot de passe",
+    "confirm": "Confirmer le nouveau mot de passe",
+    "changePassword": "Changer le mot de passe",
+    "changingPassword": "Changement…",
+    "passwordChanged": "Mot de passe changé. Tes autres sessions ont été fermées."
+  },
+  "users": {
+    "title": "Utilisateurs",
+    "loading": "Chargement…",
+    "you": "toi",
+    "admin": "Admin",
+    "noEmail": "pas d'e-mail",
+    "copies_one": "{{count}} exemplaire",
+    "copies_other": "{{count}} exemplaires",
+    "lastCopy": "dernier ajout le {{date}}",
+    "createdOn": "créé le {{date}}",
+    "addTitle": "Ajouter un compte",
+    "username": "Nom d'utilisateur",
+    "password": "Mot de passe",
+    "newPassword": "Nouveau mot de passe (laisser vide pour le garder)",
+    "email": "Adresse e-mail (facultative)",
+    "isAdmin": "Administrateur",
+    "add": "Créer le compte",
+    "adding": "Création…",
+    "edit": "Modifier {{name}}",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "cancel": "Annuler",
+    "remove": "Supprimer {{name}}",
+    "confirmRemove": "Supprimer le compte « {{name}} » et toute sa collection (exemplaires, prêts, ventes, images) ? C'est définitif.",
+    "removing": "Suppression…",
+    "mailTitle": "E-mails",
+    "mailIntro": "Vérifie l'envoi des e-mails (mot de passe oublié) : un message de test part vers ton adresse.",
+    "testEmail": "Envoyer un e-mail de test",
+    "testEmailSending": "Envoi…",
+    "testEmailSent": "E-mail de test envoyé : vérifie ta boîte de réception.",
+    "removeConfirm": "Supprimer le compte"
   }
 }

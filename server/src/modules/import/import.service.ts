@@ -20,13 +20,13 @@ export class TooManyRowsError extends Error {}
 export class ImportRunningError extends Error {}
 
 export interface ImportDeps {
-  /** Fiche d'un code-barres (collection puis sources en ligne) ; `null` si inconnu. */
-  resolve: (barcode: string) => Promise<BarcodeLookupResponse | null>;
+  /** Fiche d'un code-barres (collection du compte puis sources en ligne) ; `null` si inconnu. */
+  resolve: (userId: number, barcode: string) => Promise<BarcodeLookupResponse | null>;
   /** Cherche la pochette d'une édition ; `true` si elle a été trouvée. Absent : pas de pochettes. */
-  fetchCover?: (editionId: number) => Promise<boolean>;
+  fetchCover?: (userId: number, editionId: number) => Promise<boolean>;
 }
 
-/** On ne garde que les derniers imports : un seul utilisateur, un suivi à court terme. */
+/** On ne garde que les derniers imports de chaque compte : un suivi à court terme. */
 const KEPT_JOBS = 5;
 /** Marque d'ordre des octets UTF-8 : sans elle, Excel lit le fichier en Windows-1252. */
 const BOM = String.fromCodePoint(0xfeff);
@@ -169,20 +169,22 @@ async function safely<T>(work: () => Promise<T>, fallback: T): Promise<T> {
 
 export function createImportService(db: Database, deps: ImportDeps) {
   const copies = createCopiesService(db);
-  const jobs = new Map<string, ImportJob>();
-  let runningId: string | null = null;
+  const jobs = new Map<string, { userId: number; job: ImportJob }>();
+  /** Comptes dont un import est en cours : un seul à la fois par compte. */
+  const running = new Set<number>();
 
-  const barcodeKnown = db.prepare('SELECT 1 FROM editions WHERE barcode = ?');
+  const barcodeKnown = db.prepare('SELECT 1 FROM editions WHERE user_id = ? AND barcode = ?');
   const editionTitles = db.prepare(
     `SELECT w.title, w.series, w.volume_number AS volume, e.format
-     FROM editions e JOIN works w ON w.id = e.work_id`,
+     FROM editions e JOIN works w ON w.id = e.work_id
+     WHERE e.user_id = ?`,
   );
 
-  /** Clés « titre » des éditions de la collection, lues une fois par aperçu. */
-  const loadKnownTitles = (): Set<string> =>
+  /** Clés « titre » des éditions de la collection du compte, lues une fois par aperçu. */
+  const loadKnownTitles = (userId: number): Set<string> =>
     new Set(
       (
-        editionTitles.all() as {
+        editionTitles.all(userId) as {
           title: string;
           series: string | null;
           volume: number | null;
@@ -202,14 +204,18 @@ export function createImportService(db: Database, deps: ImportDeps) {
     return titleKey(draft.title, draft.series, draft.volumeNumber, draft.format);
   };
 
-  const existsInCollection = (draft: RowDraft, knownTitles: ReadonlySet<string>): boolean => {
+  const existsInCollection = (
+    userId: number,
+    draft: RowDraft,
+    knownTitles: ReadonlySet<string>,
+  ): boolean => {
     const identity = identityOf(draft);
     if (identity === null) {
       return false;
     }
     return draft.barcode === null
       ? knownTitles.has(identity)
-      : barcodeKnown.get(draft.barcode) !== undefined;
+      : barcodeKnown.get(userId, draft.barcode) !== undefined;
   };
 
   const toFailure = (row: ParsedRow): ImportRowFailure => ({
@@ -218,12 +224,12 @@ export function createImportService(db: Database, deps: ImportDeps) {
     issues: row.issues,
   });
 
-  const processRow = async (row: ParsedRow, job: ImportJob): Promise<void> => {
+  const processRow = async (userId: number, row: ParsedRow, job: ImportJob): Promise<void> => {
     let draft = row.draft;
     let completedOnline = false;
     if (needsCompletion(draft) && draft.barcode !== null) {
       const code = draft.barcode;
-      const found = await safely(() => deps.resolve(code), null);
+      const found = await safely(() => deps.resolve(userId, code), null);
       if (found) {
         draft = fillFromSuggestion(draft, found);
         completedOnline = true;
@@ -249,7 +255,7 @@ export function createImportService(db: Database, deps: ImportDeps) {
 
     let copy;
     try {
-      copy = copies.create(input.data);
+      copy = copies.create(userId, input.data);
     } catch (error) {
       console.warn('[import] ligne', row.line, error instanceof Error ? error.message : error);
       fail({ code: 'invalid', field: null });
@@ -261,21 +267,21 @@ export function createImportService(db: Database, deps: ImportDeps) {
     }
     const { fetchCover } = deps;
     if (copy.edition.coverPath === null && fetchCover) {
-      const found = await safely(() => fetchCover(copy.edition.id), false);
+      const found = await safely(() => fetchCover(userId, copy.edition.id), false);
       if (found) {
         job.coversFound += 1;
       }
     }
   };
 
-  const run = async (rows: ParsedRow[], job: ImportJob): Promise<void> => {
+  const run = async (userId: number, rows: ParsedRow[], job: ImportJob): Promise<void> => {
     try {
       // Séquentiel (reduce chaîné) : sources en ligne limitées en débit, doublons du fichier
       // rattachés aux éditions créées par les lignes précédentes, progression dans l'ordre.
       await rows.reduce(async (previous, row) => {
         await previous;
         try {
-          await processRow(row, job);
+          await processRow(userId, row, job);
         } catch (error) {
           // Une ligne inattendue est rapportée, sans arrêter les mille suivantes.
           console.error('[import] ligne', row.line, error);
@@ -292,20 +298,21 @@ export function createImportService(db: Database, deps: ImportDeps) {
       console.error('[import]', error);
       job.status = 'failed';
     } finally {
-      runningId = null;
+      running.delete(userId);
     }
   };
 
   return {
     /** Lit et contrôle le fichier sans rien écrire ni interroger en ligne. */
-    preview(buffer: Buffer): ImportPreview {
+    preview(userId: number, buffer: Buffer): ImportPreview {
       const { rows, ignoredColumns } = parseBuffer(buffer);
-      const knownTitles = loadKnownTitles();
+      const knownTitles = loadKnownTitles(userId);
       const seen = new Set<string>();
       const previews = rows.map((row): ImportRowPreview => {
         const identity = identityOf(row.draft);
         const duplicate =
-          identity !== null && (seen.has(identity) || existsInCollection(row.draft, knownTitles));
+          identity !== null &&
+          (seen.has(identity) || existsInCollection(userId, row.draft, knownTitles));
         if (identity !== null) {
           seen.add(identity);
         }
@@ -330,9 +337,9 @@ export function createImportService(db: Database, deps: ImportDeps) {
       };
     },
 
-    /** Lance l'import en tâche de fond ; un seul à la fois. Renvoie son état initial. */
-    start(buffer: Buffer): ImportJob {
-      if (runningId !== null) {
+    /** Lance l'import en tâche de fond ; un seul à la fois par compte. Renvoie son état initial. */
+    start(userId: number, buffer: Buffer): ImportJob {
+      if (running.has(userId)) {
         throw new ImportRunningError('Un import est déjà en cours');
       }
       const { rows } = parseBuffer(buffer);
@@ -347,22 +354,25 @@ export function createImportService(db: Database, deps: ImportDeps) {
         failures: rows.filter((row) => row.issues.length > 0).map(toFailure),
       };
       job.processed = job.failures.length;
-      jobs.set(job.id, job);
-      for (const oldest of [...jobs.keys()].slice(0, Math.max(0, jobs.size - KEPT_JOBS))) {
+      jobs.set(job.id, { userId, job });
+      const own = [...jobs].filter(([, entry]) => entry.userId === userId).map(([id]) => id);
+      for (const oldest of own.slice(0, Math.max(0, own.length - KEPT_JOBS))) {
         jobs.delete(oldest);
       }
 
-      runningId = job.id;
+      running.add(userId);
       void run(
+        userId,
         rows.filter((row) => row.issues.length === 0),
         job,
       );
       return structuredClone(job);
     },
 
-    get(id: string): ImportJob | undefined {
-      const job = jobs.get(id);
-      return job ? structuredClone(job) : undefined;
+    /** Un import d'un autre compte est introuvable. */
+    get(userId: number, id: string): ImportJob | undefined {
+      const entry = jobs.get(id);
+      return entry?.userId === userId ? structuredClone(entry.job) : undefined;
     },
   };
 }

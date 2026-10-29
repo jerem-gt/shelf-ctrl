@@ -1,5 +1,6 @@
 import express, { Router } from 'express';
 
+import { currentUserId } from '../../middleware.js';
 import { copyIdSchema } from '../copies/copies.schema.js';
 import type { CoverService } from './covers/covers.service.js';
 import { InvalidImageError } from './imageStore.js';
@@ -30,7 +31,7 @@ export function createImagesRouter(
       return;
     }
     try {
-      const coverPath = await covers.setCover(editionId, req.body);
+      const coverPath = await covers.setCover(currentUserId(res), editionId, req.body);
       if (coverPath === null) {
         res.status(404).json({ error: 'not_found' });
       } else {
@@ -45,7 +46,7 @@ export function createImagesRouter(
   });
 
   router.delete('/editions/:id/cover', async (req, res) => {
-    if (await covers.clearCover(copyIdSchema.parse(req.params.id))) {
+    if (await covers.clearCover(currentUserId(res), copyIdSchema.parse(req.params.id))) {
       res.status(204).end();
     } else {
       res.status(404).json({ error: 'not_found' });
@@ -54,7 +55,11 @@ export function createImagesRouter(
 
   /** Remplace la pochette par celle trouvée en ligne ; 404 si aucune source n'en a. */
   router.post('/editions/:id/cover/fetch', async (req, res) => {
-    const outcome = await covers.fetchForEdition(copyIdSchema.parse(req.params.id), true);
+    const outcome = await covers.fetchForEdition(
+      currentUserId(res),
+      copyIdSchema.parse(req.params.id),
+      true,
+    );
     if (outcome === 'fetched') {
       res.json({ fetched: true });
     } else {
@@ -71,7 +76,7 @@ export function createImagesRouter(
       return;
     }
     try {
-      const photoPath = await photos.set(copyId, req.body);
+      const photoPath = await photos.set(currentUserId(res), copyId, req.body);
       if (photoPath === null) {
         res.status(404).json({ error: 'not_found' });
       } else {
@@ -86,7 +91,7 @@ export function createImagesRouter(
   });
 
   router.delete('/copies/:id/photo', async (req, res) => {
-    if (await photos.clear(copyIdSchema.parse(req.params.id))) {
+    if (await photos.clear(currentUserId(res), copyIdSchema.parse(req.params.id))) {
       res.status(204).end();
     } else {
       res.status(404).json({ error: 'not_found' });

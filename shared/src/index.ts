@@ -219,7 +219,27 @@ export interface ImportJob {
 
 /** Utilisateur connecté (réponse de `/api/auth/me` et de la connexion). */
 export interface SessionResponse {
+  id: number;
   username: string;
+  email: string | null;
+  isAdmin: boolean;
+}
+
+/** `required` : aucun compte, l'application attend la création du premier (admin). */
+export interface SetupStatusResponse {
+  required: boolean;
+}
+
+/** Compte vu par un admin (page Utilisateurs). */
+export interface UserItem {
+  id: number;
+  username: string;
+  email: string | null;
+  isAdmin: boolean;
+  createdAt: string;
+  copyCount: number;
+  /** Date d'ajout du dernier exemplaire, `null` sans exemplaire. */
+  lastCopyAt: string | null;
 }
 
 export interface HealthResponse {

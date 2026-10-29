@@ -1,6 +1,7 @@
 import type { Database } from 'better-sqlite3';
 import { Router } from 'express';
 
+import { currentUserId } from '../../middleware.js';
 import { copyIdSchema } from '../copies/copies.schema.js';
 import {
   createPlatformSchema,
@@ -17,11 +18,11 @@ export function createPlatformsRouter(db: Database) {
   const service = createPlatformsService(db);
 
   router.get('/', (_req, res) => {
-    res.json({ items: service.list() });
+    res.json({ items: service.list(currentUserId(res)) });
   });
 
   router.post('/', (req, res) => {
-    const result = service.create(createPlatformSchema.parse(req.body));
+    const result = service.create(currentUserId(res), createPlatformSchema.parse(req.body));
     if (result.ok) {
       res.status(201).json(result.platform);
     } else {
@@ -31,7 +32,7 @@ export function createPlatformsRouter(db: Database) {
 
   // Avant `/:id` : « default » ne doit pas être lu comme un identifiant.
   router.put('/default', (req, res) => {
-    if (service.setDefault(setDefaultSchema.parse(req.body).id)) {
+    if (service.setDefault(currentUserId(res), setDefaultSchema.parse(req.body).id)) {
       res.status(204).end();
     } else {
       res.status(404).json({ error: 'not_found' });
@@ -40,6 +41,7 @@ export function createPlatformsRouter(db: Database) {
 
   router.patch('/:id', (req, res) => {
     const result = service.update(
+      currentUserId(res),
       copyIdSchema.parse(req.params.id),
       updatePlatformSchema.parse(req.body),
     );
@@ -51,7 +53,7 @@ export function createPlatformsRouter(db: Database) {
   });
 
   router.delete('/:id', (req, res) => {
-    if (service.remove(copyIdSchema.parse(req.params.id))) {
+    if (service.remove(currentUserId(res), copyIdSchema.parse(req.params.id))) {
       res.status(204).end();
     } else {
       res.status(404).json({ error: 'not_found' });

@@ -1,7 +1,7 @@
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
-import { BARCODE_TINTIN } from '@/tests/fixtures';
+import { BARCODE_TINTIN, SESSION_ADMIN } from '@/tests/fixtures';
 import { server } from '@/tests/msw/server';
 
 import { api, ApiError } from './client';
@@ -205,7 +205,7 @@ describe('api.auth', () => {
       }),
     );
 
-    expect(await api.auth.me()).toEqual({ username: 'admin' });
+    expect(await api.auth.me()).toEqual(SESSION_ADMIN);
     expect(await api.auth.login({ username: 'admin', password: 'secret' })).toEqual({
       username: 'admin',
     });
@@ -225,6 +225,25 @@ describe('api.auth', () => {
 
     expect(error).toBeInstanceOf(ApiError);
     expect(error).toMatchObject({ status, message });
+  });
+  it('préfère le message du code d’erreur quand il est traduit, sinon celui du statut', async () => {
+    server.use(
+      http.post('/api/auth/change-password', () =>
+        HttpResponse.json({ error: 'current_password_incorrect' }, { status: 401 }),
+      ),
+      http.post('/api/auth/test-email', () =>
+        HttpResponse.json({ error: 'code_inconnu' }, { status: 409 }),
+      ),
+    );
+
+    await expect(api.auth.changePassword('x', 'new-password')).rejects.toMatchObject({
+      code: 'current_password_incorrect',
+      message: 'Mot de passe actuel incorrect.',
+    });
+    await expect(api.auth.testEmail()).rejects.toMatchObject({
+      code: 'code_inconnu',
+      message: "Cette action n'est plus possible : l'état de l'exemplaire a changé.",
+    });
   });
 });
 

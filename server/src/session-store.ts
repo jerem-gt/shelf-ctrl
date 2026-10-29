@@ -18,6 +18,8 @@ export class SQLiteSessionStore extends Store {
   private readonly stmtDelete: Statement<[string]>;
   private readonly stmtTouch: Statement<[number, string]>;
   private readonly stmtCleanup: Statement<[number]>;
+  private readonly stmtDeleteOthers: Statement<[number, string]>;
+  private readonly stmtDeleteAll: Statement<[number]>;
 
   constructor(db: Database) {
     super();
@@ -29,6 +31,12 @@ export class SQLiteSessionStore extends Store {
     this.stmtDelete = db.prepare('DELETE FROM sessions WHERE sid = ?');
     this.stmtTouch = db.prepare('UPDATE sessions SET expires_at = ? WHERE sid = ?');
     this.stmtCleanup = db.prepare('DELETE FROM sessions WHERE expires_at < ?');
+    this.stmtDeleteOthers = db.prepare(
+      "DELETE FROM sessions WHERE json_extract(data, '$.userId') = ? AND sid != ?",
+    );
+    this.stmtDeleteAll = db.prepare(
+      "DELETE FROM sessions WHERE json_extract(data, '$.userId') = ?",
+    );
 
     setInterval(() => this.stmtCleanup.run(Date.now()), 60 * 60 * 1000).unref();
   }
@@ -68,6 +76,16 @@ export class SQLiteSessionStore extends Store {
     } catch (err) {
       callback?.(err);
     }
+  }
+
+  /** Supprime les sessions d'un utilisateur, sauf la session courante. */
+  destroyOtherSessions(userId: number, currentSid: string): void {
+    this.stmtDeleteOthers.run(userId, currentSid);
+  }
+
+  /** Supprime toutes les sessions d'un utilisateur (courante incluse). */
+  destroyAllSessions(userId: number): void {
+    this.stmtDeleteAll.run(userId);
   }
 
   touch(sid: string, session: SessionData, callback?: (err?: unknown) => void): void {

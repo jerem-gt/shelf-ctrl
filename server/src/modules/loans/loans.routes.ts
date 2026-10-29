@@ -1,6 +1,7 @@
 import type { Database } from 'better-sqlite3';
 import { type Response, Router } from 'express';
 
+import { currentUserId } from '../../middleware.js';
 import { copyIdSchema } from '../copies/copies.schema.js';
 import { lendSchema, returnSchema } from './loans.schema.js';
 import { createLoansService, type LoanFailure, type LoanResult } from './loans.service.js';
@@ -27,7 +28,7 @@ export function createLoansRouter(db: Database) {
   };
 
   router.get('/copies/:id/loans', (req, res) => {
-    const loans = service.listForCopy(copyIdSchema.parse(req.params.id));
+    const loans = service.listForCopy(currentUserId(res), copyIdSchema.parse(req.params.id));
     if (loans) {
       res.json(loans);
     } else {
@@ -37,20 +38,24 @@ export function createLoansRouter(db: Database) {
 
   router.post('/copies/:id/loans', (req, res) => {
     const input = lendSchema.parse(req.body);
-    respond(res, service.lend(copyIdSchema.parse(req.params.id), input), 201);
+    respond(res, service.lend(currentUserId(res), copyIdSchema.parse(req.params.id), input), 201);
   });
 
   router.get('/loans', (_req, res) => {
-    res.json(service.listOpen());
+    res.json(service.listOpen(currentUserId(res)));
   });
 
   router.post('/loans/:id/return', (req, res) => {
     const input = returnSchema.parse(req.body ?? {});
-    respond(res, service.returnLoan(copyIdSchema.parse(req.params.id), input), 200);
+    respond(
+      res,
+      service.returnLoan(currentUserId(res), copyIdSchema.parse(req.params.id), input),
+      200,
+    );
   });
 
   router.get('/borrowers', (_req, res) => {
-    res.json(service.listBorrowers());
+    res.json(service.listBorrowers(currentUserId(res)));
   });
 
   return router;

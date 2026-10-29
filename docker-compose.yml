@@ -18,8 +18,6 @@ services:
       - PORT=3101
       - DATA_DIR=/data
       - SESSION_SECRET=${SESSION_SECRET}
-      - ADMIN_USER=admin
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - SECURE_COOKIE=true
       - LOG_LEVEL=INFO
       - GOOGLE_BOOKS_API_KEY=${GOOGLE_BOOKS_API_KEY:-}
@@ -50,8 +48,6 @@ services:
       - DATA_DIR=/data
       # Secret distinct de la prod : les cookies ne sont pas isolés par port sur le même hôte
       - SESSION_SECRET=${SESSION_SECRET_DEV}
-      - ADMIN_USER=admin
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - SECURE_COOKIE=true
       - LOG_LEVEL=INFO
       - GOOGLE_BOOKS_API_KEY=${GOOGLE_BOOKS_API_KEY:-}

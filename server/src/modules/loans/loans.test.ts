@@ -2,11 +2,10 @@ import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 
 import { createApp } from '../../app.js';
-import { createDb, initDatabase } from '../../db/init.js';
+import { createTestDbWithUser } from '../../tests/testDb.js';
 
 function setup() {
-  const db = createDb(':memory:');
-  initDatabase(db);
+  const { db } = createTestDbWithUser();
   return { db, app: createApp(db, { barcodeProviders: [] }) };
 }
 
@@ -75,7 +74,9 @@ describe('POST /api/copies/:id/loans', () => {
   it('refuse un exemplaire vendu', async () => {
     const { app, db } = setup();
     const copyId = await createCopy(app);
-    db.prepare("INSERT INTO sales (copy_id, sold_at) VALUES (?, date('now'))").run(copyId);
+    db.prepare("INSERT INTO sales (user_id, copy_id, sold_at) VALUES (1, ?, date('now'))").run(
+      copyId,
+    );
 
     const res = await lend(app, copyId);
 
@@ -86,7 +87,9 @@ describe('POST /api/copies/:id/loans', () => {
   it('accepte un exemplaire en vente (non vendu)', async () => {
     const { app, db } = setup();
     const copyId = await createCopy(app);
-    db.prepare("INSERT INTO sales (copy_id, listed_at) VALUES (?, date('now'))").run(copyId);
+    db.prepare("INSERT INTO sales (user_id, copy_id, listed_at) VALUES (1, ?, date('now'))").run(
+      copyId,
+    );
 
     expect((await lend(app, copyId)).status).toBe(201);
   });

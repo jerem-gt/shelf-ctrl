@@ -1,6 +1,7 @@
 import type { Database } from 'better-sqlite3';
 import express, { Router } from 'express';
 
+import { currentUserId } from '../../middleware.js';
 import {
   buildTemplate,
   createImportService,
@@ -51,7 +52,7 @@ export function createImportRouter(db: Database, deps: ImportDeps) {
       return;
     }
     try {
-      res.json(service.preview(req.body));
+      res.json(service.preview(currentUserId(res), req.body));
     } catch (error) {
       const problem = fileProblem(error);
       if (!problem) {
@@ -67,7 +68,7 @@ export function createImportRouter(db: Database, deps: ImportDeps) {
       return;
     }
     try {
-      res.status(202).json(service.start(req.body));
+      res.status(202).json(service.start(currentUserId(res), req.body));
     } catch (error) {
       const problem = fileProblem(error);
       if (!problem) {
@@ -78,7 +79,7 @@ export function createImportRouter(db: Database, deps: ImportDeps) {
   });
 
   router.get('/:id', (req, res) => {
-    const job = service.get(req.params.id);
+    const job = service.get(currentUserId(res), req.params.id);
     if (job) {
       res.json(job);
     } else {

@@ -66,6 +66,25 @@ describe('SQLiteSessionStore', () => {
     expect((await get(store, 'abc')).session).toBeNull();
   });
 
+  it('supprime les sessions d’un compte, avec ou sans la session courante', async () => {
+    const { store } = setup();
+    const open = (sid: string, userId: number) =>
+      call((done) => store.set(sid, sessionWith({ maxAge: 60_000 }, userId), done));
+    await open('a1', 1);
+    await open('a2', 1);
+    await open('a3', 1);
+    await open('b1', 2);
+
+    store.destroyOtherSessions(1, 'a1');
+    expect((await get(store, 'a1')).session).toBeTruthy();
+    expect((await get(store, 'a2')).session).toBeNull();
+
+    store.destroyAllSessions(1);
+    expect((await get(store, 'a1')).session).toBeNull();
+    expect((await get(store, 'a3')).session).toBeNull();
+    expect((await get(store, 'b1')).session).toBeTruthy();
+  });
+
   it('prolonge une session avec touch', async () => {
     const { store, db } = setup();
     await call((done) => store.set('abc', sessionWith({ maxAge: 1000 }), done));

@@ -2,23 +2,22 @@ import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 
 import { createApp } from './app.js';
-import { createDb, initDatabase } from './db/init.js';
+import { createTestDbWithUser } from './tests/testDb.js';
 
 function setup() {
-  const db = createDb(':memory:');
-  initDatabase(db);
+  const { db } = createTestDbWithUser();
   return { db, app: createApp(db) };
 }
 
 type TestDb = ReturnType<typeof setup>['db'];
 
 function insertCopy(db: TestDb): number {
-  const work = db.prepare("INSERT INTO works (title) VALUES ('Tintin')").run();
+  const work = db.prepare("INSERT INTO works (user_id, title) VALUES (1, 'Tintin')").run();
   const edition = db
-    .prepare("INSERT INTO editions (work_id, format) VALUES (?, 'book')")
+    .prepare("INSERT INTO editions (user_id, work_id, format) VALUES (1, ?, 'book')")
     .run(work.lastInsertRowid);
   const copy = db
-    .prepare('INSERT INTO copies (edition_id) VALUES (?)')
+    .prepare('INSERT INTO copies (user_id, edition_id) VALUES (1, ?)')
     .run(edition.lastInsertRowid);
   return Number(copy.lastInsertRowid);
 }
@@ -52,16 +51,18 @@ describe('copy_status', () => {
     const copyId = insertCopy(db);
     expect(statusOf(db, copyId)).toBe('owned');
 
-    const borrower = db.prepare("INSERT INTO borrowers (name) VALUES ('Alice')").run();
+    const borrower = db.prepare("INSERT INTO borrowers (user_id, name) VALUES (1, 'Alice')").run();
     const loan = db
-      .prepare('INSERT INTO loans (copy_id, borrower_id) VALUES (?, ?)')
+      .prepare('INSERT INTO loans (user_id, copy_id, borrower_id) VALUES (1, ?, ?)')
       .run(copyId, borrower.lastInsertRowid);
     expect(statusOf(db, copyId)).toBe('loaned');
 
     db.prepare("UPDATE loans SET returned_at = date('now') WHERE id = ?").run(loan.lastInsertRowid);
     expect(statusOf(db, copyId)).toBe('owned');
 
-    db.prepare("INSERT INTO sales (copy_id, listed_at) VALUES (?, date('now'))").run(copyId);
+    db.prepare("INSERT INTO sales (user_id, copy_id, listed_at) VALUES (1, ?, date('now'))").run(
+      copyId,
+    );
     expect(statusOf(db, copyId)).toBe('listed');
 
     db.prepare("UPDATE sales SET sold_at = date('now') WHERE copy_id = ?").run(copyId);
@@ -71,8 +72,10 @@ describe('copy_status', () => {
   it('interdit deux prêts en cours sur le même exemplaire', () => {
     const { db } = setup();
     const copyId = insertCopy(db);
-    const borrower = db.prepare("INSERT INTO borrowers (name) VALUES ('Alice')").run();
-    const insertLoan = db.prepare('INSERT INTO loans (copy_id, borrower_id) VALUES (?, ?)');
+    const borrower = db.prepare("INSERT INTO borrowers (user_id, name) VALUES (1, 'Alice')").run();
+    const insertLoan = db.prepare(
+      'INSERT INTO loans (user_id, copy_id, borrower_id) VALUES (1, ?, ?)',
+    );
     insertLoan.run(copyId, borrower.lastInsertRowid);
     expect(() => insertLoan.run(copyId, borrower.lastInsertRowid)).toThrow();
   });

@@ -1,60 +1,48 @@
-import bcrypt from 'bcrypt';
 import type { Database } from 'better-sqlite3';
 
-export interface User {
-  id: number;
-  username: string;
-  password_hash: string;
-}
+import type { ResetTokenRow, User } from './auth.types.js';
 
 export const BCRYPT_COST = 12;
 
 export function createAuthRepo(db: Database) {
+  const getByUsernameStmt = db.prepare<[string], User>('SELECT * FROM users WHERE username = ?');
+  const getByEmailStmt = db.prepare<[string], User>('SELECT * FROM users WHERE email = ?');
+  const getByIdStmt = db.prepare<[number], User>('SELECT * FROM users WHERE id = ?');
+  const countUsersStmt = db.prepare<[], { n: number }>('SELECT COUNT(*) AS n FROM users');
+  const insertAdminStmt = db.prepare<[string, string]>(
+    'INSERT INTO users (username, password_hash, is_admin) VALUES (?, ?, 1)',
+  );
+  const updatePasswordStmt = db.prepare<[string, number]>(
+    'UPDATE users SET password_hash = ? WHERE id = ?',
+  );
+  const deleteTokensForUserStmt = db.prepare<[number]>(
+    'DELETE FROM password_reset_tokens WHERE user_id = ?',
+  );
+  const purgeExpiredTokensStmt = db.prepare<[number]>(
+    'DELETE FROM password_reset_tokens WHERE expires_at <= ?',
+  );
+  const insertTokenStmt = db.prepare<[string, number, number]>(
+    'INSERT INTO password_reset_tokens (token_hash, user_id, expires_at) VALUES (?, ?, ?)',
+  );
+  const getTokenStmt = db.prepare<[string], ResetTokenRow>(
+    'SELECT user_id, expires_at FROM password_reset_tokens WHERE token_hash = ?',
+  );
+
   return {
-    getByUsername: (username: string): User | undefined =>
-      db
-        .prepare('SELECT id, username, password_hash FROM users WHERE username = ?')
-        .get(username) as User | undefined,
-    getById: (id: number): User | undefined =>
-      db.prepare('SELECT id, username, password_hash FROM users WHERE id = ?').get(id) as
-        User | undefined,
+    getByUsername: (username: string): User | undefined => getByUsernameStmt.get(username),
+    /** `email` doit être normalisé (emailSchema : trim + minuscules). */
+    getByEmail: (email: string): User | undefined => getByEmailStmt.get(email),
+    getById: (id: number): User | undefined => getByIdStmt.get(id),
+    countUsers: (): number => countUsersStmt.get()?.n ?? 0,
+    createAdmin: (username: string, hash: string): number =>
+      Number(insertAdminStmt.run(username, hash).lastInsertRowid),
+    updatePassword: (userId: number, hash: string) => updatePasswordStmt.run(hash, userId),
+    deleteResetTokensForUser: (userId: number) => deleteTokensForUserStmt.run(userId),
+    purgeExpiredResetTokens: (now: number) => purgeExpiredTokensStmt.run(now),
+    insertResetToken: (tokenHash: string, userId: number, expiresAt: number) =>
+      insertTokenStmt.run(tokenHash, userId, expiresAt),
+    getResetToken: (tokenHash: string): ResetTokenRow | undefined => getTokenStmt.get(tokenHash),
   };
 }
 
-export type SyncResult = 'created' | 'updated' | 'unchanged';
-
-/**
- * Aligne l'unique compte sur ADMIN_USER / ADMIN_PASSWORD : l'environnement fait foi, donc changer
- * le mot de passe dans le compose et redémarrer suffit. Aucune interface ne modifie le compte.
- */
-export function syncAdminUser(
-  db: Database,
-  username: string,
-  password: string,
-  cost = BCRYPT_COST,
-): SyncResult {
-  const existing = db
-    .prepare('SELECT id, username, password_hash FROM users ORDER BY id LIMIT 1')
-    .get() as User | undefined;
-
-  if (!existing) {
-    db.prepare('INSERT INTO users (username, password_hash) VALUES (?, ?)').run(
-      username,
-      bcrypt.hashSync(password, cost),
-    );
-    return 'created';
-  }
-
-  const samePassword = bcrypt.compareSync(password, existing.password_hash);
-  if (existing.username === username && samePassword) {
-    return 'unchanged';
-  }
-  db.prepare('UPDATE users SET username = ?, password_hash = ? WHERE id = ?').run(
-    username,
-    samePassword ? existing.password_hash : bcrypt.hashSync(password, cost),
-    existing.id,
-  );
-  // Identifiants changés : les sessions ouvertes avec les anciens ne doivent plus valoir.
-  db.prepare('DELETE FROM sessions').run();
-  return 'updated';
-}
+export type AuthRepo = ReturnType<typeof createAuthRepo>;

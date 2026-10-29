@@ -2,11 +2,10 @@ import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 
 import { createApp } from '../../app.js';
-import { createDb, initDatabase } from '../../db/init.js';
+import { createTestDbWithUser } from '../../tests/testDb.js';
 
 function setup() {
-  const db = createDb(':memory:');
-  initDatabase(db);
+  const { db } = createTestDbWithUser();
   return { db, app: createApp(db) };
 }
 
@@ -143,8 +142,8 @@ describe('GET /api/copies', () => {
     const byBarcode = await request(app).get('/api/copies?q=5051889');
     expect(byBarcode.body.total).toBe(1);
 
-    db.prepare("INSERT INTO borrowers (name) VALUES ('Alice')").run();
-    db.prepare('INSERT INTO loans (copy_id, borrower_id) VALUES (1, 1)').run();
+    db.prepare("INSERT INTO borrowers (user_id, name) VALUES (1, 'Alice')").run();
+    db.prepare('INSERT INTO loans (user_id, copy_id, borrower_id) VALUES (1, 1, 1)').run();
     const loaned = await request(app).get('/api/copies?status=loaned');
     expect(loaned.body.total).toBe(1);
     expect(loaned.body.items[0].status).toBe('loaned');
@@ -236,8 +235,10 @@ describe('GET/PATCH/DELETE /api/copies/:id', () => {
     it('supprime aussi les prêts de l’exemplaire', async () => {
       const { app, db } = setup();
       const created = await request(app).post('/api/copies').send(tintin);
-      db.prepare("INSERT INTO borrowers (name) VALUES ('Alice')").run();
-      db.prepare('INSERT INTO loans (copy_id, borrower_id) VALUES (?, 1)').run(created.body.id);
+      db.prepare("INSERT INTO borrowers (user_id, name) VALUES (1, 'Alice')").run();
+      db.prepare('INSERT INTO loans (user_id, copy_id, borrower_id) VALUES (1, ?, 1)').run(
+        created.body.id,
+      );
 
       await request(app).delete(`/api/copies/${created.body.id}`);
 

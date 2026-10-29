@@ -1,8 +1,9 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
+import { SESSION_ADMIN } from '@/tests/fixtures';
 import { server } from '@/tests/msw/server';
 
 import App from './App';
@@ -14,11 +15,11 @@ function stubSession(loggedIn: boolean) {
   const state = { loggedIn };
   server.use(
     http.get('/api/auth/me', () =>
-      state.loggedIn ? HttpResponse.json({ username: 'admin' }) : unauthorized(),
+      state.loggedIn ? HttpResponse.json(SESSION_ADMIN) : unauthorized(),
     ),
     http.post('/api/auth/login', () => {
       state.loggedIn = true;
-      return HttpResponse.json({ username: 'admin' });
+      return HttpResponse.json(SESSION_ADMIN);
     }),
     http.post('/api/auth/logout', () => {
       state.loggedIn = false;
@@ -43,6 +44,23 @@ describe('App connectée', () => {
     expect(within(nav).getByRole('link', { name: 'Collection' })).toHaveAttribute('href', '/');
     expect(within(nav).getByRole('link', { name: 'Prêts' })).toHaveAttribute('href', '/loans');
     expect(within(nav).getByRole('link', { name: 'Ventes' })).toHaveAttribute('href', '/sales');
+  });
+
+  it('montre le lien Utilisateurs aux seuls administrateurs', async () => {
+    const { unmount } = render(<App />);
+    const nav = await screen.findByRole('navigation', { name: 'Navigation' });
+    expect(within(nav).getByRole('link', { name: 'Utilisateurs' })).toHaveAttribute(
+      'href',
+      '/admin',
+    );
+    unmount();
+
+    server.use(
+      http.get('/api/auth/me', () => HttpResponse.json({ ...SESSION_ADMIN, isAdmin: false })),
+    );
+    render(<App />);
+    const userNav = await screen.findByRole('navigation', { name: 'Navigation' });
+    expect(within(userNav).queryByRole('link', { name: 'Utilisateurs' })).not.toBeInTheDocument();
   });
 
   it('se déconnecte et revient à la page de connexion', async () => {
@@ -117,5 +135,55 @@ describe('App déconnectée', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Impossible de joindre le serveur.');
     expect(screen.queryByLabelText('Identifiant')).not.toBeInTheDocument();
+  });
+});
+
+describe('App sans compte ni session', () => {
+  afterEach(() => {
+    globalThis.history.pushState({}, '', '/');
+  });
+
+  it('demande la création du premier compte, puis ouvre l’application', async () => {
+    const state = stubSession(false);
+    let received: unknown;
+    server.use(
+      http.get('/api/auth/setup', () => HttpResponse.json({ required: !state.loggedIn })),
+      http.post('/api/auth/setup', async ({ request }) => {
+        received = await request.json();
+        state.loggedIn = true;
+        return HttpResponse.json(SESSION_ADMIN);
+      }),
+    );
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.type(await screen.findByLabelText("Jeton d'installation"), ' abc ');
+    await user.type(screen.getByLabelText("Nom d'utilisateur"), 'jerem');
+    await user.type(screen.getByLabelText('Mot de passe'), 'long-enough');
+    await user.type(screen.getByLabelText('Confirmer le mot de passe'), 'long-enough');
+    await user.click(screen.getByRole('button', { name: 'Créer le compte' }));
+
+    expect(await screen.findByText('Tintin au Tibet')).toBeInTheDocument();
+    expect(received).toEqual({ token: 'abc', username: 'jerem', password: 'long-enough' });
+  });
+
+  it('mène de la connexion au mot de passe oublié, et retour', async () => {
+    stubSession(false);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(await screen.findByRole('link', { name: 'Mot de passe oublié ?' }));
+    expect(await screen.findByLabelText('Identifiant ou e-mail')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('link', { name: 'Retour à la connexion' }));
+    expect(await screen.findByRole('button', { name: 'Se connecter' })).toBeInTheDocument();
+  });
+
+  it('ouvre le lien de réinitialisation sans session', async () => {
+    stubSession(false);
+    globalThis.history.pushState({}, '', '/reset-password?token=abc');
+    render(<App />);
+
+    expect(await screen.findByLabelText('Nouveau mot de passe')).toBeInTheDocument();
   });
 });

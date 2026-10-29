@@ -1,6 +1,7 @@
 import type { Database } from 'better-sqlite3';
 import { type Response, Router } from 'express';
 
+import { currentUserId } from '../../middleware.js';
 import { copyIdSchema } from '../copies/copies.schema.js';
 import { listSchema, sellSchema, updateSaleSchema } from './sales.schema.js';
 import { createSalesService, type SaleFailure, type SaleResult } from './sales.service.js';
@@ -27,7 +28,7 @@ export function createSalesRouter(db: Database) {
   };
 
   router.get('/copies/:id/sale', (req, res) => {
-    const sale = service.findForCopy(copyIdSchema.parse(req.params.id));
+    const sale = service.findForCopy(currentUserId(res), copyIdSchema.parse(req.params.id));
     if (sale === undefined) {
       res.status(404).json({ error: 'not_found' });
     } else {
@@ -37,21 +38,25 @@ export function createSalesRouter(db: Database) {
 
   router.post('/copies/:id/sale', (req, res) => {
     const input = listSchema.parse(req.body ?? {});
-    respond(res, service.listForSale(copyIdSchema.parse(req.params.id), input), 201);
+    respond(
+      res,
+      service.listForSale(currentUserId(res), copyIdSchema.parse(req.params.id), input),
+      201,
+    );
   });
 
   router.patch('/copies/:id/sale', (req, res) => {
     const input = updateSaleSchema.parse(req.body);
-    respond(res, service.update(copyIdSchema.parse(req.params.id), input), 200);
+    respond(res, service.update(currentUserId(res), copyIdSchema.parse(req.params.id), input), 200);
   });
 
   router.post('/copies/:id/sale/sold', (req, res) => {
     const input = sellSchema.parse(req.body ?? {});
-    respond(res, service.sell(copyIdSchema.parse(req.params.id), input), 200);
+    respond(res, service.sell(currentUserId(res), copyIdSchema.parse(req.params.id), input), 200);
   });
 
   router.delete('/copies/:id/sale', (req, res) => {
-    if (service.remove(copyIdSchema.parse(req.params.id))) {
+    if (service.remove(currentUserId(res), copyIdSchema.parse(req.params.id))) {
       res.status(204).end();
     } else {
       res.status(404).json({ error: 'not_found' });
@@ -59,7 +64,7 @@ export function createSalesRouter(db: Database) {
   });
 
   router.get('/sales', (_req, res) => {
-    res.json(service.listAll());
+    res.json(service.listAll(currentUserId(res)));
   });
 
   return router;

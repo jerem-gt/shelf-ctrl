@@ -6,6 +6,8 @@ import type {
   OpenLoanItem,
   SaleItem,
   SaleListItem,
+  SessionResponse,
+  UserItem,
 } from '@shelfctrl/types';
 
 export const COPY_TINTIN: CopyItem = {
@@ -144,4 +146,31 @@ export const SALE_LIST_SOLD: SaleListItem = {
   copyId: 2,
   work: { title: 'Alien', series: null, volumeNumber: null },
   format: 'bluray',
+};
+
+export const SESSION_ADMIN: SessionResponse = {
+  id: 1,
+  username: 'admin',
+  email: 'admin@example.com',
+  isAdmin: true,
+};
+
+export const USER_ADMIN: UserItem = {
+  id: 1,
+  username: 'admin',
+  email: 'admin@example.com',
+  isAdmin: true,
+  createdAt: '2026-01-05 10:00:00',
+  copyCount: 2,
+  lastCopyAt: '2026-10-14 10:00:00',
+};
+
+export const USER_BOB: UserItem = {
+  id: 2,
+  username: 'bob',
+  email: null,
+  isAdmin: false,
+  createdAt: '2026-02-01 10:00:00',
+  copyCount: 0,
+  lastCopyAt: null,
 };

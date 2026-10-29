@@ -2,18 +2,22 @@ import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@ta
 import { LogOut } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BrowserRouter, Link, NavLink, Route, Routes } from 'react-router';
+import { BrowserRouter, Link, NavLink, Route, Routes, useLocation } from 'react-router';
 
 import { ApiError } from '@/api/client';
-import { ME_KEY, useLogout, useMe } from '@/hooks/useAuth';
+import { ME_KEY, useLogout, useMe, useSetupStatus } from '@/hooks/useAuth';
 import { AddCopyPage } from '@/pages/AddCopyPage';
 import { CollectionPage } from '@/pages/CollectionPage';
 import { CopyPage } from '@/pages/CopyPage';
+import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
 import { ImportPage } from '@/pages/ImportPage';
 import { LoansPage } from '@/pages/LoansPage';
 import { LoginPage } from '@/pages/LoginPage';
+import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 import { SalesPage } from '@/pages/SalesPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { SetupPage } from '@/pages/SetupPage';
+import { UsersPage } from '@/pages/UsersPage';
 
 function navClass({ isActive }: { isActive: boolean }) {
   return isActive ? 'text-slate-900 underline underline-offset-4' : 'text-slate-500';
@@ -22,6 +26,7 @@ function navClass({ isActive }: { isActive: boolean }) {
 export function AppRoutes() {
   const { t } = useTranslation();
   const logout = useLogout();
+  const isAdmin = useMe().data?.isAdmin === true;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -49,6 +54,11 @@ export function AppRoutes() {
             <NavLink to="/settings" className={navClass}>
               {t('nav.settings')}
             </NavLink>
+            {isAdmin && (
+              <NavLink to="/admin" className={navClass}>
+                {t('nav.users')}
+              </NavLink>
+            )}
           </nav>
           <div className="order-2 ml-auto flex items-center gap-3 sm:order-3">
             <p className="hidden text-sm text-slate-500 lg:block">{t('tagline')}</p>
@@ -74,24 +84,49 @@ export function AppRoutes() {
           <Route path="/sales" element={<SalesPage />} />
           <Route path="/import" element={<ImportPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          {isAdmin && <Route path="/admin" element={<UsersPage />} />}
         </Routes>
       </main>
     </div>
   );
 }
 
+/** Écrans sans session : premier compte tant qu'aucun n'existe, sinon connexion et mot de passe oublié. */
+function PublicRoutes() {
+  const { t } = useTranslation();
+  const setup = useSetupStatus();
+
+  if (setup.isPending) {
+    return <p className="p-6 text-slate-500">{t('collection.loading')}</p>;
+  }
+  if (setup.data?.required) {
+    return <SetupPage />;
+  }
+  return (
+    <Routes>
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="*" element={<LoginPage />} />
+    </Routes>
+  );
+}
+
 /** Affiche la page de connexion tant qu'il n'y a pas de session, l'application sinon. */
 function AuthGate({ children }: Readonly<{ children: ReactNode }>) {
   const { t } = useTranslation();
+  const { pathname } = useLocation();
   const { data, error, isPending } = useMe();
 
+  // Le lien reçu par e-mail s'ouvre avec ou sans session.
+  if (pathname === '/reset-password') {
+    return <ResetPasswordPage />;
+  }
   if (isPending) {
     return <p className="p-6 text-slate-500">{t('collection.loading')}</p>;
   }
   // Le 401 d'abord : après une déconnexion ou une expiration, la dernière donnée connue reste en
   // cache à côté de l'erreur, et ne doit pas ouvrir l'application.
   if (error instanceof ApiError && error.status === 401) {
-    return <LoginPage />;
+    return <PublicRoutes />;
   }
   if (data) {
     return <>{children}</>;

@@ -1,7 +1,15 @@
 import type { ZodType } from 'zod';
 import { toJSONSchema } from 'zod';
 
-import { loginSchema, SESSION_COOKIE } from '../modules/auth/auth.routes.js';
+import { SESSION_COOKIE } from '../modules/auth/auth.routes.js';
+import {
+  changePasswordSchema,
+  forgotPasswordSchema,
+  loginSchema,
+  profileSchema,
+  resetPasswordSchema,
+  setupSchema,
+} from '../modules/auth/auth.schema.js';
 import {
   createCopySchema,
   listCopiesSchema,
@@ -15,6 +23,7 @@ import {
 } from '../modules/platforms/platforms.schema.js';
 import { listSchema, sellSchema, updateSaleSchema } from '../modules/sales/sales.schema.js';
 import { querySchema as titleQuerySchema } from '../modules/titles/titles.routes.js';
+import { createUserSchema, updateUserSchema } from '../modules/users/users.schema.js';
 
 // ─── helpers ───────────────────────────────────────────────────────────────
 
@@ -67,9 +76,11 @@ const r202 = { 202: { description: 'Accepted' } };
 const r204 = { 204: { description: 'No Content' } };
 const r400 = { 400: { description: 'Validation error' } };
 const r401 = { 401: { description: 'Unauthorized' } };
+const r403 = { 403: { description: 'Forbidden (admin only)' } };
 const r404 = { 404: { description: 'Not found' } };
 const r409 = { 409: { description: 'Conflict' } };
 const r415 = { 415: { description: 'Unsupported image' } };
+const r429 = { 429: { description: 'Too many failures' } };
 
 const sessionAuth = [{ sessionCookie: [] }];
 
@@ -109,11 +120,79 @@ export function buildOpenApiSpec() {
           tags: ['Auth'],
           summary: 'Connexion',
           requestBody: body(loginSchema),
+          responses: { ...r200('Session started'), ...r400, ...r401, ...r429 },
+        },
+      },
+      '/api/auth/setup': {
+        get: {
+          tags: ['Auth'],
+          summary: 'Premier démarrage : création du premier compte attendue ?',
+          responses: r200(),
+        },
+        post: {
+          tags: ['Auth'],
+          summary: 'Créer le premier compte (admin), avec le jeton écrit dans les logs',
+          requestBody: body(setupSchema),
           responses: {
             ...r200('Session started'),
             ...r400,
+            403: { description: 'Invalid setup token' },
+            409: { description: 'An account already exists' },
+            ...r429,
+          },
+        },
+      },
+      '/api/auth/profile': {
+        patch: {
+          tags: ['Auth'],
+          summary: 'Modifier son nom ou son e-mail (mot de passe actuel requis)',
+          security: sessionAuth,
+          requestBody: body(profileSchema),
+          responses: { ...r200(), ...r400, ...r401, ...r409, ...r429 },
+        },
+      },
+      '/api/auth/change-password': {
+        post: {
+          tags: ['Auth'],
+          summary: 'Changer son mot de passe (ferme les autres sessions)',
+          security: sessionAuth,
+          requestBody: body(changePasswordSchema),
+          responses: { ...r204, ...r400, ...r401, ...r429 },
+        },
+      },
+      '/api/auth/password/forgot': {
+        post: {
+          tags: ['Auth'],
+          summary:
+            'Mot de passe oublié : lien par e-mail (réponse identique si le compte est inconnu)',
+          requestBody: body(forgotPasswordSchema),
+          responses: { ...r204, ...r400, ...r429 },
+        },
+      },
+      '/api/auth/password/reset': {
+        post: {
+          tags: ['Auth'],
+          summary: 'Nouveau mot de passe avec le jeton reçu (ferme toutes les sessions)',
+          requestBody: body(resetPasswordSchema),
+          responses: {
+            ...r204,
+            400: { description: 'Validation error or invalid token' },
+            ...r429,
+          },
+        },
+      },
+      '/api/auth/test-email': {
+        post: {
+          tags: ['Auth'],
+          summary: "Envoyer un e-mail de test à l'admin connecté",
+          security: sessionAuth,
+          responses: {
+            ...r204,
+            400: { description: 'No email on the account' },
             ...r401,
-            429: { description: 'Too many failures' },
+            ...r403,
+            502: { description: 'Sending failed' },
+            503: { description: 'SMTP not configured' },
           },
         },
       },
@@ -129,6 +208,40 @@ export function buildOpenApiSpec() {
           tags: ['Auth'],
           summary: 'Utilisateur connecté',
           responses: { ...r200(), ...r401 },
+        },
+      },
+
+      // ── Utilisateurs (admin) ─────────────────────────────────────────────
+      '/api/users': {
+        get: {
+          tags: ['Utilisateurs'],
+          summary: 'Liste des comptes',
+          security: sessionAuth,
+          responses: { ...r200(), ...r401, ...r403 },
+        },
+        post: {
+          tags: ['Utilisateurs'],
+          summary: 'Créer un compte',
+          security: sessionAuth,
+          requestBody: body(createUserSchema),
+          responses: { ...r201, ...r400, ...r401, ...r403, ...r409 },
+        },
+      },
+      '/api/users/{id}': {
+        patch: {
+          tags: ['Utilisateurs'],
+          summary: 'Modifier un compte (nom, e-mail, mot de passe, rôle admin)',
+          security: sessionAuth,
+          parameters: pId,
+          requestBody: body(updateUserSchema),
+          responses: { ...r200(), ...r400, ...r401, ...r403, ...r404, ...r409 },
+        },
+        delete: {
+          tags: ['Utilisateurs'],
+          summary: 'Supprimer un compte, ses données et ses images',
+          security: sessionAuth,
+          parameters: pId,
+          responses: { ...r204, ...r401, ...r403, ...r404, ...r409 },
         },
       },
 

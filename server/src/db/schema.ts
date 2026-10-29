@@ -73,7 +73,7 @@ export function initSchema(db: Database) {
     -- Une seule ligne par exemplaire : la ligne seule vaut « en vente », avec sold_at « vendu » ; la supprimer retire l'annonce.
     CREATE UNIQUE INDEX IF NOT EXISTS idx_sales_copy_unique ON sales (copy_id);
 
-    -- Compte unique, synchronisé avec ADMIN_USER / ADMIN_PASSWORD au démarrage.
+    -- Comptes (rôle admin, e-mail et données par compte : migration 2).
     CREATE TABLE IF NOT EXISTS users
     (
         id            INTEGER PRIMARY KEY AUTOINCREMENT,

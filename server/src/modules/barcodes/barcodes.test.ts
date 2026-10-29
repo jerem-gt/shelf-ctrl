@@ -3,7 +3,7 @@ import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createApp } from '../../app.js';
-import { createDb, initDatabase } from '../../db/init.js';
+import { createTestDbWithUser } from '../../tests/testDb.js';
 import type { BarcodeProvider } from './providers/types.js';
 
 const suggestion = (title: string): BarcodeSuggestion => ({
@@ -21,8 +21,7 @@ function fakeProvider(
 }
 
 function setup(providers: BarcodeProvider[]) {
-  const db = createDb(':memory:');
-  initDatabase(db);
+  const { db } = createTestDbWithUser();
   return { db, app: createApp(db, { barcodeProviders: providers }) };
 }
 

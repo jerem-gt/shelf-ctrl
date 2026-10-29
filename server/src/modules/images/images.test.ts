@@ -7,7 +7,7 @@ import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createApp } from '../../app.js';
-import { createDb, initDatabase } from '../../db/init.js';
+import { createTestDbWithUser } from '../../tests/testDb.js';
 import { createOpenLibraryCoverProvider } from './covers/openLibrary.js';
 import { createTmdbCoverProvider } from './covers/tmdb.js';
 import type { CoverProvider } from './covers/types.js';
@@ -24,8 +24,7 @@ afterEach(() => {
 function setup(coverProviders: CoverProvider[] = []) {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'shelfctrl-images-'));
   tempDirs.push(dataDir);
-  const db = createDb(':memory:');
-  initDatabase(db);
+  const { db } = createTestDbWithUser();
   const app = createApp(db, {
     barcodeProviders: [],
     titleSearchProviders: [],
@@ -407,8 +406,7 @@ describe('accès aux fichiers', () => {
   it('exige une session pour les images quand l’authentification est active', async () => {
     const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'shelfctrl-images-'));
     tempDirs.push(dataDir);
-    const db = createDb(':memory:');
-    initDatabase(db);
+    const { db } = createTestDbWithUser();
     const app = createApp(db, {
       barcodeProviders: [],
       titleSearchProviders: [],

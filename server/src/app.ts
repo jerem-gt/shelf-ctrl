@@ -6,8 +6,11 @@ import session from 'express-session';
 import helmet from 'helmet';
 import { ZodError } from 'zod';
 
-import { requireAuth } from './middleware.js';
+import type { Mailer } from './lib/mailer.js';
+import { actAs, requireAuth } from './middleware.js';
 import { createAuthRouter, SESSION_COOKIE } from './modules/auth/auth.routes.js';
+import type { AuthLogger } from './modules/auth/auth.types.js';
+import type { SetupToken } from './modules/auth/setup.js';
 import { parseBarcode } from './modules/barcodes/barcode.js';
 import { createBarcodesRouter } from './modules/barcodes/barcodes.routes.js';
 import { createBarcodesService } from './modules/barcodes/barcodes.service.js';
@@ -22,6 +25,7 @@ import { createSalesRouter } from './modules/sales/sales.routes.js';
 import { createDefaultTitleSearchProviders } from './modules/titles/providers/index.js';
 import type { TitleSearchProvider } from './modules/titles/providers/types.js';
 import { createTitlesRouter } from './modules/titles/titles.routes.js';
+import { createUsersRouter } from './modules/users/users.routes.js';
 import { createDocsRouter } from './openapi/router.js';
 import { SQLiteSessionStore } from './session-store.js';
 
@@ -40,10 +44,24 @@ export interface AppOptions {
   /** Sources de recherche par titre (par défaut : chaîne configurée par l'environnement). */
   titleSearchProviders?: readonly TitleSearchProvider[];
   /**
-   * Authentification par session. Sans elle l'API est ouverte (tests) : `index.ts` la fournit
-   * toujours, et refuse de démarrer en production si la configuration est incomplète.
+   * Authentification par session. Sans elle l'API est ouverte et agit pour le compte `actAsUserId`
+   * (tests) : `index.ts` la fournit toujours, et refuse de démarrer en production sans secret.
    */
-  auth?: { sessionSecret: string; secureCookies: boolean };
+  auth?: AuthOptions;
+  /** Sans `auth` : compte pour lequel agissent les requêtes (1 par défaut). */
+  actAsUserId?: number;
+}
+
+export interface AuthOptions {
+  sessionSecret: string;
+  secureCookies: boolean;
+  /** URL publique de l'application, sans slash final, pour les liens des e-mails. */
+  appUrl?: string;
+  /** Envoi des e-mails (par défaut : SMTP lu dans l'environnement). */
+  mailer?: Mailer;
+  /** Jeton de création du premier compte (par défaut : un nouveau, inconnu des logs). */
+  setupToken?: SetupToken;
+  log?: AuthLogger;
 }
 
 function isClientError(err: unknown): err is { status: number } {
@@ -101,12 +119,15 @@ export function createApp(db: Database, options: AppOptions = {}) {
   // Documentation de l'API (Swagger UI et spec), publique comme dans cash-ctrl : aucune donnée.
   app.use('/api/docs', createDocsRouter());
 
+  const images = options.images ? createImages(db, options.images) : null;
+
   if (options.auth) {
+    const sessionStore = new SQLiteSessionStore(db);
     app.use(
       session({
         // Nom propre à l'appli : cookies et noms d'hôte sont partagés avec cash-ctrl sur le NAS.
         name: SESSION_COOKIE,
-        store: new SQLiteSessionStore(db),
+        store: sessionStore,
         secret: options.auth.sessionSecret,
         resave: false,
         saveUninitialized: false,
@@ -119,13 +140,19 @@ export function createApp(db: Database, options: AppOptions = {}) {
         },
       }),
     );
-    app.use('/api/auth', createAuthRouter(db));
+    const { mailer, setupToken, appUrl, log } = options.auth;
+    app.use('/api/auth', createAuthRouter(db, sessionStore, { mailer, setupToken, appUrl, log }));
     // /api/health, /api/docs et /api/auth/* sont déclarés avant : tout le reste de l'API exige une session.
     app.use('/api', requireAuth);
     app.use(['/covers', '/photos'], requireAuth);
+    app.use(
+      '/api/users',
+      createUsersRouter(db, { sessionStore, removeAccountImages: images?.removeAccountImages }),
+    );
+  } else {
+    app.use(['/api', '/covers', '/photos'], actAs(options.actAsUserId ?? 1));
   }
 
-  const images = options.images ? createImages(db, options.images) : null;
   if (images) {
     app.use('/covers', images.covers);
     app.use('/photos', images.photos);
@@ -145,9 +172,9 @@ export function createApp(db: Database, options: AppOptions = {}) {
   app.use(
     '/api/import',
     createImportRouter(db, {
-      resolve: (code) => {
+      resolve: (userId, code) => {
         const parsed = parseBarcode(code);
-        return parsed ? barcodes.resolve(parsed) : Promise.resolve(null);
+        return parsed ? barcodes.resolve(userId, parsed) : Promise.resolve(null);
       },
       fetchCover: images?.fetchCover,
     }),
