@@ -60,14 +60,18 @@ export function createUsersRouter(db: Database, deps: UsersRouterDeps): Router {
     }
     const hash = await bcrypt.hash(password, BCRYPT_COST);
     // Revérifié après le hachage (asynchrone) : une requête concurrente a pu prendre le nom.
-    const result = db.transaction((): UserItem | UserConflict => {
-      return identityConflict(null, username, email) ?? repo.create(username, hash, email, isAdmin);
+    const result = db.transaction((): { user: UserItem } | { conflict: UserConflict } => {
+      const late = identityConflict(null, username, email);
+      if (late !== null) {
+        return { conflict: late };
+      }
+      return { user: repo.create(username, hash, email, isAdmin) };
     })();
-    if (typeof result === 'string') {
-      res.status(409).json({ error: result });
+    if ('conflict' in result) {
+      res.status(409).json({ error: result.conflict });
       return;
     }
-    res.status(201).json(result);
+    res.status(201).json(result.user);
   });
 
   router.patch('/:id', async (req, res) => {
