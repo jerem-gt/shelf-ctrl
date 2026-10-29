@@ -20,6 +20,6 @@ Client : http://localhost:5173 (proxy `/api` vers le serveur sur le port 3001).
 
 ## Stack
 
-React 19 · Vite · Tailwind 4 · TanStack Query · Express 5 · SQLite · Docker (Synology Container Manager).
+React 19 · Vite · Tailwind 4 · TanStack Query · Express 5 · SQLite · Docker (Portainer sur Synology).
 
 Voir [CLAUDE.md](./CLAUDE.md) pour les conventions et le modèle de données.

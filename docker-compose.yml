@@ -1,4 +1,5 @@
-# Stack dédiée : projet Container Manager indépendant de cash-ctrl (réseau par défaut propre au projet).
+# Stack Portainer dédiée, lue telle quelle depuis GitHub : toute variable ajoutée ici se crée d'abord dans la stack.
+# Indépendante de cash-ctrl (réseau propre au projet).
 services:
   shelfctrl:
     image: ghcr.io/jerem-gt/shelf-ctrl:latest
