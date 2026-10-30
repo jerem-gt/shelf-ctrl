@@ -289,9 +289,7 @@ function TestEmailCard() {
         </p>
       )}
       {testEmail.isSuccess && (
-        <p role="status" className="text-sm text-green-700">
-          {t('users.testEmailSent')}
-        </p>
+        <output className="block text-sm text-green-700">{t('users.testEmailSent')}</output>
       )}
       <button
         type="button"

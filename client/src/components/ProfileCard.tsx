@@ -81,9 +81,7 @@ function ProfileForm({
         </p>
       )}
       {update.isSuccess && !changed && (
-        <p role="status" className="text-sm text-green-700">
-          {t('profile.saved')}
-        </p>
+        <output className="block text-sm text-green-700">{t('profile.saved')}</output>
       )}
       <button type="submit" disabled={!changed || update.isPending} className={BUTTON_CLASS}>
         {update.isPending ? t('profile.saving') : t('profile.save')}
@@ -163,9 +161,7 @@ function PasswordForm() {
         </p>
       )}
       {change.isSuccess && (
-        <p role="status" className="text-sm text-green-700">
-          {t('profile.passwordChanged')}
-        </p>
+        <output className="block text-sm text-green-700">{t('profile.passwordChanged')}</output>
       )}
       <button type="submit" disabled={change.isPending} className={BUTTON_CLASS}>
         {change.isPending ? t('profile.changingPassword') : t('profile.changePassword')}

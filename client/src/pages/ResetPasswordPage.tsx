@@ -4,8 +4,9 @@ import { Link, useSearchParams } from 'react-router';
 
 import { ApiError } from '@/api/client';
 import { AUTH_LINK_CLASS, AuthCard } from '@/components/AuthCard';
+import { NewPasswordFields } from '@/components/NewPasswordFields';
 import { useResetPassword } from '@/hooks/useAuth';
-import { FIELD_CLASS, LABEL_CLASS, PRIMARY_BUTTON_CLASS } from '@/lib/formClasses';
+import { PRIMARY_BUTTON_CLASS } from '@/lib/formClasses';
 import { newPasswordProblem } from '@/lib/passwords';
 
 /** Ouverte depuis le lien reçu (`/reset-password?token=…`), avec ou sans session. */
@@ -54,28 +55,14 @@ export function ResetPasswordPage() {
       error={problem === null ? reset.error?.message : t(problem)}
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <label className={LABEL_CLASS}>
-          {t('reset.password')}
-          <input
-            required
-            type="password"
-            autoComplete="new-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className={FIELD_CLASS}
-          />
-        </label>
-        <label className={LABEL_CLASS}>
-          {t('reset.confirm')}
-          <input
-            required
-            type="password"
-            autoComplete="new-password"
-            value={confirm}
-            onChange={(event) => setConfirm(event.target.value)}
-            className={FIELD_CLASS}
-          />
-        </label>
+        <NewPasswordFields
+          passwordLabel={t('reset.password')}
+          confirmLabel={t('reset.confirm')}
+          password={password}
+          confirm={confirm}
+          onPasswordChange={setPassword}
+          onConfirmChange={setConfirm}
+        />
         <button type="submit" disabled={reset.isPending} className={PRIMARY_BUTTON_CLASS}>
           {reset.isPending ? t('reset.submitting') : t('reset.submit')}
         </button>

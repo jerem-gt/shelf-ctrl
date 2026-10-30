@@ -2,6 +2,7 @@ import { type SyntheticEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { AuthCard } from '@/components/AuthCard';
+import { NewPasswordFields } from '@/components/NewPasswordFields';
 import { useSetup } from '@/hooks/useAuth';
 import { FIELD_CLASS, LABEL_CLASS, PRIMARY_BUTTON_CLASS } from '@/lib/formClasses';
 import { newPasswordProblem } from '@/lib/passwords';
@@ -56,28 +57,14 @@ export function SetupPage() {
             className={FIELD_CLASS}
           />
         </label>
-        <label className={LABEL_CLASS}>
-          {t('setup.password')}
-          <input
-            required
-            type="password"
-            autoComplete="new-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className={FIELD_CLASS}
-          />
-        </label>
-        <label className={LABEL_CLASS}>
-          {t('setup.confirm')}
-          <input
-            required
-            type="password"
-            autoComplete="new-password"
-            value={confirm}
-            onChange={(event) => setConfirm(event.target.value)}
-            className={FIELD_CLASS}
-          />
-        </label>
+        <NewPasswordFields
+          passwordLabel={t('setup.password')}
+          confirmLabel={t('setup.confirm')}
+          password={password}
+          confirm={confirm}
+          onPasswordChange={setPassword}
+          onConfirmChange={setConfirm}
+        />
         <button type="submit" disabled={setup.isPending} className={PRIMARY_BUTTON_CLASS}>
           {setup.isPending ? t('setup.submitting') : t('setup.submit')}
         </button>
