@@ -1,8 +1,8 @@
+import type { Mailer } from '@jerem-gt/ctrl-shared/server/mailer';
 import type { Database } from 'better-sqlite3';
 import { Router } from 'express';
 
 import { BadRequestError, HttpError } from '../../lib/errors.js';
-import type { Mailer } from '../../lib/mailer.js';
 import { MAIL_TEXTS } from '../../lib/mailTexts.js';
 import { createRequireAdmin, currentUserId, requireAuth } from '../../middleware.js';
 import type { AuthRepo } from './auth.repo.js';

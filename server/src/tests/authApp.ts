@@ -1,8 +1,8 @@
+import type { Mailer, MailMessage } from '@jerem-gt/ctrl-shared/server/mailer';
 import request from 'supertest';
 import { vi } from 'vitest';
 
 import { type AuthOptions, createApp } from '../app.js';
-import type { Mailer, MailMessage } from '../lib/mailer.js';
 import { createTestDb, type TestDb } from './testDb.js';
 
 export const TEST_SECRET = 'a'.repeat(40);

@@ -1,15 +1,15 @@
 import { randomBytes } from 'node:crypto';
 
+import { sha256Hex } from '@jerem-gt/ctrl-shared/server/crypto';
+import type { Mailer } from '@jerem-gt/ctrl-shared/server/mailer';
+import { FailureRateLimiter } from '@jerem-gt/ctrl-shared/server/rateLimit';
+import type { SQLiteSessionStore } from '@jerem-gt/ctrl-shared/server/session-store';
 import bcrypt from 'bcrypt';
 import type { Database } from 'better-sqlite3';
 import { Router } from 'express';
 
-import { sha256Hex } from '../../lib/crypto.js';
 import { BadRequestError, HttpError } from '../../lib/errors.js';
-import type { Mailer } from '../../lib/mailer.js';
 import { MAIL_TEXTS } from '../../lib/mailTexts.js';
-import { FailureRateLimiter } from '../../lib/rateLimit.js';
-import type { SQLiteSessionStore } from '../../session-store.js';
 import { type AuthRepo, BCRYPT_COST } from './auth.repo.js';
 import { emailSchema, forgotPasswordSchema, resetPasswordSchema } from './auth.schema.js';
 import type { AuthLogger, User } from './auth.types.js';

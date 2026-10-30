@@ -3,12 +3,12 @@ import 'dotenv/config';
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { announceSetupToken, SetupToken } from '@jerem-gt/ctrl-shared/server/setup';
 import express from 'express';
 
 import { createApp } from './app.js';
 import { createDb, DATA_DIR, initDatabase } from './db/init.js';
 import { loadAuthConfig } from './modules/auth/config.js';
-import { announceSetupToken, SetupToken } from './modules/auth/setup.js';
 import { createDefaultCoverProviders } from './modules/images/covers/covers.service.js';
 
 const PORT = Number.parseInt(process.env.PORT ?? '3001');

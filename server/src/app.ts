@@ -1,3 +1,6 @@
+import type { Mailer } from '@jerem-gt/ctrl-shared/server/mailer';
+import { SQLiteSessionStore } from '@jerem-gt/ctrl-shared/server/session-store';
+import type { SetupToken } from '@jerem-gt/ctrl-shared/server/setup';
 import type { HealthResponse } from '@shelfctrl/types';
 import type { Database } from 'better-sqlite3';
 import compression from 'compression';
@@ -8,12 +11,10 @@ import { ZodError } from 'zod';
 
 import type { ErrorCode } from './lib/errorCodes.js';
 import { HttpError } from './lib/errors.js';
-import type { Mailer } from './lib/mailer.js';
 import { sendError, zodToApiError } from './lib/routeHelpers.js';
 import { actAs, requireAuth } from './middleware.js';
 import { createAuthRouter, SESSION_COOKIE } from './modules/auth/auth.routes.js';
 import type { AuthLogger } from './modules/auth/auth.types.js';
-import type { SetupToken } from './modules/auth/setup.js';
 import { parseBarcode } from './modules/barcodes/barcode.js';
 import { createBarcodesRouter } from './modules/barcodes/barcodes.routes.js';
 import { createBarcodesService } from './modules/barcodes/barcodes.service.js';
@@ -30,7 +31,6 @@ import type { TitleSearchProvider } from './modules/titles/providers/types.js';
 import { createTitlesRouter } from './modules/titles/titles.routes.js';
 import { createUsersRouter } from './modules/users/users.routes.js';
 import { createDocsRouter } from './openapi/router.js';
-import { SQLiteSessionStore } from './session-store.js';
 
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 

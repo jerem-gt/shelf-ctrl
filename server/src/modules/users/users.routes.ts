@@ -1,10 +1,10 @@
+import type { SQLiteSessionStore } from '@jerem-gt/ctrl-shared/server/session-store';
 import bcrypt from 'bcrypt';
 import type { Database } from 'better-sqlite3';
 import { Router } from 'express';
 
 import { ConflictError, NotFoundError } from '../../lib/errors.js';
 import { createRequireAdmin, currentUserId } from '../../middleware.js';
-import type { SQLiteSessionStore } from '../../session-store.js';
 import { BCRYPT_COST } from '../auth/auth.repo.js';
 import type { AccountImages } from '../images/index.js';
 import { createUsersRepo } from './users.repo.js';

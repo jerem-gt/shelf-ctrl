@@ -1,10 +1,10 @@
+import { SetupToken } from '@jerem-gt/ctrl-shared/server/setup';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 
 import { createApp } from '../../app.js';
 import { createAuthApp, loginAgent, TEST_SECRET, type TestApp } from '../../tests/authApp.js';
 import { addTestUser, createTestDb } from '../../tests/testDb.js';
-import { SetupToken } from './setup.js';
 
 const PASSWORD = 'correct-horse';
 

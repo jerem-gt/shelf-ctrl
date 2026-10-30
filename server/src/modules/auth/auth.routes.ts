@@ -1,20 +1,20 @@
+import { createMailer, type Mailer } from '@jerem-gt/ctrl-shared/server/mailer';
+import { FailureRateLimiter } from '@jerem-gt/ctrl-shared/server/rateLimit';
+import type { SQLiteSessionStore } from '@jerem-gt/ctrl-shared/server/session-store';
+import { SetupToken } from '@jerem-gt/ctrl-shared/server/setup';
 import type { SessionResponse, SetupStatusResponse } from '@shelfctrl/types';
 import bcrypt from 'bcrypt';
 import type { Database } from 'better-sqlite3';
 import { type NextFunction, type Request, type Response, Router } from 'express';
 
 import { ConflictError, HttpError } from '../../lib/errors.js';
-import { createMailer, type Mailer } from '../../lib/mailer.js';
-import { FailureRateLimiter } from '../../lib/rateLimit.js';
 import { currentUserId, requireAuth } from '../../middleware.js';
-import type { SQLiteSessionStore } from '../../session-store.js';
 import { createUsersRepo } from '../users/users.repo.js';
 import { BCRYPT_COST, createAuthRepo } from './auth.repo.js';
 import { changePasswordSchema, loginSchema, profileSchema, setupSchema } from './auth.schema.js';
 import type { AuthLogger, User } from './auth.types.js';
 import { createMailRouter } from './mail.routes.js';
 import { createPasswordRouter } from './password.routes.js';
-import { SetupToken } from './setup.js';
 
 export const SESSION_COOKIE = 'shelfctrl.sid';
 
