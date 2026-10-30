@@ -5,6 +5,7 @@ import type { Database } from 'better-sqlite3';
 import { Router } from 'express';
 
 import { sha256Hex } from '../../lib/crypto.js';
+import { BadRequestError, HttpError } from '../../lib/errors.js';
 import type { Mailer } from '../../lib/mailer.js';
 import { MAIL_TEXTS } from '../../lib/mailTexts.js';
 import { FailureRateLimiter } from '../../lib/rateLimit.js';
@@ -67,8 +68,7 @@ export function createPasswordRouter(deps: PasswordRouterDeps): Router {
   router.post('/password/forgot', (req, res) => {
     const key = `forgot:${req.ip ?? 'unknown'}`;
     if (!forgotLimiter.isAllowed(key)) {
-      res.status(429).json({ error: 'too_many_attempts' });
-      return;
+      throw new HttpError(429, 'auth.too_many_attempts');
     }
     // Chaque requête compte, qu'elle aboutisse ou non.
     forgotLimiter.recordFailure(key);
@@ -90,16 +90,14 @@ export function createPasswordRouter(deps: PasswordRouterDeps): Router {
   router.post('/password/reset', async (req, res) => {
     const key = `reset:${req.ip ?? 'unknown'}`;
     if (!resetLimiter.isAllowed(key)) {
-      res.status(429).json({ error: 'too_many_attempts' });
-      return;
+      throw new HttpError(429, 'auth.too_many_attempts');
     }
     const data = resetPasswordSchema.parse(req.body);
 
     const tokenHash = sha256Hex(data.token);
     if (!validResetToken(tokenHash)) {
       resetLimiter.recordFailure(key);
-      res.status(400).json({ error: 'reset_token_invalid' });
-      return;
+      throw new BadRequestError('auth.reset_token_invalid');
     }
 
     // Haché après la vérification du jeton : un faux jeton ne coûte pas un bcrypt au serveur.
@@ -115,8 +113,7 @@ export function createPasswordRouter(deps: PasswordRouterDeps): Router {
       return row.user_id;
     })();
     if (userId === null) {
-      res.status(400).json({ error: 'reset_token_invalid' });
-      return;
+      throw new BadRequestError('auth.reset_token_invalid');
     }
     sessionStore.destroyAllSessions(userId);
     resetLimiter.reset(key);

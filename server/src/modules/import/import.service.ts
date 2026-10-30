@@ -10,14 +10,11 @@ import type {
 } from '@shelfctrl/types';
 import type { Database } from 'better-sqlite3';
 
+import { BadRequestError, ConflictError } from '../../lib/errors.js';
 import { createCopySchema } from '../copies/copies.schema.js';
 import { createCopiesService } from '../copies/copies.service.js';
 import { decodeCsv, parseCsv, toCsvCell } from './csv.js';
 import { MAX_ROWS, needsCompletion, type ParsedRow, parseTable, type RowDraft } from './rows.js';
-
-export class EmptyFileError extends Error {}
-export class TooManyRowsError extends Error {}
-export class ImportRunningError extends Error {}
 
 export interface ImportDeps {
   /** Fiche d'un code-barres (collection du compte puis sources en ligne) ; `null` si inconnu. */
@@ -88,10 +85,10 @@ export function buildTemplate(): string {
 function parseBuffer(buffer: Buffer) {
   const table = parseCsv(decodeCsv(buffer));
   if (table.length === 0) {
-    throw new EmptyFileError('Fichier vide');
+    throw new BadRequestError('import.empty_file');
   }
   if (table.length - 1 > MAX_ROWS) {
-    throw new TooManyRowsError(`Plus de ${MAX_ROWS} lignes`);
+    throw new BadRequestError('import.too_many_rows', { max: MAX_ROWS });
   }
   return parseTable(table);
 }
@@ -340,7 +337,7 @@ export function createImportService(db: Database, deps: ImportDeps) {
     /** Lance l'import en tâche de fond ; un seul à la fois par compte. Renvoie son état initial. */
     start(userId: number, buffer: Buffer): ImportJob {
       if (running.has(userId)) {
-        throw new ImportRunningError('Un import est déjà en cours');
+        throw new ConflictError('import.running');
       }
       const { rows } = parseBuffer(buffer);
       const job: ImportJob = {

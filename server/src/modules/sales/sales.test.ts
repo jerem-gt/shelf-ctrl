@@ -65,12 +65,12 @@ describe('POST /api/copies/:id/sale (mise en vente)', () => {
 
     const again = await listForSale(app, copyId);
     expect(again.status).toBe(409);
-    expect(again.body).toEqual({ error: 'already_listed' });
+    expect(again.body.error.code).toBe('sale.already_listed');
 
     await sell(app, copyId);
     const afterSale = await listForSale(app, copyId);
     expect(afterSale.status).toBe(409);
-    expect(afterSale.body).toEqual({ error: 'already_sold' });
+    expect(afterSale.body.error.code).toBe('sale.already_sold');
   });
 
   it('répond 404 pour un exemplaire inconnu', async () => {
@@ -89,7 +89,7 @@ describe('POST /api/copies/:id/sale (mise en vente)', () => {
     const res = await listForSale(app, await createCopy(app), body);
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe('validation');
+    expect(res.body.error.code).toBe('validation.invalid');
   });
 });
 
@@ -139,7 +139,7 @@ describe('POST /api/copies/:id/sale/sold (vente)', () => {
     const res = await sell(app, copyId);
 
     expect(res.status).toBe(409);
-    expect(res.body).toEqual({ error: 'already_sold' });
+    expect(res.body.error.code).toBe('sale.already_sold');
   });
 
   it('refuse un exemplaire prêté, puis l’accepte une fois rendu', async () => {
@@ -151,7 +151,7 @@ describe('POST /api/copies/:id/sale/sold (vente)', () => {
 
     const refused = await sell(app, copyId);
     expect(refused.status).toBe(409);
-    expect(refused.body).toEqual({ error: 'loaned' });
+    expect(refused.body.error.code).toBe('sale.copy_loaned');
 
     await request(app).post(`/api/loans/${loan.body.id}/return`).send({});
     expect((await sell(app, copyId)).status).toBe(200);
@@ -164,7 +164,7 @@ describe('POST /api/copies/:id/sale/sold (vente)', () => {
 
     const early = await sell(app, copyId, { soldAt: '2026-10-09' });
     expect(early.status).toBe(400);
-    expect(early.body).toEqual({ error: 'invalid_date' });
+    expect(early.body.error.code).toBe('sale.invalid_date');
 
     expect((await sell(app, copyId, { soldAt: '2026-10-10' })).status).toBe(200);
   });

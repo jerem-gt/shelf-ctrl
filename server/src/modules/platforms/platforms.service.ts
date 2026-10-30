@@ -1,11 +1,8 @@
 import type { PlatformItem } from '@shelfctrl/types';
 import type { Database } from 'better-sqlite3';
 
+import { ConflictError, NotFoundError } from '../../lib/errors.js';
 import type { CreatePlatformInput, UpdatePlatformInput } from './platforms.schema.js';
-
-export type PlatformFailure = 'not_found' | 'duplicate';
-export type PlatformResult =
-  { ok: true; platform: PlatformItem } | { ok: false; reason: PlatformFailure };
 
 interface PlatformRow {
   id: number;
@@ -46,12 +43,12 @@ export function createPlatformsService(db: Database) {
     },
 
     /** La première plateforme ajoutée devient la plateforme par défaut. */
-    create: db.transaction((userId: number, input: CreatePlatformInput): PlatformResult => {
+    create: db.transaction((userId: number, input: CreatePlatformInput): PlatformItem => {
       const exists = db
         .prepare('SELECT 1 FROM platforms WHERE user_id = ? AND name = ?')
         .get(userId, input.name);
       if (exists) {
-        return { ok: false, reason: 'duplicate' };
+        throw new ConflictError('platform.duplicate');
       }
       const hasDefault = db
         .prepare('SELECT 1 FROM platforms WHERE user_id = ? AND is_default = 1')
@@ -61,31 +58,33 @@ export function createPlatformsService(db: Database) {
           'INSERT INTO platforms (user_id, name, publish_url, is_default) VALUES (?, ?, ?, ?)',
         )
         .run(userId, input.name, input.publishUrl ?? null, hasDefault ? 0 : 1);
-      return {
-        ok: true,
-        platform: findById(userId, Number(result.lastInsertRowid)) as PlatformItem,
-      };
+      return findById(userId, Number(result.lastInsertRowid)) as PlatformItem;
     }),
 
-    update(userId: number, id: number, input: UpdatePlatformInput): PlatformResult {
+    update(userId: number, id: number, input: UpdatePlatformInput): PlatformItem {
       const changed = db
         .prepare('UPDATE platforms SET publish_url = ? WHERE id = ? AND user_id = ?')
         .run(input.publishUrl, id, userId);
-      const platform = changed.changes > 0 ? findById(userId, id) : undefined;
-      return platform ? { ok: true, platform } : { ok: false, reason: 'not_found' };
+      if (changed.changes === 0) {
+        throw new NotFoundError('platform.not_found');
+      }
+      return findById(userId, id) as PlatformItem;
     },
 
     /** Retirer la plateforme par défaut ne désigne pas de remplaçante. */
-    remove(userId: number, id: number): boolean {
-      return (
-        db.prepare('DELETE FROM platforms WHERE id = ? AND user_id = ?').run(id, userId).changes > 0
-      );
+    remove(userId: number, id: number): void {
+      const { changes } = db
+        .prepare('DELETE FROM platforms WHERE id = ? AND user_id = ?')
+        .run(id, userId);
+      if (changes === 0) {
+        throw new NotFoundError('platform.not_found');
+      }
     },
 
-    /** `null` : plus de plateforme par défaut. `false` : plateforme inconnue. */
-    setDefault: db.transaction((userId: number, id: number | null): boolean => {
+    /** `null` : plus de plateforme par défaut. */
+    setDefault: db.transaction((userId: number, id: number | null): void => {
       if (id !== null && !findById(userId, id)) {
-        return false;
+        throw new NotFoundError('platform.not_found');
       }
       db.prepare('UPDATE platforms SET is_default = 0 WHERE user_id = ? AND is_default = 1').run(
         userId,
@@ -93,7 +92,6 @@ export function createPlatformsService(db: Database) {
       if (id !== null) {
         db.prepare('UPDATE platforms SET is_default = 1 WHERE id = ?').run(id);
       }
-      return true;
     }),
   };
 }

@@ -4,6 +4,7 @@ import { http, HttpResponse } from 'msw';
 import { Route, Routes } from 'react-router';
 import { describe, expect, it } from 'vitest';
 
+import { apiError } from '@/tests/msw/apiError';
 import { server } from '@/tests/msw/server';
 import { renderWithProviders } from '@/tests/renderWithProviders';
 
@@ -66,9 +67,7 @@ describe('CopyPage — consultation', () => {
     ['inconnu', 99],
     ['invalide', 'abc'],
   ])('indique qu’un exemplaire %s est introuvable', async (_label, id) => {
-    server.use(
-      http.get('/api/copies/:id', () => HttpResponse.json({ error: 'x' }, { status: 404 })),
-    );
+    server.use(http.get('/api/copies/:id', () => apiError('copy.not_found', 404)));
     renderPage(id);
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Exemplaire introuvable.');

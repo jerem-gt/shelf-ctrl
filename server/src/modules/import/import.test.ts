@@ -203,8 +203,8 @@ describe('POST /api/import/preview', () => {
   });
 
   it.each([
-    ['un fichier vide', '', 'empty_file'],
-    ['un fichier sans colonne utile', 'Auteur;Éditeur\nHergé;Casterman\n', 'no_columns'],
+    ['un fichier vide', '', 'import.empty_file'],
+    ['un fichier sans colonne utile', 'Auteur;Éditeur\nHergé;Casterman\n', 'import.no_columns'],
     ['un fichier sans ligne', 'Titre;Tome\n', null],
   ])('%s', async (_name, body, error) => {
     const res = await preview(setup(), body);
@@ -213,7 +213,7 @@ describe('POST /api/import/preview', () => {
       expect(res.body).toMatchObject({ total: 0, valid: 0 });
     } else {
       expect(res.status).toBe(400);
-      expect(res.body).toMatchObject({ error });
+      expect(res.body.error.code).toBe(error);
     }
   });
 
@@ -226,14 +226,17 @@ describe('POST /api/import/preview', () => {
     const res = await preview(setup(), csv(...lines));
 
     expect(res.status).toBe(400);
-    expect(res.body).toEqual({ error: 'too_many_rows', max: MAX_ROWS });
+    expect(res.body.error).toMatchObject({
+      code: 'import.too_many_rows',
+      params: { max: MAX_ROWS },
+    });
   });
 
   it('refuse un contenu qui n’est pas du texte', async () => {
     const res = await preview(setup(), JSON.stringify({ a: 1 }), 'application/json');
 
     expect(res.status).toBe(400);
-    expect(res.body).toEqual({ error: 'empty_file' });
+    expect(res.body.error.code).toBe('import.empty_file');
   });
 
   it('ignore un corps text/plain, envoyable par un formulaire cross-site (anti-CSRF)', async () => {
@@ -244,7 +247,7 @@ describe('POST /api/import/preview', () => {
       await start(setup(), body, 'text/plain'),
     ]) {
       expect(res.status).toBe(400);
-      expect(res.body).toEqual({ error: 'empty_file' });
+      expect(res.body.error.code).toBe('import.empty_file');
     }
   });
 
@@ -417,7 +420,7 @@ describe('POST /api/import', () => {
 
     expect(first.status).toBe(202);
     expect(second.status).toBe(409);
-    expect(second.body).toEqual({ error: 'import_running' });
+    expect(second.body.error.code).toBe('import.running');
     expect(running.status).toBe('running');
 
     await vi.waitFor(async () => {
@@ -432,6 +435,6 @@ describe('POST /api/import', () => {
 
     expect((await request(app).get('/api/import/inconnu')).status).toBe(404);
     expect((await start(app, '')).status).toBe(400);
-    expect((await start(app, 'Auteur\nHergé\n')).body).toEqual({ error: 'no_columns' });
+    expect((await start(app, 'Auteur\nHergé\n')).body.error.code).toBe('import.no_columns');
   });
 });

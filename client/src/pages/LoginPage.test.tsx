@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { delay, http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
 
+import { apiError } from '@/tests/msw/apiError';
 import { server } from '@/tests/msw/server';
 import { renderWithProviders } from '@/tests/renderWithProviders';
 
@@ -46,11 +47,11 @@ describe('LoginPage', () => {
   });
 
   it.each([
-    [401, 'Identifiant ou mot de passe incorrect.'],
-    [429, 'Trop de tentatives : réessaie dans quelques minutes.'],
-    [500, 'Une erreur est survenue.'],
-  ])('affiche le message adapté à une réponse %i', async (status, message) => {
-    server.use(http.post('/api/auth/login', () => HttpResponse.json({}, { status })));
+    ['auth.invalid_credentials', 401, 'Identifiant ou mot de passe incorrect.'],
+    ['auth.too_many_attempts', 429, 'Trop de tentatives : réessaie dans quelques minutes.'],
+    ['common.internal', 500, 'Une erreur est survenue.'],
+  ])('affiche le message adapté au code %s', async (code, status, message) => {
+    server.use(http.post('/api/auth/login', () => apiError(code, status)));
 
     await fillAndSubmit('admin', 'wrong');
 

@@ -20,31 +20,6 @@
     "listed": "En vente",
     "sold": "Vendu"
   },
-  "errors": {
-    "network": "Impossible de joindre le serveur.",
-    "validation": "Certains champs sont invalides.",
-    "generic": "Une erreur est survenue.",
-    "conflict": "Cette action n'est plus possible : l'état de l'exemplaire a changé.",
-    "unauthorized": "Identifiant ou mot de passe incorrect.",
-    "tooManyAttempts": "Trop de tentatives : réessaie dans quelques minutes.",
-    "invalidImage": "Ce fichier n'est pas une image exploitable (JPEG, PNG, WebP…).",
-    "imageTooLarge": "Cette image est trop lourde (12 Mo au maximum).",
-    "forbidden": "Action réservée aux administrateurs.",
-    "codes": {
-      "invalid_credentials": "Identifiant ou mot de passe incorrect.",
-      "current_password_incorrect": "Mot de passe actuel incorrect.",
-      "username_taken": "Ce nom d'utilisateur est déjà pris.",
-      "email_taken": "Cette adresse e-mail est déjà utilisée par un autre compte.",
-      "last_admin": "Il faut garder au moins un administrateur.",
-      "cannot_delete_self": "Tu ne peux pas supprimer ton propre compte.",
-      "setup_token_invalid": "Jeton d'installation incorrect.",
-      "setup_done": "Le premier compte a déjà été créé : connecte-toi.",
-      "reset_token_invalid": "Ce lien est invalide ou a expiré.",
-      "email_missing": "Renseigne d'abord ton adresse e-mail dans ton profil (Réglages).",
-      "smtp_not_configured": "L'envoi d'e-mails n'est pas configuré sur le serveur (variables SMTP_*).",
-      "email_send_failed": "L'envoi de l'e-mail a échoué : vérifie la configuration SMTP et les logs du serveur."
-    }
-  },
   "collection": {
     "title": "Ma collection",
     "add": "Ajouter",
@@ -290,10 +265,6 @@
     "newImport": "Nouvel import",
     "notFound": "Cet import est introuvable (le serveur a peut-être redémarré). Vérifie la collection avant de relancer.",
     "errors": {
-      "empty_file": "Le fichier est vide.",
-      "no_columns": "Aucune colonne « titre » ni « code-barres » : vérifie la ligne d'en-tête du fichier.",
-      "too_many_rows": "Le fichier a trop de lignes (1000 au maximum) : découpe-le en plusieurs fichiers.",
-      "import_running": "Un import est déjà en cours : attends qu'il se termine.",
       "too_large": "Le fichier est trop lourd (2 Mo au maximum).",
       "unreadable": "Impossible de lire ce fichier : vérifie qu'il existe encore et réessaie."
     },
@@ -344,7 +315,6 @@
     "noDefault": "Aucune",
     "loading": "Chargement des plateformes…",
     "errors": {
-      "duplicate": "Cette plateforme existe déjà.",
       "invalid": "Nom ou adresse invalide : l'adresse doit commencer par http:// ou https://."
     }
   },

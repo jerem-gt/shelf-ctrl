@@ -7,6 +7,7 @@ import type {
   MediaFormat,
 } from '@shelfctrl/types';
 
+import { BadRequestError } from '../../lib/errors.js';
 import { parseBarcode } from '../barcodes/barcode.js';
 import { mapHeaders, parseCondition, parseFormat } from './columns.js';
 
@@ -27,9 +28,6 @@ const VOLUME = /^(?:t|tome|vol\.?|volume)?\s*(\d{1,4})$/i;
 const YEAR = /^\d{4}$/;
 const MIN_YEAR = 1000;
 const MAX_YEAR = 2100;
-
-/** Aucune colonne `titre` ni `code-barres` : le fichier n'est pas un import utilisable. */
-export class NoColumnsError extends Error {}
 
 /** Contenu d'une ligne, normalisé ; `null` quand la cellule est vide ou invalide. */
 export interface RowDraft {
@@ -160,13 +158,14 @@ export function needsCompletion(draft: RowDraft): boolean {
   );
 }
 
-/** Interprète un tableau CSV (en-tête puis lignes) ; lève `NoColumnsError` sans colonne utile. */
+/** Interprète un tableau CSV (en-tête puis lignes) ; lève `import.no_columns` sans colonne utile. */
 export function parseTable(table: readonly string[][]): ParsedTable {
   const [headers = [], ...body] = table;
   const { columns, ignored } = mapHeaders(headers);
   const fields = new Set(columns.values());
   if (!fields.has('title') && !fields.has('barcode')) {
-    throw new NoColumnsError('Aucune colonne titre ni code-barres');
+    // Aucune colonne `titre` ni `code-barres` : le fichier n'est pas un import utilisable.
+    throw new BadRequestError('import.no_columns');
   }
 
   const rows = body.map((values, index) => {

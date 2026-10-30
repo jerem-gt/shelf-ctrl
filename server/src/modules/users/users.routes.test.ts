@@ -76,13 +76,13 @@ describe('POST /api/users', () => {
   });
 
   it.each([
-    ['nom pris', { username: 'bob' }, 'username_taken'],
-    ['e-mail pris', { username: 'carol', email: 'BOB@example.com' }, 'email_taken'],
+    ['nom pris', { username: 'bob' }, 'user.username_taken'],
+    ['e-mail pris', { username: 'carol', email: 'BOB@example.com' }, 'user.email_taken'],
   ])('retourne 409 : %s', async (_label, body, error) => {
     const { agent } = await asAdmin();
     const res = await agent.post('/api/users').send({ password: 'long-enough', ...body });
     expect(res.status).toBe(409);
-    expect(res.body).toEqual({ error });
+    expect(res.body.error.code).toBe(error);
   });
 
   it.each([
@@ -131,7 +131,7 @@ describe('PATCH /api/users/:id', () => {
     const { agent, adminId, bobId } = await asAdmin();
     const last = await agent.patch(`/api/users/${adminId}`).send({ isAdmin: false });
     expect(last.status).toBe(409);
-    expect(last.body).toEqual({ error: 'last_admin' });
+    expect(last.body.error.code).toBe('user.last_admin');
 
     await agent.patch(`/api/users/${bobId}`).send({ isAdmin: true });
     expect((await agent.patch(`/api/users/${adminId}`).send({ isAdmin: false })).status).toBe(200);
@@ -177,7 +177,7 @@ describe('PATCH /api/users/:id', () => {
     );
     const taken = await agent.patch(`/api/users/${adminId}`).send({ username: 'bob' });
     expect(taken.status).toBe(409);
-    expect(taken.body).toEqual({ error: 'username_taken' });
+    expect(taken.body.error.code).toBe('user.username_taken');
   });
 
   it('retourne 404 pour un compte inconnu et 400 pour un corps vide', async () => {
@@ -257,7 +257,7 @@ describe('DELETE /api/users/:id', () => {
     const { agent, adminId } = await asAdmin();
     const res = await agent.delete(`/api/users/${adminId}`);
     expect(res.status).toBe(409);
-    expect(res.body).toEqual({ error: 'cannot_delete_self' });
+    expect(res.body.error.code).toBe('user.cannot_delete_self');
   });
 
   it('supprime un autre admin s’il en reste un, 404 pour un inconnu', async () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { mapHeaders } from './columns.js';
-import { needsCompletion, NoColumnsError, parseTable } from './rows.js';
+import { needsCompletion, parseTable } from './rows.js';
 
 const table = (header: string[], ...rows: string[][]) => [header, ...rows];
 
@@ -60,7 +60,7 @@ describe('parseTable', () => {
 
   it('refuse un fichier sans colonne titre ni code-barres', () => {
     expect(() => parseTable(table(['Auteur', 'Éditeur'], ['Hergé', 'Casterman']))).toThrow(
-      NoColumnsError,
+      expect.objectContaining({ status: 400, code: 'import.no_columns' }),
     );
   });
 

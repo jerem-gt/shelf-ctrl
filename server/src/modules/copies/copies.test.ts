@@ -84,7 +84,7 @@ describe('POST /api/copies', () => {
     const { app } = setup();
     const res = await request(app).post('/api/copies').send(body);
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe('validation');
+    expect(res.body.error.code).toBe('validation.invalid');
   });
 
   it('rejette un JSON mal formé', async () => {

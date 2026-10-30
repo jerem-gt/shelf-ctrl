@@ -1,19 +1,20 @@
 import type { Database } from 'better-sqlite3';
-import express, { Router } from 'express';
+import express, { type Request, Router } from 'express';
 
+import { BadRequestError, NotFoundError } from '../../lib/errors.js';
 import { currentUserId } from '../../middleware.js';
-import {
-  buildTemplate,
-  createImportService,
-  EmptyFileError,
-  type ImportDeps,
-  ImportRunningError,
-  TooManyRowsError,
-} from './import.service.js';
-import { MAX_ROWS, NoColumnsError } from './rows.js';
+import { buildTemplate, createImportService, type ImportDeps } from './import.service.js';
 
 /** Corps brut en octet-stream uniquement : text/plain, envoyable par un formulaire cross-site, est ignoré (anti-CSRF). */
 const rawFile = express.raw({ type: 'application/octet-stream', limit: '2mb' });
+
+/** Le fichier envoyé ; absent, d'un autre type ou vide : 400. */
+function fileBody(req: Request): Buffer {
+  if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
+    throw new BadRequestError('import.empty_file');
+  }
+  return req.body;
+}
 
 /**
  * Monté sur `/api/import` : modèle de fichier, aperçu sans écriture, import en tâche de fond
@@ -23,22 +24,6 @@ export function createImportRouter(db: Database, deps: ImportDeps) {
   const router = Router();
   const service = createImportService(db, deps);
 
-  const fileProblem = (error: unknown): { status: number; body: object } | null => {
-    if (error instanceof EmptyFileError) {
-      return { status: 400, body: { error: 'empty_file' } };
-    }
-    if (error instanceof NoColumnsError) {
-      return { status: 400, body: { error: 'no_columns' } };
-    }
-    if (error instanceof TooManyRowsError) {
-      return { status: 400, body: { error: 'too_many_rows', max: MAX_ROWS } };
-    }
-    if (error instanceof ImportRunningError) {
-      return { status: 409, body: { error: 'import_running' } };
-    }
-    return null;
-  };
-
   router.get('/template', (_req, res) => {
     res
       .type('text/csv; charset=utf-8')
@@ -47,44 +32,19 @@ export function createImportRouter(db: Database, deps: ImportDeps) {
   });
 
   router.post('/preview', rawFile, (req, res) => {
-    if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
-      res.status(400).json({ error: 'empty_file' });
-      return;
-    }
-    try {
-      res.json(service.preview(currentUserId(res), req.body));
-    } catch (error) {
-      const problem = fileProblem(error);
-      if (!problem) {
-        throw error;
-      }
-      res.status(problem.status).json(problem.body);
-    }
+    res.json(service.preview(currentUserId(res), fileBody(req)));
   });
 
   router.post('/', rawFile, (req, res) => {
-    if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
-      res.status(400).json({ error: 'empty_file' });
-      return;
-    }
-    try {
-      res.status(202).json(service.start(currentUserId(res), req.body));
-    } catch (error) {
-      const problem = fileProblem(error);
-      if (!problem) {
-        throw error;
-      }
-      res.status(problem.status).json(problem.body);
-    }
+    res.status(202).json(service.start(currentUserId(res), fileBody(req)));
   });
 
   router.get('/:id', (req, res) => {
     const job = service.get(currentUserId(res), req.params.id);
-    if (job) {
-      res.json(job);
-    } else {
-      res.status(404).json({ error: 'not_found' });
+    if (!job) {
+      throw new NotFoundError('import.not_found');
     }
+    res.json(job);
   });
 
   return router;

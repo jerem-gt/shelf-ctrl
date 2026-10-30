@@ -6,7 +6,10 @@ import session from 'express-session';
 import helmet from 'helmet';
 import { ZodError } from 'zod';
 
+import type { ErrorCode } from './lib/errorCodes.js';
+import { HttpError } from './lib/errors.js';
 import type { Mailer } from './lib/mailer.js';
+import { sendError, zodToApiError } from './lib/routeHelpers.js';
 import { actAs, requireAuth } from './middleware.js';
 import { createAuthRouter, SESSION_COOKIE } from './modules/auth/auth.routes.js';
 import type { AuthLogger } from './modules/auth/auth.types.js';
@@ -64,33 +67,37 @@ export interface AuthOptions {
   log?: AuthLogger;
 }
 
-function isClientError(err: unknown): err is { status: number } {
-  return (
-    typeof err === 'object' &&
-    err !== null &&
-    'status' in err &&
-    typeof err.status === 'number' &&
-    err.status >= 400 &&
-    err.status < 500
-  );
+/** Erreur 4xx des lecteurs de corps (JSON illisible, corps trop gros…), avec son code. */
+function bodyParserError(err: unknown): { status: number; code: ErrorCode } | null {
+  if (typeof err !== 'object' || err === null || !('status' in err)) {
+    return null;
+  }
+  const { status } = err;
+  if (typeof status !== 'number' || status < 400 || status >= 500) {
+    return null;
+  }
+  const code: ErrorCode = status === 413 ? 'common.payload_too_large' : 'common.invalid_request';
+  return { status, code };
 }
 
 // 4 params requis pour qu'Express reconnaisse le gestionnaire d'erreur (fn.length === 4)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const errorHandler: ErrorRequestHandler = (err: unknown, _req, res, _next) => {
-  if (err instanceof ZodError) {
-    res.status(400).json({
-      error: 'validation',
-      issues: err.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message })),
-    });
+  if (err instanceof HttpError) {
+    sendError(res, err.status, err.code, err.params);
     return;
   }
-  if (isClientError(err)) {
-    res.status(err.status).json({ error: 'bad_request' });
+  if (err instanceof ZodError) {
+    res.status(400).json({ error: zodToApiError(err) });
+    return;
+  }
+  const bodyError = bodyParserError(err);
+  if (bodyError) {
+    sendError(res, bodyError.status, bodyError.code);
     return;
   }
   console.error(err);
-  res.status(500).json({ error: 'internal' });
+  sendError(res, 500, 'common.internal');
 };
 
 export function createApp(db: Database, options: AppOptions = {}) {

@@ -4,6 +4,7 @@ import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
 import { COPY_TINTIN } from '@/tests/fixtures';
+import { apiError } from '@/tests/msw/apiError';
 import { server } from '@/tests/msw/server';
 import { renderWithProviders } from '@/tests/renderWithProviders';
 
@@ -93,11 +94,7 @@ describe('ImagesSection', () => {
   });
 
   it('signale une image refusée par le serveur', async () => {
-    server.use(
-      http.put('/api/editions/:id/cover', () =>
-        HttpResponse.json({ error: 'invalid_image' }, { status: 415 }),
-      ),
-    );
+    server.use(http.put('/api/editions/:id/cover', () => apiError('image.invalid', 415)));
     const user = userEvent.setup();
     renderWithProviders(<ImagesSection copy={COPY_TINTIN} />);
 
@@ -146,9 +143,7 @@ describe('ImagesSection', () => {
 
   it('invite à envoyer sa propre image quand aucune pochette n’est trouvée en ligne', async () => {
     server.use(
-      http.post('/api/editions/:id/cover/fetch', () =>
-        HttpResponse.json({ error: 'no_cover_found' }, { status: 404 }),
-      ),
+      http.post('/api/editions/:id/cover/fetch', () => apiError('image.no_cover_found', 404)),
     );
     const user = userEvent.setup();
     renderWithProviders(<ImagesSection copy={COPY_TINTIN} />);

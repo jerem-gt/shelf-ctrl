@@ -114,7 +114,7 @@ describe('GET /api/barcodes/:code', () => {
     const res = await request(app).get(`/api/barcodes/${TINTIN_ISBN}`);
 
     expect(res.status).toBe(404);
-    expect(res.body).toEqual({ error: 'not_found' });
+    expect(res.body.error.code).toBe('barcode.not_found');
   });
 
   it('répond 400 pour un code invalide sans interroger les sources', async () => {
@@ -124,7 +124,7 @@ describe('GET /api/barcodes/:code', () => {
     const res = await request(app).get('/api/barcodes/1234');
 
     expect(res.status).toBe(400);
-    expect(res.body).toEqual({ error: 'invalid_barcode' });
+    expect(res.body.error.code).toBe('barcode.invalid');
     expect(provider.lookup).not.toHaveBeenCalled();
   });
 

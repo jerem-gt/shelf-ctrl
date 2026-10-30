@@ -132,7 +132,7 @@ describe('pochette d’une édition', () => {
     const wrongType = await putImage(app, url, await png('#f00'), 'application/json');
 
     expect(garbage.status).toBe(415);
-    expect(garbage.body).toEqual({ error: 'invalid_image' });
+    expect(garbage.body.error.code).toBe('image.invalid');
     expect(wrongType.status).toBe(415);
     expect(files('covers')).toEqual([]);
   });
@@ -305,7 +305,7 @@ describe('pochette trouvée en ligne', () => {
     const res = await request(app).post(`/api/editions/${copy.edition.id}/cover/fetch`);
 
     expect(res.status).toBe(404);
-    expect(res.body).toEqual({ error: 'no_cover_found' });
+    expect(res.body.error.code).toBe('image.no_cover_found');
   });
 
   it('remplace la pochette existante sur demande, 404 si aucune source n’en a', async () => {
@@ -323,8 +323,9 @@ describe('pochette trouvée en ligne', () => {
     const none = setup([provider(() => Promise.resolve(null))]);
     const other = await createCopy(none.app);
     expect(
-      (await request(none.app).post(`/api/editions/${other.edition.id}/cover/fetch`)).body,
-    ).toEqual({ error: 'no_cover_found' });
+      (await request(none.app).post(`/api/editions/${other.edition.id}/cover/fetch`)).body.error
+        .code,
+    ).toBe('image.no_cover_found');
   });
 });
 

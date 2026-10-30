@@ -21,14 +21,11 @@ const BUTTON_CLASS =
 
 const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
-/** Message d'une erreur de réglage : doublon et saisie invalide d'abord, sinon le texte par défaut. */
+/** Message d'une erreur de réglage : saisie invalide expliquée, sinon le code traduit du serveur. */
 function useErrorMessage() {
   const { t } = useTranslation();
   return (error: Error): string => {
-    if (error instanceof ApiError && error.status === 409) {
-      return t('settings.errors.duplicate');
-    }
-    if (error instanceof ApiError && error.status === 400) {
+    if (error instanceof ApiError && error.code === 'validation.invalid') {
       return t('settings.errors.invalid');
     }
     return error.message;

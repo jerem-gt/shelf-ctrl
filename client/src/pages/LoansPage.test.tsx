@@ -4,6 +4,7 @@ import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
 
 import { OPEN_LOAN_ALIEN, OPEN_LOAN_TINTIN } from '@/tests/fixtures';
+import { apiError } from '@/tests/msw/apiError';
 import { server } from '@/tests/msw/server';
 import { renderWithProviders } from '@/tests/renderWithProviders';
 
@@ -48,7 +49,7 @@ describe('LoansPage', () => {
   });
 
   it('affiche l’erreur de chargement', async () => {
-    server.use(http.get('/api/loans', () => HttpResponse.json({}, { status: 500 })));
+    server.use(http.get('/api/loans', () => apiError('common.internal', 500)));
     renderWithProviders(<LoansPage />);
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Une erreur est survenue.');
@@ -76,13 +77,13 @@ describe('LoansPage', () => {
 
   it('affiche l’erreur quand le retour échoue et garde le prêt affiché', async () => {
     stubOpenLoans([{ ...OPEN_LOAN_ALIEN, loanedAt: isoDaysAgo(2) }]);
-    server.use(http.post('/api/loans/:id/return', () => HttpResponse.json({}, { status: 409 })));
+    server.use(http.post('/api/loans/:id/return', () => apiError('loan.already_returned', 409)));
     const user = userEvent.setup();
     renderWithProviders(<LoansPage />);
 
     await user.click(await screen.findByRole('button', { name: 'Rendu' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent("Cette action n'est plus possible");
+    expect(await screen.findByRole('alert')).toHaveTextContent('Ce prêt est déjà rendu.');
     expect(screen.getByText('Alien')).toBeInTheDocument();
   });
 });

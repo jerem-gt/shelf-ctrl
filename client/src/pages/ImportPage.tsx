@@ -13,7 +13,6 @@ const PRIMARY_BUTTON_CLASS =
   'rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60';
 /** Au-delà, la liste des lignes à corriger est tronquée : le fichier se corrige par morceaux. */
 const MAX_LISTED_PROBLEMS = 50;
-const KNOWN_ERROR_CODES = new Set(['empty_file', 'no_columns', 'too_many_rows', 'import_running']);
 
 interface ListedRow {
   line: number;
@@ -21,17 +20,12 @@ interface ListedRow {
   issues: ImportIssue[];
 }
 
-/** Message d'une erreur d'envoi : le code du serveur d'abord, puis la taille, sinon le texte par défaut. */
+/** Message d'une erreur d'envoi : la taille maximale d'un import, sinon le code traduit du serveur. */
 function useErrorMessage() {
   const { t } = useTranslation();
   return (error: Error): string => {
-    if (error instanceof ApiError) {
-      if (error.code !== null && KNOWN_ERROR_CODES.has(error.code)) {
-        return t(`import.errors.${error.code}`);
-      }
-      if (error.status === 413) {
-        return t('import.errors.too_large');
-      }
+    if (error instanceof ApiError && error.code === 'common.payload_too_large') {
+      return t('import.errors.too_large');
     }
     return error.message;
   };

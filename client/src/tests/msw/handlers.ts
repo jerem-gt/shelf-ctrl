@@ -12,6 +12,7 @@ import {
   USER_ADMIN,
   USER_BOB,
 } from '../fixtures';
+import { apiError } from './apiError';
 
 export const handlers = [
   http.get('/api/auth/me', () => HttpResponse.json(SESSION_ADMIN)),
@@ -45,7 +46,7 @@ export const handlers = [
     if (copy) {
       return HttpResponse.json(copy);
     }
-    return HttpResponse.json({ error: 'not_found' }, { status: 404 });
+    return apiError('copy.not_found', 404);
   }),
   http.patch('/api/copies/:id', async ({ request }) => {
     const changes = (await request.json()) as Partial<CopyItem>;

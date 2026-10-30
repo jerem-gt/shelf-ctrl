@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
 
+import { apiError } from '@/tests/msw/apiError';
 import { server } from '@/tests/msw/server';
 import { renderWithProviders } from '@/tests/renderWithProviders';
 
@@ -60,11 +61,7 @@ describe('UsersPage', () => {
   });
 
   it('affiche un nom déjà pris', async () => {
-    server.use(
-      http.post('/api/users', () =>
-        HttpResponse.json({ error: 'username_taken' }, { status: 409 }),
-      ),
-    );
+    server.use(http.post('/api/users', () => apiError('user.username_taken', 409)));
     const user = userEvent.setup();
     renderWithProviders(<UsersPage />);
     const form = (await screen.findByRole('heading', { name: 'Ajouter un compte' }))
@@ -98,9 +95,7 @@ describe('UsersPage', () => {
   });
 
   it('affiche le refus de rétrograder le dernier admin', async () => {
-    server.use(
-      http.patch('/api/users/1', () => HttpResponse.json({ error: 'last_admin' }, { status: 409 })),
-    );
+    server.use(http.patch('/api/users/1', () => apiError('user.last_admin', 409)));
     const user = userEvent.setup();
     renderWithProviders(<UsersPage />);
     const admin = await rowOf('admin');
@@ -141,11 +136,7 @@ describe('UsersPage', () => {
     await user.click(await screen.findByRole('button', { name: 'Envoyer un e-mail de test' }));
     expect(await screen.findByRole('status')).toHaveTextContent('E-mail de test envoyé');
 
-    server.use(
-      http.post('/api/auth/test-email', () =>
-        HttpResponse.json({ error: 'smtp_not_configured' }, { status: 503 }),
-      ),
-    );
+    server.use(http.post('/api/auth/test-email', () => apiError('auth.smtp_not_configured', 503)));
     await user.click(screen.getByRole('button', { name: 'Envoyer un e-mail de test' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('SMTP_');
   });

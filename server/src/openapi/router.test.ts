@@ -30,6 +30,16 @@ describe('GET /api/docs/openapi.json', () => {
     expect(names).toEqual(['q', 'format', 'status', 'limit', 'offset']);
   });
 
+  it("décrit le corps d'erreur, avec les codes du registre", async () => {
+    const res = await request(setup()).get('/api/docs/openapi.json');
+
+    const error = res.body.components.schemas.Error.properties.error;
+    expect(error.properties.code.enum).toContain('loan.already_loaned');
+    expect(res.body.paths['/api/copies/{id}'].get.responses['404'].content).toEqual({
+      'application/json': { schema: { $ref: '#/components/schemas/Error' } },
+    });
+  });
+
   it('reste accessible sans session, contrairement au reste de l’API', async () => {
     const app = setup({ sessionSecret: 'x'.repeat(32), secureCookies: false });
 

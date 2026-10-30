@@ -1,6 +1,7 @@
 import type { Database } from 'better-sqlite3';
 import { Router } from 'express';
 
+import { BadRequestError, NotFoundError } from '../../lib/errors.js';
 import { currentUserId } from '../../middleware.js';
 import { parseBarcode } from './barcode.js';
 import { createBarcodesService } from './barcodes.service.js';
@@ -13,15 +14,13 @@ export function createBarcodesRouter(db: Database, providers: readonly BarcodePr
   router.get('/:code', async (req, res) => {
     const barcode = parseBarcode(req.params.code);
     if (!barcode) {
-      res.status(400).json({ error: 'invalid_barcode' });
-      return;
+      throw new BadRequestError('barcode.invalid');
     }
     const result = await service.resolve(currentUserId(res), barcode);
-    if (result) {
-      res.json(result);
-    } else {
-      res.status(404).json({ error: 'not_found' });
+    if (!result) {
+      throw new NotFoundError('barcode.not_found');
     }
+    res.json(result);
   });
 
   return router;

@@ -62,7 +62,7 @@ describe('POST /api/platforms', () => {
     const res = await create(app, { name: 'vinted' });
 
     expect(res.status).toBe(409);
-    expect(res.body).toEqual({ error: 'duplicate' });
+    expect(res.body.error.code).toBe('platform.duplicate');
     expect(await list(app)).toHaveLength(1);
   });
 

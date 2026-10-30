@@ -4,11 +4,12 @@ import { http, HttpResponse } from 'msw';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { SESSION_ADMIN } from '@/tests/fixtures';
+import { apiError } from '@/tests/msw/apiError';
 import { server } from '@/tests/msw/server';
 
 import App from './App';
 
-const unauthorized = () => HttpResponse.json({ error: 'unauthorized' }, { status: 401 });
+const unauthorized = () => apiError('common.unauthorized', 401);
 
 /** Simule un serveur à état : la session existe tant que `state.loggedIn` est vrai. */
 function stubSession(loggedIn: boolean) {
@@ -115,7 +116,7 @@ describe('App déconnectée', () => {
 
   it('reste sur la page de connexion avec un message quand les identifiants sont refusés', async () => {
     stubSession(false);
-    server.use(http.post('/api/auth/login', unauthorized));
+    server.use(http.post('/api/auth/login', () => apiError('auth.invalid_credentials', 401)));
     const user = userEvent.setup();
     render(<App />);
 

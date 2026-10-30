@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import type { Database } from 'better-sqlite3';
 import { type NextFunction, type Request, type Response, Router } from 'express';
 
+import { ConflictError, HttpError } from '../../lib/errors.js';
 import { createMailer, type Mailer } from '../../lib/mailer.js';
 import { FailureRateLimiter } from '../../lib/rateLimit.js';
 import { currentUserId, requireAuth } from '../../middleware.js';
@@ -71,24 +72,26 @@ export function createAuthRouter(
   const setupToken = options.setupToken ?? new SetupToken();
   const log = options.log ?? console;
 
-  /** Vérifie le mot de passe actuel, échecs limités ; répond 429/401 et renvoie false sinon. */
-  async function checkCurrentPassword(
-    res: Response,
-    user: User,
-    candidate: string,
-  ): Promise<boolean> {
+  /** Vérifie le mot de passe actuel, échecs limités ; lève 429/401 sinon. */
+  async function checkCurrentPassword(user: User, candidate: string): Promise<void> {
     const key = `password:${user.id}`;
     if (!limiter.isAllowed(key)) {
-      res.status(429).json({ error: 'too_many_attempts' });
-      return false;
+      throw new HttpError(429, 'auth.too_many_attempts');
     }
     if (!(await bcrypt.compare(candidate, user.password_hash))) {
       limiter.recordFailure(key);
-      res.status(401).json({ error: 'current_password_incorrect' });
-      return false;
+      throw new HttpError(401, 'auth.current_password_incorrect');
     }
     limiter.reset(key);
-    return true;
+  }
+
+  /** Le compte de la session ; supprimé entre-temps : 401. */
+  function sessionUser(res: Response): User {
+    const user = repo.getById(currentUserId(res));
+    if (!user) {
+      throw new HttpError(401, 'common.unauthorized');
+    }
+    return user;
   }
 
   router.get('/setup', (_req, res) => {
@@ -98,19 +101,16 @@ export function createAuthRouter(
 
   router.post('/setup', async (req, res, next) => {
     if (repo.countUsers() > 0) {
-      res.status(409).json({ error: 'setup_done' });
-      return;
+      throw new ConflictError('auth.setup_done');
     }
     const key = `setup:${req.ip ?? 'unknown'}`;
     if (!limiter.isAllowed(key)) {
-      res.status(429).json({ error: 'too_many_attempts' });
-      return;
+      throw new HttpError(429, 'auth.too_many_attempts');
     }
     const data = setupSchema.parse(req.body);
     if (!setupToken.verify(data.token)) {
       limiter.recordFailure(key);
-      res.status(403).json({ error: 'setup_token_invalid' });
-      return;
+      throw new HttpError(403, 'auth.setup_token_invalid');
     }
 
     const hash = await bcrypt.hash(data.password, BCRYPT_COST);
@@ -119,8 +119,7 @@ export function createAuthRouter(
       repo.countUsers() > 0 ? null : repo.createAdmin(data.username, hash),
     )();
     if (userId === null) {
-      res.status(409).json({ error: 'setup_done' });
-      return;
+      throw new ConflictError('auth.setup_done');
     }
     setupToken.consume();
     limiter.reset(key);
@@ -131,22 +130,15 @@ export function createAuthRouter(
   router.post('/login', async (req, res, next) => {
     const key = req.ip ?? 'unknown';
     if (!limiter.isAllowed(key)) {
-      res.status(429).json({ error: 'too_many_attempts' });
-      return;
+      throw new HttpError(429, 'auth.too_many_attempts');
     }
-    const parsed = loginSchema.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: 'validation' });
-      return;
-    }
-    const { username, password } = parsed.data;
+    const { username, password } = loginSchema.parse(req.body);
     const user = repo.getByUsername(username);
     const passwordOk = await bcrypt.compare(password, user?.password_hash ?? getDummyHash());
     if (!user || !passwordOk) {
       limiter.recordFailure(key);
       log.warn(`[auth] échec de connexion depuis ${key}`);
-      res.status(401).json({ error: 'invalid_credentials' });
-      return;
+      throw new HttpError(401, 'auth.invalid_credentials');
     }
     limiter.reset(key);
     startSession(req, res, next, user);
@@ -162,8 +154,7 @@ export function createAuthRouter(
   router.get('/me', (req, res) => {
     const user = req.session?.userId ? repo.getById(req.session.userId) : undefined;
     if (!user) {
-      res.status(401).json({ error: 'unauthorized' });
-      return;
+      throw new HttpError(401, 'common.unauthorized');
     }
     res.json(sessionResponse(user));
   });
@@ -171,26 +162,18 @@ export function createAuthRouter(
   /** Nom d'utilisateur et e-mail : le mot de passe actuel est requis. */
   router.patch('/profile', requireAuth, async (req, res) => {
     const data = profileSchema.parse(req.body);
-    const userId = currentUserId(res);
-    const user = repo.getById(userId);
-    if (!user) {
-      res.status(401).json({ error: 'unauthorized' });
-      return;
-    }
-    if (!(await checkCurrentPassword(res, user, data.currentPassword))) {
-      return;
-    }
+    const user = sessionUser(res);
+    const userId = user.id;
+    await checkCurrentPassword(user, data.currentPassword);
 
     const { username, email } = data;
     const usernameOwner = username === undefined ? undefined : usersRepo.getByUsername(username);
     if (usernameOwner && usernameOwner.id !== userId) {
-      res.status(409).json({ error: 'username_taken' });
-      return;
+      throw new ConflictError('user.username_taken');
     }
     const emailOwner = email ? usersRepo.getByEmail(email) : undefined;
     if (emailOwner && emailOwner.id !== userId) {
-      res.status(409).json({ error: 'email_taken' });
-      return;
+      throw new ConflictError('user.email_taken');
     }
     db.transaction(() => {
       if (username !== undefined) {
@@ -206,17 +189,10 @@ export function createAuthRouter(
   /** Ferme les autres sessions du compte, garde la session courante. */
   router.post('/change-password', requireAuth, async (req, res) => {
     const data = changePasswordSchema.parse(req.body);
-    const userId = currentUserId(res);
-    const user = repo.getById(userId);
-    if (!user) {
-      res.status(401).json({ error: 'unauthorized' });
-      return;
-    }
-    if (!(await checkCurrentPassword(res, user, data.current))) {
-      return;
-    }
-    repo.updatePassword(userId, await bcrypt.hash(data.next, BCRYPT_COST));
-    sessionStore.destroyOtherSessions(userId, req.sessionID);
+    const user = sessionUser(res);
+    await checkCurrentPassword(user, data.current);
+    repo.updatePassword(user.id, await bcrypt.hash(data.next, BCRYPT_COST));
+    sessionStore.destroyOtherSessions(user.id, req.sessionID);
     res.status(204).end();
   });
 

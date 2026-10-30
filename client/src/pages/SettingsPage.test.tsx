@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
+import { apiError } from '@/tests/msw/apiError';
 import { server } from '@/tests/msw/server';
 import { renderWithProviders } from '@/tests/renderWithProviders';
 
@@ -29,11 +30,11 @@ function stubServer(initial: PlatformItem[] = []) {
     http.post('/api/platforms', async ({ request }) => {
       const body = (await log(request)) as { name: string; publishUrl?: string };
       if (items.some((item) => item.name.toLowerCase() === body.name.toLowerCase())) {
-        return HttpResponse.json({ error: 'duplicate' }, { status: 409 });
+        return apiError('platform.duplicate', 409);
       }
       // Comme le serveur : adresse de dépôt en http/https seulement
       if (body.publishUrl !== undefined && !/^https?:\/\//i.test(body.publishUrl)) {
-        return HttpResponse.json({ error: 'validation' }, { status: 400 });
+        return apiError('validation.invalid', 400);
       }
       const created = {
         id: nextId++,

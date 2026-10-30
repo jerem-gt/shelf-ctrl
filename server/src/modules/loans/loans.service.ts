@@ -7,12 +7,9 @@ import type {
 } from '@shelfctrl/types';
 import type { Database } from 'better-sqlite3';
 
+import { BadRequestError, ConflictError, NotFoundError } from '../../lib/errors.js';
 import { today } from '../../lib/isoDate.js';
 import type { LendInput, ReturnInput } from './loans.schema.js';
-
-export type LoanFailure =
-  'not_found' | 'sold' | 'already_loaned' | 'already_returned' | 'invalid_date';
-export type LoanResult = { ok: true; loan: LoanItem } | { ok: false; reason: LoanFailure };
 
 interface LoanRow {
   id: number;
@@ -67,7 +64,7 @@ export function createLoansService(db: Database) {
     );
   };
 
-  const lend = db.transaction((userId: number, copyId: number, input: LendInput): LoanResult => {
+  const lend = db.transaction((userId: number, copyId: number, input: LendInput): LoanItem => {
     const row = db
       .prepare(
         `SELECT cs.status FROM copy_status cs JOIN copies c ON c.id = cs.copy_id
@@ -75,13 +72,13 @@ export function createLoansService(db: Database) {
       )
       .get(copyId, userId) as { status: CopyStatus } | undefined;
     if (!row) {
-      return { ok: false, reason: 'not_found' };
+      throw new NotFoundError('copy.not_found');
     }
     if (row.status === 'sold') {
-      return { ok: false, reason: 'sold' };
+      throw new ConflictError('loan.copy_sold');
     }
     if (row.status === 'loaned') {
-      return { ok: false, reason: 'already_loaned' };
+      throw new ConflictError('loan.already_loaned');
     }
     const result = db
       .prepare('INSERT INTO loans (user_id, copy_id, borrower_id, loaned_at) VALUES (?, ?, ?, ?)')
@@ -91,35 +88,35 @@ export function createLoansService(db: Database) {
         findOrCreateBorrower(userId, input.borrowerName),
         input.loanedAt ?? today(),
       );
-    return { ok: true, loan: findLoan(userId, Number(result.lastInsertRowid)) as LoanItem };
+    return findLoan(userId, Number(result.lastInsertRowid)) as LoanItem;
   });
 
   return {
     lend,
 
-    returnLoan(userId: number, id: number, input: ReturnInput): LoanResult {
+    returnLoan(userId: number, id: number, input: ReturnInput): LoanItem {
       const loan = findLoan(userId, id);
       if (!loan) {
-        return { ok: false, reason: 'not_found' };
+        throw new NotFoundError('loan.not_found');
       }
       if (loan.returnedAt !== null) {
-        return { ok: false, reason: 'already_returned' };
+        throw new ConflictError('loan.already_returned');
       }
       const returnedAt = input.returnedAt ?? today();
       if (returnedAt < loan.loanedAt) {
-        return { ok: false, reason: 'invalid_date' };
+        throw new BadRequestError('loan.invalid_date');
       }
       db.prepare('UPDATE loans SET returned_at = ? WHERE id = ?').run(returnedAt, id);
-      return { ok: true, loan: findLoan(userId, id) as LoanItem };
+      return findLoan(userId, id) as LoanItem;
     },
 
-    /** Historique d'un exemplaire, du plus récent au plus ancien ; `null` si l'exemplaire n'existe pas. */
-    listForCopy(userId: number, copyId: number): LoanItem[] | null {
+    /** Historique d'un exemplaire, du plus récent au plus ancien. */
+    listForCopy(userId: number, copyId: number): LoanItem[] {
       const exists = db
         .prepare('SELECT 1 FROM copies WHERE id = ? AND user_id = ?')
         .get(copyId, userId);
       if (!exists) {
-        return null;
+        throw new NotFoundError('copy.not_found');
       }
       const rows = db
         .prepare(`${SELECT_LOANS} WHERE l.copy_id = ? ORDER BY l.loaned_at DESC, l.id DESC`)

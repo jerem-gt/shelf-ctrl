@@ -1,6 +1,8 @@
 import type { Database } from 'better-sqlite3';
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 
+import { sendError } from './lib/routeHelpers.js';
+
 declare module 'express-session' {
   interface SessionData {
     userId?: number;
@@ -15,7 +17,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
     next();
     return;
   }
-  res.status(401).json({ error: 'unauthorized' });
+  sendError(res, 401, 'common.unauthorized');
 }
 
 /** Sans authentification (tests) : toutes les requêtes agissent pour ce compte. */
@@ -41,6 +43,6 @@ export function createRequireAdmin(db: Database): RequestHandler {
       next();
       return;
     }
-    res.status(403).json({ error: 'forbidden' });
+    sendError(res, 403, 'common.forbidden');
   };
 }

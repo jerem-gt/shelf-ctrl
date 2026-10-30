@@ -21,34 +21,68 @@ import type {
 
 import i18n from '@/i18n';
 
+/** Corps d'erreur structuré renvoyé par l'API (cf. server/src/lib/errorCodes.ts). */
+export interface ApiErrorField {
+  path: string;
+  code: string;
+  params?: Record<string, string | number>;
+  message: string;
+}
+export interface ApiErrorBody {
+  code: string;
+  message: string;
+  params?: Record<string, string | number>;
+  fields?: ApiErrorField[];
+}
+
+/** Erreur API : `message` est déjà traduit ; `body` porte la forme structurée (code, fields…). */
 export class ApiError extends Error {
   readonly status: number;
-  /** Code d'erreur du serveur (`error` du corps JSON), quand il y en a un. */
-  readonly code: string | null;
-  constructor(message: string, status: number, code: string | null = null) {
+  readonly body?: ApiErrorBody;
+  constructor(message: string, status: number, body?: ApiErrorBody) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
-    this.code = code;
+    this.body = body;
+  }
+
+  /** Code d'erreur du serveur, quand il y en a un. */
+  get code(): string | null {
+    return this.body?.code ?? null;
   }
 }
 
-const ERROR_KEYS: Record<number, string> = {
-  400: 'errors.validation',
-  401: 'errors.unauthorized',
-  409: 'errors.conflict',
-  413: 'errors.imageTooLarge',
-  415: 'errors.invalidImage',
-  429: 'errors.tooManyAttempts',
-};
+function isApiErrorBody(value: unknown): value is ApiErrorBody {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'code' in value &&
+    typeof value.code === 'string' &&
+    'message' in value &&
+    typeof value.message === 'string'
+  );
+}
 
-/** Message propre au code d'erreur du serveur s'il est traduit, sinon celui du statut HTTP. */
-function errorMessage(status: number, code: string | null): string {
-  const codeKey = `errors.codes.${code}`;
-  if (code !== null && i18n.exists(codeKey)) {
-    return i18n.t(codeKey);
+/** Traduit un code via le namespace i18n `errors`, avec repli sur le message FR du serveur. */
+function translateCode(
+  code: string,
+  message: string,
+  params?: Record<string, string | number>,
+): string {
+  return i18n.t(`errors:${code}`, { ...params, defaultValue: message });
+}
+
+/** Traduit un champ d'erreur de validation. */
+export function translateErrorField(field: ApiErrorField): string {
+  return translateCode(field.code, field.message, field.params);
+}
+
+/** Message d'une erreur : le détail par champ s'il y en a, sinon le code traduit. */
+function formatError(body: ApiErrorBody): string {
+  if (body.fields && body.fields.length > 0) {
+    return body.fields.map(translateErrorField).join(' · ');
   }
-  return i18n.t(ERROR_KEYS[status] ?? 'errors.generic');
+  return translateCode(body.code, body.message, body.params);
 }
 
 /** Un fichier part tel quel avec son type MIME ; tout le reste est envoyé en JSON. */
@@ -67,16 +101,16 @@ function asOctetStream(file: Blob): Blob {
   return file.slice(0, file.size, 'application/octet-stream');
 }
 
-async function readErrorCode(res: Response): Promise<string | null> {
+async function readErrorBody(res: Response): Promise<ApiErrorBody | undefined> {
   try {
     const body: unknown = await res.json();
     if (typeof body === 'object' && body !== null && 'error' in body) {
-      return typeof body.error === 'string' ? body.error : null;
+      return isApiErrorBody(body.error) ? body.error : undefined;
     }
   } catch {
-    // Corps absent ou qui n'est pas du JSON : le statut suffit.
+    // Corps absent ou qui n'est pas du JSON (proxy en erreur…) : message générique.
   }
-  return null;
+  return undefined;
 }
 
 async function request<T>(method: string, url: string, body?: unknown): Promise<T> {
@@ -84,11 +118,12 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
   try {
     res = await fetch(url, toRequestInit(method, body));
   } catch {
-    throw new ApiError(i18n.t('errors.network'), 0);
+    throw new ApiError(i18n.t('errors:common.network'), 0);
   }
   if (!res.ok) {
-    const code = await readErrorCode(res);
-    throw new ApiError(errorMessage(res.status, code), res.status, code);
+    const error = await readErrorBody(res);
+    const message = error ? formatError(error) : i18n.t('errors:common.internal');
+    throw new ApiError(message, res.status, error);
   }
   if (res.status === 204) {
     return undefined as T;

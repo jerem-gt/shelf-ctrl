@@ -1,0 +1,79 @@
+{
+  "common": {
+    "network": "Impossible de joindre le serveur.",
+    "unauthorized": "Ta session a expiré : reconnecte-toi.",
+    "forbidden": "Action réservée aux administrateurs.",
+    "invalid_request": "Requête invalide.",
+    "internal": "Une erreur est survenue.",
+    "payload_too_large": "Le fichier est trop lourd (12 Mo au maximum pour une image).",
+    "unsupported_media_type": "Ce type de fichier n'est pas pris en charge."
+  },
+  "validation": {
+    "invalid": "Certains champs sont invalides.",
+    "required": "Ce champ est requis.",
+    "invalid_type": "Type de valeur incorrect.",
+    "too_small": "La valeur doit être au moins {{minimum}}.",
+    "too_big": "La valeur ne doit pas dépasser {{maximum}}.",
+    "too_short": "Doit contenir au moins {{minimum}} caractère(s).",
+    "too_long": "Doit contenir au plus {{maximum}} caractère(s).",
+    "invalid_format": "Format invalide.",
+    "invalid_value": "Valeur non autorisée."
+  },
+  "copy": {
+    "not_found": "Cet exemplaire n'existe pas ou plus."
+  },
+  "edition": {
+    "not_found": "Cette édition n'existe pas ou plus."
+  },
+  "loan": {
+    "not_found": "Ce prêt n'existe pas ou plus.",
+    "copy_sold": "Cet exemplaire est vendu : il ne peut plus être prêté.",
+    "already_loaned": "Cet exemplaire est déjà prêté.",
+    "already_returned": "Ce prêt est déjà rendu.",
+    "invalid_date": "La date de retour ne peut pas précéder celle du prêt."
+  },
+  "sale": {
+    "not_found": "Cet exemplaire n'est ni en vente ni vendu.",
+    "already_listed": "Cet exemplaire est déjà en vente.",
+    "already_sold": "Cet exemplaire est déjà vendu.",
+    "copy_loaned": "Cet exemplaire est prêté : il ne peut pas être vendu avant son retour.",
+    "invalid_date": "La date de vente ne peut pas précéder celle de la mise en vente."
+  },
+  "platform": {
+    "not_found": "Cette plateforme n'existe pas ou plus.",
+    "duplicate": "Cette plateforme existe déjà."
+  },
+  "image": {
+    "invalid": "Ce fichier n'est pas une image exploitable (JPEG, PNG, WebP…).",
+    "no_cover_found": "Aucune pochette trouvée en ligne."
+  },
+  "barcode": {
+    "invalid": "Code-barres invalide : vérifie la saisie.",
+    "not_found": "Aucune fiche trouvée pour ce code."
+  },
+  "import": {
+    "empty_file": "Le fichier est vide.",
+    "no_columns": "Aucune colonne « titre » ni « code-barres » : vérifie la ligne d'en-tête du fichier.",
+    "too_many_rows": "Le fichier a trop de lignes ({{max}} au maximum) : découpe-le en plusieurs fichiers.",
+    "running": "Un import est déjà en cours : attends qu'il se termine.",
+    "not_found": "Cet import n'est plus suivi (le serveur a peut-être redémarré)."
+  },
+  "user": {
+    "not_found": "Ce compte n'existe pas ou plus.",
+    "username_taken": "Ce nom d'utilisateur est déjà pris.",
+    "email_taken": "Cette adresse e-mail est déjà utilisée par un autre compte.",
+    "last_admin": "Il faut garder au moins un administrateur.",
+    "cannot_delete_self": "Tu ne peux pas supprimer ton propre compte."
+  },
+  "auth": {
+    "invalid_credentials": "Identifiant ou mot de passe incorrect.",
+    "too_many_attempts": "Trop de tentatives : réessaie dans quelques minutes.",
+    "current_password_incorrect": "Mot de passe actuel incorrect.",
+    "setup_done": "Le premier compte a déjà été créé : connecte-toi.",
+    "setup_token_invalid": "Jeton d'installation incorrect.",
+    "reset_token_invalid": "Ce lien est invalide ou a expiré.",
+    "email_missing": "Renseigne d'abord ton adresse e-mail dans ton profil (Réglages).",
+    "smtp_not_configured": "L'envoi d'e-mails n'est pas configuré sur le serveur (variables SMTP_*).",
+    "email_send_failed": "L'envoi de l'e-mail a échoué : vérifie la configuration SMTP et les logs du serveur."
+  }
+}

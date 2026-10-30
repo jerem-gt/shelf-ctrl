@@ -20,7 +20,8 @@ export function ResetPasswordPage() {
   const [problem, setProblem] = useState<string | null>(null);
 
   const tokenInvalid =
-    token === '' || (reset.error instanceof ApiError && reset.error.code === 'reset_token_invalid');
+    token === '' ||
+    (reset.error instanceof ApiError && reset.error.code === 'auth.reset_token_invalid');
   if (tokenInvalid) {
     return (
       <AuthCard subtitle={t('reset.invalidToken')}>

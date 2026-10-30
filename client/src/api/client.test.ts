@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
 import { BARCODE_TINTIN, SESSION_ADMIN } from '@/tests/fixtures';
+import { apiError } from '@/tests/msw/apiError';
 import { server } from '@/tests/msw/server';
 
 import { api, ApiError } from './client';
@@ -24,14 +25,46 @@ describe('api.copies.list', () => {
   });
 
   it.each([
-    [400, 'Certains champs sont invalides.'],
-    [500, 'Une erreur est survenue.'],
-  ])('traduit un statut %i en message', async (status, message) => {
-    server.use(http.get('/api/copies', () => HttpResponse.json({}, { status })));
+    ['common.internal', 500, 'Une erreur est survenue.'],
+    ['validation.invalid', 400, 'Certains champs sont invalides.'],
+  ])('traduit le code %s', async (code, status, message) => {
+    server.use(http.get('/api/copies', () => apiError(code, status)));
 
     const error = await api.copies.list().catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ApiError);
-    expect(error).toMatchObject({ status, message });
+    expect(error).toMatchObject({ status, message, code });
+  });
+
+  it('affiche le détail par champ, traduit avec ses paramètres', async () => {
+    server.use(
+      http.get('/api/copies', () =>
+        HttpResponse.json(
+          {
+            error: {
+              code: 'validation.invalid',
+              message: 'Données invalides',
+              fields: [
+                { path: 'q', code: 'validation.too_long', params: { maximum: 200 }, message: '' },
+                { path: 'limit', code: 'validation.required', message: '' },
+              ],
+            },
+          },
+          { status: 400 },
+        ),
+      ),
+    );
+
+    const error = await api.copies.list().catch((e: unknown) => e);
+    expect(error).toMatchObject({
+      message: 'Doit contenir au plus 200 caractère(s). · Ce champ est requis.',
+    });
+  });
+
+  it('répond un message générique sans corps d’erreur exploitable (proxy, HTML…)', async () => {
+    server.use(http.get('/api/copies', () => new HttpResponse('<html>', { status: 502 })));
+
+    const error = await api.copies.list().catch((e: unknown) => e);
+    expect(error).toMatchObject({ status: 502, message: 'Une erreur est survenue.', code: null });
   });
 
   it('signale une erreur réseau avec le statut 0', async () => {
@@ -59,11 +92,7 @@ describe('api.barcodes.lookup', () => {
   });
 
   it('signale un code inconnu par une ApiError 404', async () => {
-    server.use(
-      http.get('/api/barcodes/:code', () =>
-        HttpResponse.json({ error: 'not_found' }, { status: 404 }),
-      ),
-    );
+    server.use(http.get('/api/barcodes/:code', () => apiError('barcode.not_found', 404)));
 
     const error = await api.barcodes.lookup('9782203001190').catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ApiError);
@@ -140,14 +169,11 @@ describe('api.loans / api.borrowers', () => {
     ]);
   });
 
-  it('traduit un conflit (409) en message', async () => {
-    server.use(http.post('/api/copies/:id/loans', () => HttpResponse.json({}, { status: 409 })));
+  it('traduit un conflit en message', async () => {
+    server.use(http.post('/api/copies/:id/loans', () => apiError('loan.already_loaned', 409)));
 
     const error = await api.loans.lend(1, { borrowerName: 'Alice' }).catch((e: unknown) => e);
-    expect(error).toMatchObject({
-      status: 409,
-      message: "Cette action n'est plus possible : l'état de l'exemplaire a changé.",
-    });
+    expect(error).toMatchObject({ status: 409, message: 'Cet exemplaire est déjà prêté.' });
   });
 });
 
@@ -214,10 +240,10 @@ describe('api.auth', () => {
   });
 
   it.each([
-    [401, 'Identifiant ou mot de passe incorrect.'],
-    [429, 'Trop de tentatives : réessaie dans quelques minutes.'],
-  ])('traduit un statut %i en message', async (status, message) => {
-    server.use(http.post('/api/auth/login', () => HttpResponse.json({}, { status })));
+    ['auth.invalid_credentials', 401, 'Identifiant ou mot de passe incorrect.'],
+    ['auth.too_many_attempts', 429, 'Trop de tentatives : réessaie dans quelques minutes.'],
+  ])('traduit le code %s', async (code, status, message) => {
+    server.use(http.post('/api/auth/login', () => apiError(code, status)));
 
     const error = await api.auth
       .login({ username: 'admin', password: 'x' })
@@ -226,23 +252,13 @@ describe('api.auth', () => {
     expect(error).toBeInstanceOf(ApiError);
     expect(error).toMatchObject({ status, message });
   });
-  it('préfère le message du code d’erreur quand il est traduit, sinon celui du statut', async () => {
-    server.use(
-      http.post('/api/auth/change-password', () =>
-        HttpResponse.json({ error: 'current_password_incorrect' }, { status: 401 }),
-      ),
-      http.post('/api/auth/test-email', () =>
-        HttpResponse.json({ error: 'code_inconnu' }, { status: 409 }),
-      ),
-    );
 
-    await expect(api.auth.changePassword('x', 'new-password')).rejects.toMatchObject({
-      code: 'current_password_incorrect',
-      message: 'Mot de passe actuel incorrect.',
-    });
+  it('reprend le message du serveur quand le code n’est pas traduit', async () => {
+    server.use(http.post('/api/auth/test-email', () => apiError('code.inconnu', 409)));
+
     await expect(api.auth.testEmail()).rejects.toMatchObject({
-      code: 'code_inconnu',
-      message: "Cette action n'est plus possible : l'état de l'exemplaire a changé.",
+      code: 'code.inconnu',
+      message: '[repli] code.inconnu',
     });
   });
 });

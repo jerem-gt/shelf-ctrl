@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
+import { apiError } from '@/tests/msw/apiError';
 import { server } from '@/tests/msw/server';
 import { renderWithProviders } from '@/tests/renderWithProviders';
 
@@ -31,9 +32,7 @@ describe('ForgotPasswordPage', () => {
 
   it('affiche la limitation des demandes', async () => {
     server.use(
-      http.post('/api/auth/password/forgot', () =>
-        HttpResponse.json({ error: 'too_many_attempts' }, { status: 429 }),
-      ),
+      http.post('/api/auth/password/forgot', () => apiError('auth.too_many_attempts', 429)),
     );
     const user = userEvent.setup();
     renderWithProviders(<ForgotPasswordPage />);
@@ -91,9 +90,7 @@ describe('ResetPasswordPage', () => {
 
   it('propose une nouvelle demande quand le lien est expiré ou absent', async () => {
     server.use(
-      http.post('/api/auth/password/reset', () =>
-        HttpResponse.json({ error: 'reset_token_invalid' }, { status: 400 }),
-      ),
+      http.post('/api/auth/password/reset', () => apiError('auth.reset_token_invalid', 400)),
     );
     const { unmount } = renderWithProviders(<ResetPasswordPage />, '/reset-password?token=old');
     await fill('brand-new-pw', 'brand-new-pw');
@@ -110,11 +107,7 @@ describe('ResetPasswordPage', () => {
 
 describe('SetupPage', () => {
   it('affiche le refus d’un jeton erroné', async () => {
-    server.use(
-      http.post('/api/auth/setup', () =>
-        HttpResponse.json({ error: 'setup_token_invalid' }, { status: 403 }),
-      ),
-    );
+    server.use(http.post('/api/auth/setup', () => apiError('auth.setup_token_invalid', 403)));
     const user = userEvent.setup();
     renderWithProviders(<SetupPage />);
 

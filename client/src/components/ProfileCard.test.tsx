@@ -4,6 +4,7 @@ import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 
 import { SESSION_ADMIN } from '@/tests/fixtures';
+import { apiError } from '@/tests/msw/apiError';
 import { server } from '@/tests/msw/server';
 import { renderWithProviders } from '@/tests/renderWithProviders';
 
@@ -56,9 +57,7 @@ describe('ProfileCard', () => {
 
   it('affiche le refus du mot de passe actuel', async () => {
     server.use(
-      http.patch('/api/auth/profile', () =>
-        HttpResponse.json({ error: 'current_password_incorrect' }, { status: 401 }),
-      ),
+      http.patch('/api/auth/profile', () => apiError('auth.current_password_incorrect', 401)),
     );
     const user = userEvent.setup();
     renderWithProviders(<ProfileCard />);

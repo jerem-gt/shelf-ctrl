@@ -1,12 +1,9 @@
 import type { CopyStatus, MediaFormat, SaleItem, SaleListItem } from '@shelfctrl/types';
 import type { Database } from 'better-sqlite3';
 
+import { BadRequestError, ConflictError, NotFoundError } from '../../lib/errors.js';
 import { today } from '../../lib/isoDate.js';
 import type { ListInput, SellInput, UpdateSaleInput } from './sales.schema.js';
-
-export type SaleFailure =
-  'not_found' | 'already_listed' | 'already_sold' | 'loaned' | 'invalid_date';
-export type SaleResult = { ok: true; sale: SaleItem } | { ok: false; reason: SaleFailure };
 
 interface SaleRow {
   id: number;
@@ -50,13 +47,13 @@ export function createSalesService(db: Database) {
   };
 
   const listForSale = db.transaction(
-    (userId: number, copyId: number, input: ListInput): SaleResult => {
+    (userId: number, copyId: number, input: ListInput): SaleItem => {
       if (!copyExists(userId, copyId)) {
-        return { ok: false, reason: 'not_found' };
+        throw new NotFoundError('copy.not_found');
       }
       const existing = findByCopy(userId, copyId);
       if (existing) {
-        return { ok: false, reason: existing.soldAt ? 'already_sold' : 'already_listed' };
+        throw new ConflictError(existing.soldAt ? 'sale.already_sold' : 'sale.already_listed');
       }
       db.prepare(
         'INSERT INTO sales (user_id, copy_id, platform, price_cents, listed_at) VALUES (?, ?, ?, ?, ?)',
@@ -67,11 +64,11 @@ export function createSalesService(db: Database) {
         input.priceCents ?? null,
         input.listedAt ?? today(),
       );
-      return { ok: true, sale: findByCopy(userId, copyId) as SaleItem };
+      return findByCopy(userId, copyId) as SaleItem;
     },
   );
 
-  const sell = db.transaction((userId: number, copyId: number, input: SellInput): SaleResult => {
+  const sell = db.transaction((userId: number, copyId: number, input: SellInput): SaleItem => {
     const row = db
       .prepare(
         `SELECT cs.status FROM copy_status cs JOIN copies c ON c.id = cs.copy_id
@@ -79,13 +76,13 @@ export function createSalesService(db: Database) {
       )
       .get(copyId, userId) as { status: CopyStatus } | undefined;
     if (!row) {
-      return { ok: false, reason: 'not_found' };
+      throw new NotFoundError('copy.not_found');
     }
     if (row.status === 'sold') {
-      return { ok: false, reason: 'already_sold' };
+      throw new ConflictError('sale.already_sold');
     }
     if (row.status === 'loaned') {
-      return { ok: false, reason: 'loaned' };
+      throw new ConflictError('sale.copy_loaned');
     }
 
     const soldAt = input.soldAt ?? today();
@@ -95,7 +92,7 @@ export function createSalesService(db: Database) {
         'INSERT INTO sales (user_id, copy_id, platform, price_cents, sold_at) VALUES (?, ?, ?, ?, ?)',
       ).run(userId, copyId, input.platform ?? null, input.priceCents ?? null, soldAt);
     } else if (existing.listedAt !== null && soldAt < existing.listedAt) {
-      return { ok: false, reason: 'invalid_date' };
+      throw new BadRequestError('sale.invalid_date');
     } else {
       db.prepare(
         'UPDATE sales SET platform = ?, price_cents = ?, sold_at = ? WHERE copy_id = ?',
@@ -106,37 +103,42 @@ export function createSalesService(db: Database) {
         copyId,
       );
     }
-    return { ok: true, sale: findByCopy(userId, copyId) as SaleItem };
+    return findByCopy(userId, copyId) as SaleItem;
   });
 
   return {
     listForSale,
     sell,
 
-    /** `undefined` : exemplaire inconnu ; `null` : ni en vente ni vendu. */
-    findForCopy(userId: number, copyId: number): SaleItem | null | undefined {
-      return copyExists(userId, copyId) ? findByCopy(userId, copyId) : undefined;
+    /** `null` : ni en vente ni vendu. */
+    findForCopy(userId: number, copyId: number): SaleItem | null {
+      if (!copyExists(userId, copyId)) {
+        throw new NotFoundError('copy.not_found');
+      }
+      return findByCopy(userId, copyId);
     },
 
-    update(userId: number, copyId: number, input: UpdateSaleInput): SaleResult {
+    update(userId: number, copyId: number, input: UpdateSaleInput): SaleItem {
       const existing = findByCopy(userId, copyId);
       if (!existing) {
-        return { ok: false, reason: 'not_found' };
+        throw new NotFoundError('sale.not_found');
       }
       db.prepare('UPDATE sales SET platform = ?, price_cents = ? WHERE copy_id = ?').run(
         input.platform === undefined ? existing.platform : input.platform,
         input.priceCents === undefined ? existing.priceCents : input.priceCents,
         copyId,
       );
-      return { ok: true, sale: findByCopy(userId, copyId) as SaleItem };
+      return findByCopy(userId, copyId) as SaleItem;
     },
 
     /** Retire l'annonce ou annule la vente : l'exemplaire redevient « en rayon ». */
-    remove(userId: number, copyId: number): boolean {
-      return (
-        db.prepare('DELETE FROM sales WHERE copy_id = ? AND user_id = ?').run(copyId, userId)
-          .changes > 0
-      );
+    remove(userId: number, copyId: number): void {
+      const { changes } = db
+        .prepare('DELETE FROM sales WHERE copy_id = ? AND user_id = ?')
+        .run(copyId, userId);
+      if (changes === 0) {
+        throw new NotFoundError('sale.not_found');
+      }
     },
 
     listAll(userId: number): SaleListItem[] {

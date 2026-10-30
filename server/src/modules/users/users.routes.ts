@@ -1,16 +1,14 @@
-import type { UserItem } from '@shelfctrl/types';
 import bcrypt from 'bcrypt';
 import type { Database } from 'better-sqlite3';
 import { Router } from 'express';
 
+import { ConflictError, NotFoundError } from '../../lib/errors.js';
 import { createRequireAdmin, currentUserId } from '../../middleware.js';
 import type { SQLiteSessionStore } from '../../session-store.js';
 import { BCRYPT_COST } from '../auth/auth.repo.js';
 import type { AccountImages } from '../images/index.js';
 import { createUsersRepo } from './users.repo.js';
 import { createUserSchema, updateUserSchema, userIdSchema } from './users.schema.js';
-
-type UserConflict = 'username_taken' | 'email_taken' | 'last_admin';
 
 export interface UsersRouterDeps {
   sessionStore: SQLiteSessionStore;
@@ -30,74 +28,64 @@ export function createUsersRouter(db: Database, deps: UsersRouterDeps): Router {
     res.json({ items: repo.list() });
   });
 
-  /** Nom ou e-mail déjà pris par un autre compte que `id` (null : création). */
-  const identityConflict = (
+  /** Lève 409 si le nom ou l'e-mail est déjà pris par un autre compte que `id` (null : création). */
+  const assertIdentityFree = (
     id: number | null,
     username: string | undefined,
     email: string | null | undefined,
-  ): UserConflict | null => {
+  ): void => {
     const usernameOwner = username === undefined ? undefined : repo.getByUsername(username);
     if (usernameOwner && usernameOwner.id !== id) {
-      return 'username_taken';
+      throw new ConflictError('user.username_taken');
     }
     const emailOwner = email ? repo.getByEmail(email) : undefined;
     if (emailOwner && emailOwner.id !== id) {
-      return 'email_taken';
+      throw new ConflictError('user.email_taken');
     }
-    return null;
   };
 
   /** Retirer le rôle admin (rétrogradation ou suppression) au dernier admin est refusé. */
-  const removesLastAdmin = (id: number): boolean =>
-    repo.getById(id)?.isAdmin === true && repo.countAdmins() <= 1;
+  const assertNotLastAdmin = (id: number): void => {
+    if (repo.getById(id)?.isAdmin === true && repo.countAdmins() <= 1) {
+      throw new ConflictError('user.last_admin');
+    }
+  };
+
+  const assertExists = (id: number): void => {
+    if (!repo.getById(id)) {
+      throw new NotFoundError('user.not_found');
+    }
+  };
 
   router.post('/', async (req, res) => {
     const { username, password, email = null, isAdmin = false } = createUserSchema.parse(req.body);
-    const early = identityConflict(null, username, email);
-    if (early !== null) {
-      res.status(409).json({ error: early });
-      return;
-    }
+    assertIdentityFree(null, username, email);
     const hash = await bcrypt.hash(password, BCRYPT_COST);
     // Revérifié après le hachage (asynchrone) : une requête concurrente a pu prendre le nom.
-    const result = db.transaction((): { user: UserItem } | { conflict: UserConflict } => {
-      const late = identityConflict(null, username, email);
-      if (late !== null) {
-        return { conflict: late };
-      }
-      return { user: repo.create(username, hash, email, isAdmin) };
+    const user = db.transaction(() => {
+      assertIdentityFree(null, username, email);
+      return repo.create(username, hash, email, isAdmin);
     })();
-    if ('conflict' in result) {
-      res.status(409).json({ error: result.conflict });
-      return;
-    }
-    res.status(201).json(result.user);
+    res.status(201).json(user);
   });
 
   router.patch('/:id', async (req, res) => {
     const id = userIdSchema.parse(req.params.id);
-    if (!repo.getById(id)) {
-      res.status(404).json({ error: 'not_found' });
-      return;
-    }
+    assertExists(id);
     const { username, password, email, isAdmin } = updateUserSchema.parse(req.body);
-    const conflictOf = (): UserConflict | null =>
-      identityConflict(id, username, email) ??
-      (isAdmin === false && removesLastAdmin(id) ? 'last_admin' : null);
+    const assertAllowed = () => {
+      assertIdentityFree(id, username, email);
+      if (isAdmin === false) {
+        assertNotLastAdmin(id);
+      }
+    };
 
-    const early = conflictOf();
-    if (early !== null) {
-      res.status(409).json({ error: early });
-      return;
-    }
+    assertAllowed();
     const hash = password === undefined ? null : await bcrypt.hash(password, BCRYPT_COST);
     // Revérifié dans la transaction, après le hachage : deux admins qui se rétrogradent l'un
     // l'autre en même temps ne laissent pas l'application sans admin.
-    const conflict = db.transaction((): UserConflict | null => {
-      const late = conflictOf();
-      if (late !== null) {
-        return late;
-      }
+    db.transaction(() => {
+      assertAllowed();
       if (username !== undefined) {
         repo.updateUsername(id, username);
       }
@@ -110,12 +98,7 @@ export function createUsersRouter(db: Database, deps: UsersRouterDeps): Router {
       if (hash !== null) {
         repo.updatePassword(id, hash);
       }
-      return null;
     })();
-    if (conflict !== null) {
-      res.status(409).json({ error: conflict });
-      return;
-    }
     // Mot de passe changé : son propre compte garde la session courante, un autre les perd toutes.
     if (hash !== null) {
       if (id === currentUserId(res)) {
@@ -129,19 +112,14 @@ export function createUsersRouter(db: Database, deps: UsersRouterDeps): Router {
 
   router.delete('/:id', async (req, res) => {
     const id = userIdSchema.parse(req.params.id);
-    if (!repo.getById(id)) {
-      res.status(404).json({ error: 'not_found' });
-      return;
-    }
+    assertExists(id);
     if (id === currentUserId(res)) {
-      res.status(409).json({ error: 'cannot_delete_self' });
-      return;
+      throw new ConflictError('user.cannot_delete_self');
     }
-    const files = db.transaction(() => (removesLastAdmin(id) ? null : repo.remove(id)))();
-    if (files === null) {
-      res.status(409).json({ error: 'last_admin' });
-      return;
-    }
+    const files = db.transaction(() => {
+      assertNotLastAdmin(id);
+      return repo.remove(id);
+    })();
     sessionStore.destroyAllSessions(id);
     await removeAccountImages?.(files);
     res.status(204).end();

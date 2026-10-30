@@ -1,6 +1,7 @@
 import type { Database } from 'better-sqlite3';
 import { Router } from 'express';
 
+import { BadRequestError, HttpError } from '../../lib/errors.js';
 import type { Mailer } from '../../lib/mailer.js';
 import { MAIL_TEXTS } from '../../lib/mailTexts.js';
 import { createRequireAdmin, currentUserId, requireAuth } from '../../middleware.js';
@@ -22,19 +23,16 @@ export function createMailRouter(deps: MailRouterDeps): Router {
   router.post('/test-email', requireAuth, createRequireAdmin(db), async (_req, res) => {
     const user = repo.getById(currentUserId(res));
     if (!user?.email) {
-      res.status(400).json({ error: 'email_missing' });
-      return;
+      throw new BadRequestError('auth.email_missing');
     }
     if (!mailer.isConfigured()) {
-      res.status(503).json({ error: 'smtp_not_configured' });
-      return;
+      throw new HttpError(503, 'auth.smtp_not_configured');
     }
     try {
       await mailer.send({ to: user.email, subject: MAIL_TEXTS.testSubject, text: MAIL_TEXTS.test });
     } catch (err) {
       log.error(`[auth] envoi de l'e-mail de test échoué : ${String(err)}`);
-      res.status(502).json({ error: 'email_send_failed' });
-      return;
+      throw new HttpError(502, 'auth.email_send_failed');
     }
     res.status(204).end();
   });

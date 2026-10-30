@@ -36,7 +36,7 @@ describe('accès aux routes protégées', () => {
     const { app } = setup();
     const res = await request(app)[method.toLowerCase() as 'get' | 'post'](path);
     expect(res.status).toBe(401);
-    expect(res.body).toEqual({ error: 'unauthorized' });
+    expect(res.body.error.code).toBe('common.unauthorized');
   });
 
   it('laisse la route de santé publique', async () => {
@@ -85,7 +85,7 @@ describe('POST /api/auth/login', () => {
     const { app } = setup();
     const res = await login(app, body);
     expect(res.status).toBe(401);
-    expect(res.body).toEqual({ error: 'invalid_credentials' });
+    expect(res.body.error.code).toBe('auth.invalid_credentials');
     expect(res.headers['set-cookie']).toBeUndefined();
   });
 
@@ -98,7 +98,7 @@ describe('POST /api/auth/login', () => {
     const { app } = setup();
     const res = await login(app, body);
     expect(res.status).toBe(400);
-    expect(res.body).toEqual({ error: 'validation' });
+    expect(res.body.error.code).toBe('validation.invalid');
   });
 
   it('change d’identifiant de session à chaque connexion', async () => {
@@ -131,7 +131,7 @@ describe('limitation des tentatives', () => {
     await failAttempts(app, 10);
     const res = await login(app);
     expect(res.status).toBe(429);
-    expect(res.body).toEqual({ error: 'too_many_attempts' });
+    expect(res.body.error.code).toBe('auth.too_many_attempts');
   });
 
   it('remet le compteur à zéro après une connexion réussie', async () => {
@@ -233,7 +233,7 @@ describe('premier démarrage', () => {
       .send({ token, username: 'other', password: 'long-enough' });
 
     expect(again.status).toBe(409);
-    expect(again.body).toEqual({ error: 'setup_done' });
+    expect(again.body.error.code).toBe('auth.setup_done');
   });
 
   it('retourne 409 si un compte existe déjà', async () => {
@@ -251,7 +251,7 @@ describe('premier démarrage', () => {
       .post('/api/auth/setup')
       .send({ token: 'faux', ...firstAccount });
     expect(res.status).toBe(403);
-    expect(res.body).toEqual({ error: 'setup_token_invalid' });
+    expect(res.body.error.code).toBe('auth.setup_token_invalid');
     expect(db.prepare('SELECT COUNT(*) AS n FROM users').get()).toEqual({ n: 0 });
   });
 
@@ -315,20 +315,20 @@ describe('PATCH /api/auth/profile', () => {
       .patch('/api/auth/profile')
       .send({ currentPassword: 'wrong', username: 'jerem' });
     expect(res.status).toBe(401);
-    expect(res.body).toEqual({ error: 'current_password_incorrect' });
+    expect(res.body.error.code).toBe('auth.current_password_incorrect');
     expect(db.prepare("SELECT 1 FROM users WHERE username = 'jerem'").get()).toBeUndefined();
   });
 
   it.each([
-    ['nom pris', { username: 'bob' }, 'username_taken'],
-    ['e-mail pris, casse différente', { email: 'BOB@example.com' }, 'email_taken'],
+    ['nom pris', { username: 'bob' }, 'user.username_taken'],
+    ['e-mail pris, casse différente', { email: 'BOB@example.com' }, 'user.email_taken'],
   ])('retourne 409 : %s', async (_label, change, error) => {
     const { agent } = await profileSetup();
     const res = await agent
       .patch('/api/auth/profile')
       .send({ currentPassword: PASSWORD, ...change });
     expect(res.status).toBe(409);
-    expect(res.body).toEqual({ error });
+    expect(res.body.error.code).toBe(error);
   });
 
   it.each([

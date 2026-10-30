@@ -4,6 +4,8 @@ import path from 'node:path';
 
 import sharp from 'sharp';
 
+import { HttpError } from '../../lib/errors.js';
+
 /** `covers` : pochette d'une édition ; `photos` : photo d'un exemplaire. */
 export type ImageKind = 'covers' | 'photos';
 
@@ -12,8 +14,6 @@ const MAX_SIZE: Record<ImageKind, number> = { covers: 900, photos: 1600 };
 const MAX_PIXELS = 50_000_000;
 const WEBP_QUALITY = 80;
 const FILE_NAME = /^\d+-[0-9a-f]{10}\.webp$/;
-
-export class InvalidImageError extends Error {}
 
 /**
  * Images stockées dans `DATA_DIR/images/{covers,photos}`, jamais liées à distance. Tout est
@@ -44,7 +44,7 @@ export function createImageStore(dataDir: string) {
           .webp({ quality: WEBP_QUALITY })
           .toBuffer();
       } catch {
-        throw new InvalidImageError('Image illisible');
+        throw new HttpError(415, 'image.invalid');
       }
       const hash = crypto.createHash('sha1').update(output).digest('hex').slice(0, 10);
       const name = `${ownerId}-${hash}.webp`;

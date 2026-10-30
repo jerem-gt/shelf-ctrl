@@ -1,44 +1,25 @@
 import type { Database } from 'better-sqlite3';
-import { type Response, Router } from 'express';
+import { Router } from 'express';
 
 import { currentUserId } from '../../middleware.js';
 import { copyIdSchema } from '../copies/copies.schema.js';
 import { lendSchema, returnSchema } from './loans.schema.js';
-import { createLoansService, type LoanFailure, type LoanResult } from './loans.service.js';
-
-const FAILURE_STATUS: Record<LoanFailure, number> = {
-  not_found: 404,
-  sold: 409,
-  already_loaned: 409,
-  already_returned: 409,
-  invalid_date: 400,
-};
+import { createLoansService } from './loans.service.js';
 
 /** Monté sur `/api` : les chemins mêlent `/copies/:id/loans`, `/loans` et `/borrowers`. */
 export function createLoansRouter(db: Database) {
   const router = Router();
   const service = createLoansService(db);
 
-  const respond = (res: Response, result: LoanResult, successStatus: number) => {
-    if (result.ok) {
-      res.status(successStatus).json(result.loan);
-    } else {
-      res.status(FAILURE_STATUS[result.reason]).json({ error: result.reason });
-    }
-  };
-
   router.get('/copies/:id/loans', (req, res) => {
-    const loans = service.listForCopy(currentUserId(res), copyIdSchema.parse(req.params.id));
-    if (loans) {
-      res.json(loans);
-    } else {
-      res.status(404).json({ error: 'not_found' });
-    }
+    res.json(service.listForCopy(currentUserId(res), copyIdSchema.parse(req.params.id)));
   });
 
   router.post('/copies/:id/loans', (req, res) => {
     const input = lendSchema.parse(req.body);
-    respond(res, service.lend(currentUserId(res), copyIdSchema.parse(req.params.id), input), 201);
+    res
+      .status(201)
+      .json(service.lend(currentUserId(res), copyIdSchema.parse(req.params.id), input));
   });
 
   router.get('/loans', (_req, res) => {
@@ -47,11 +28,7 @@ export function createLoansRouter(db: Database) {
 
   router.post('/loans/:id/return', (req, res) => {
     const input = returnSchema.parse(req.body ?? {});
-    respond(
-      res,
-      service.returnLoan(currentUserId(res), copyIdSchema.parse(req.params.id), input),
-      200,
-    );
+    res.json(service.returnLoan(currentUserId(res), copyIdSchema.parse(req.params.id), input));
   });
 
   router.get('/borrowers', (_req, res) => {

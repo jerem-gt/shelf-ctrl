@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 import { localToday } from '@/lib/format';
 import { COPY_TINTIN, SALE_LISTED, SALE_SOLD } from '@/tests/fixtures';
+import { apiError } from '@/tests/msw/apiError';
 import { server } from '@/tests/msw/server';
 import { renderWithProviders } from '@/tests/renderWithProviders';
 
@@ -241,7 +242,7 @@ describe('SaleSection — sans vente', () => {
   });
 
   it('affiche l’erreur du serveur et garde le formulaire', async () => {
-    server.use(http.post('/api/copies/:id/sale', () => HttpResponse.json({}, { status: 409 })));
+    server.use(http.post('/api/copies/:id/sale', () => apiError('sale.already_listed', 409)));
     const user = userEvent.setup();
     renderWithProviders(<SaleSection copy={COPY_TINTIN} />);
 
@@ -249,7 +250,7 @@ describe('SaleSection — sans vente', () => {
     await user.selectOptions(screen.getByLabelText('Plateforme'), 'Vinted');
     await user.click(screen.getByRole('button', { name: 'Mettre en vente' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent("Cette action n'est plus possible");
+    expect(await screen.findByRole('alert')).toHaveTextContent('Cet exemplaire est déjà en vente.');
     expect(screen.getByLabelText('Plateforme')).toBeInTheDocument();
   });
 
@@ -363,7 +364,7 @@ describe('SaleSection — en vente', () => {
 
   it('affiche l’erreur quand le retrait échoue', async () => {
     stubSale(SALE_LISTED);
-    server.use(http.delete('/api/copies/:id/sale', () => HttpResponse.json({}, { status: 500 })));
+    server.use(http.delete('/api/copies/:id/sale', () => apiError('common.internal', 500)));
     const user = userEvent.setup();
     renderWithProviders(<SaleSection copy={listedCopy} />);
 

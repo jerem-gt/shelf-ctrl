@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { localToday } from '@/lib/format';
 import { COPY_TINTIN, LOAN_DONE, LOAN_OPEN } from '@/tests/fixtures';
+import { apiError } from '@/tests/msw/apiError';
 import { server } from '@/tests/msw/server';
 import { renderWithProviders } from '@/tests/renderWithProviders';
 
@@ -92,11 +93,7 @@ describe('LoanSection — prêt', () => {
   });
 
   it('affiche l’erreur quand le prêt est refusé', async () => {
-    server.use(
-      http.post('/api/copies/:id/loans', () =>
-        HttpResponse.json({ error: 'already_loaned' }, { status: 409 }),
-      ),
-    );
+    server.use(http.post('/api/copies/:id/loans', () => apiError('loan.already_loaned', 409)));
     const user = userEvent.setup();
     renderWithProviders(<LoanSection copy={COPY_TINTIN} />);
 
@@ -104,9 +101,7 @@ describe('LoanSection — prêt', () => {
     await user.type(screen.getByLabelText('Prêté à'), 'Alice');
     await user.click(screen.getByRole('button', { name: 'Enregistrer le prêt' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      "Cette action n'est plus possible : l'état de l'exemplaire a changé.",
-    );
+    expect(await screen.findByRole('alert')).toHaveTextContent('Cet exemplaire est déjà prêté.');
     expect(screen.getByLabelText('Prêté à')).toHaveValue('Alice');
   });
 
@@ -145,17 +140,13 @@ describe('LoanSection — retour et historique', () => {
 
   it('affiche l’erreur quand le retour échoue', async () => {
     stubLoans([LOAN_OPEN]);
-    server.use(
-      http.post('/api/loans/:id/return', () =>
-        HttpResponse.json({ error: 'already_returned' }, { status: 409 }),
-      ),
-    );
+    server.use(http.post('/api/loans/:id/return', () => apiError('loan.already_returned', 409)));
     const user = userEvent.setup();
     renderWithProviders(<LoanSection copy={loaned} />);
 
     await user.click(await screen.findByRole('button', { name: 'Marquer comme rendu' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent("Cette action n'est plus possible");
+    expect(await screen.findByRole('alert')).toHaveTextContent('Ce prêt est déjà rendu.');
   });
 
   it('liste l’historique, du plus récent au plus ancien, avec le prêt en cours', async () => {

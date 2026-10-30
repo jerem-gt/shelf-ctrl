@@ -147,7 +147,7 @@ describe('POST /api/auth/password/reset', () => {
       await reset(app, token);
       const again = await reset(app, token, 'another-password');
       expect(again.status).toBe(400);
-      expect(again.body).toEqual({ error: 'reset_token_invalid' });
+      expect(again.body.error.code).toBe('auth.reset_token_invalid');
     },
     SLOW,
   );
@@ -181,7 +181,7 @@ describe('POST /api/auth/password/reset', () => {
     const { app, db, token } = await withToken();
     const res = await reset(app, token, 'short');
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe('validation');
+    expect(res.body.error.code).toBe('validation.invalid');
     expect(tokenCount(db)).toBe(1);
   });
 
@@ -208,7 +208,7 @@ describe('POST /api/auth/test-email', () => {
     const agent = await loginAgent(app, 'alice');
     const res = await agent.post('/api/auth/test-email');
     expect(res.status).toBe(400);
-    expect(res.body).toEqual({ error: 'email_missing' });
+    expect(res.body.error.code).toBe('auth.email_missing');
   });
 
   it('retourne 503 sans SMTP et 502 si l’envoi échoue', async () => {

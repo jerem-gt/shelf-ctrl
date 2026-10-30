@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { mockCamera, restoreCamera } from '@/tests/cameraMocks';
 import { BARCODE_TINTIN, COPY_TINTIN } from '@/tests/fixtures';
+import { apiError } from '@/tests/msw/apiError';
 import { server } from '@/tests/msw/server';
 import { renderWithProviders } from '@/tests/renderWithProviders';
 
@@ -75,7 +76,7 @@ describe('AddCopyPage', () => {
   });
 
   it('affiche l’erreur du serveur et reste sur le formulaire', async () => {
-    server.use(http.post('/api/copies', () => HttpResponse.json({}, { status: 400 })));
+    server.use(http.post('/api/copies', () => apiError('validation.invalid', 400)));
     const user = userEvent.setup();
     renderPage();
 
@@ -167,7 +168,7 @@ describe('AddCopyPage — recherche par code-barres', () => {
     [400, 'Code-barres invalide : vérifie la saisie.'],
     [500, 'Une erreur est survenue.'],
   ])('affiche un message adapté pour une réponse %i', async (status, message) => {
-    stubLookup(status, { error: 'x' });
+    stubLookup(status, {});
     await searchFor('9782203001190');
 
     expect(await screen.findByRole('status')).toHaveTextContent(message);

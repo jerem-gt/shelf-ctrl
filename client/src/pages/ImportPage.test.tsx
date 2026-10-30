@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
 
+import { apiError } from '@/tests/msw/apiError';
 import { server } from '@/tests/msw/server';
 import { renderWithProviders } from '@/tests/renderWithProviders';
 
@@ -111,13 +112,11 @@ describe('ImportPage — fichier', () => {
   });
 
   it.each([
-    ['no_columns', 400, /Aucune colonne « titre » ni « code-barres »/],
-    ['empty_file', 400, /Le fichier est vide/],
-    ['too_many_rows', 400, /trop de lignes/],
+    ['import.no_columns', 400, /Aucune colonne « titre » ni « code-barres »/],
+    ['import.empty_file', 400, /Le fichier est vide/],
+    ['import.too_many_rows', 400, /trop de lignes \(1000 au maximum\)/],
   ])('explique l’erreur « %s » du serveur', async (code, status, message) => {
-    server.use(
-      http.post('/api/import/preview', () => HttpResponse.json({ error: code }, { status })),
-    );
+    server.use(http.post('/api/import/preview', () => apiError(code, status, { max: 1000 })));
 
     await chooseFile();
 
@@ -125,11 +124,7 @@ describe('ImportPage — fichier', () => {
   });
 
   it('explique un fichier trop lourd', async () => {
-    server.use(
-      http.post('/api/import/preview', () =>
-        HttpResponse.json({ error: 'bad_request' }, { status: 413 }),
-      ),
-    );
+    server.use(http.post('/api/import/preview', () => apiError('common.payload_too_large', 413)));
 
     await chooseFile();
 
@@ -210,11 +205,7 @@ describe('ImportPage — import', () => {
 
   it('signale un import déjà en cours', async () => {
     stubPreview(PREVIEW);
-    server.use(
-      http.post('/api/import', () =>
-        HttpResponse.json({ error: 'import_running' }, { status: 409 }),
-      ),
-    );
+    server.use(http.post('/api/import', () => apiError('import.running', 409)));
 
     const user = await chooseFile();
     await user.click(await screen.findByRole('button', { name: 'Importer 2 lignes' }));
@@ -261,9 +252,7 @@ describe('ImportPage — import', () => {
   });
 
   it('explique un import introuvable et permet d’en relancer un', async () => {
-    server.use(
-      http.get('/api/import/:id', () => HttpResponse.json({ error: 'not_found' }, { status: 404 })),
-    );
+    server.use(http.get('/api/import/:id', () => apiError('import.not_found', 404)));
     const user = userEvent.setup();
     renderWithProviders(<ImportPage />, '/import?job=perdu');
 

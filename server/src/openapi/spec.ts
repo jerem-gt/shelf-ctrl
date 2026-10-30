@@ -1,6 +1,7 @@
 import type { ZodType } from 'zod';
 import { toJSONSchema } from 'zod';
 
+import { ERROR_MESSAGES } from '../lib/errorCodes.js';
 import { SESSION_COOKIE } from '../modules/auth/auth.routes.js';
 import {
   changePasswordSchema,
@@ -74,13 +75,49 @@ const r200 = (description = 'OK') => ({ 200: { description } });
 const r201 = { 201: { description: 'Created' } };
 const r202 = { 202: { description: 'Accepted' } };
 const r204 = { 204: { description: 'No Content' } };
-const r400 = { 400: { description: 'Validation error' } };
-const r401 = { 401: { description: 'Unauthorized' } };
-const r403 = { 403: { description: 'Forbidden (admin only)' } };
-const r404 = { 404: { description: 'Not found' } };
-const r409 = { 409: { description: 'Conflict' } };
-const r415 = { 415: { description: 'Unsupported image' } };
-const r429 = { 429: { description: 'Too many failures' } };
+// Corps `{ error: { code, message, params?, fields? } }` (cf. lib/errorCodes.ts).
+const ERROR_CODES = Object.keys(ERROR_MESSAGES);
+const errorBodySchema = {
+  type: 'object',
+  required: ['error'],
+  properties: {
+    error: {
+      type: 'object',
+      required: ['code', 'message'],
+      properties: {
+        code: { type: 'string', enum: ERROR_CODES },
+        message: { type: 'string', description: 'Message FR de repli' },
+        params: { type: 'object', additionalProperties: { type: ['string', 'number'] } },
+        fields: {
+          type: 'array',
+          description: 'Détail par champ (validation)',
+          items: {
+            type: 'object',
+            required: ['path', 'code', 'message'],
+            properties: {
+              path: { type: 'string' },
+              code: { type: 'string', enum: ERROR_CODES },
+              message: { type: 'string' },
+              params: { type: 'object', additionalProperties: { type: ['string', 'number'] } },
+            },
+          },
+        },
+      },
+    },
+  },
+};
+const errorResponse = (description: string) => ({
+  description,
+  content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+});
+
+const r400 = { 400: errorResponse('Validation error') };
+const r401 = { 401: errorResponse('Unauthorized') };
+const r403 = { 403: errorResponse('Forbidden (admin only)') };
+const r404 = { 404: errorResponse('Not found') };
+const r409 = { 409: errorResponse('Conflict') };
+const r415 = { 415: errorResponse('Unsupported image') };
+const r429 = { 429: errorResponse('Too many failures') };
 
 const sessionAuth = [{ sessionCookie: [] }];
 
@@ -104,6 +141,7 @@ export function buildOpenApiSpec() {
       description: 'API REST interne de ShelfCtrl (collection de BD, DVD et Blu-ray).',
     },
     components: {
+      schemas: { Error: errorBodySchema },
       securitySchemes: {
         sessionCookie: {
           type: 'apiKey',
@@ -136,8 +174,8 @@ export function buildOpenApiSpec() {
           responses: {
             ...r200('Session started'),
             ...r400,
-            403: { description: 'Invalid setup token' },
-            409: { description: 'An account already exists' },
+            403: errorResponse('Invalid setup token'),
+            409: errorResponse('An account already exists'),
             ...r429,
           },
         },
@@ -176,7 +214,7 @@ export function buildOpenApiSpec() {
           requestBody: body(resetPasswordSchema),
           responses: {
             ...r204,
-            400: { description: 'Validation error or invalid token' },
+            400: errorResponse('Validation error or invalid token'),
             ...r429,
           },
         },
@@ -188,11 +226,11 @@ export function buildOpenApiSpec() {
           security: sessionAuth,
           responses: {
             ...r204,
-            400: { description: 'No email on the account' },
+            400: errorResponse('No email on the account'),
             ...r401,
             ...r403,
-            502: { description: 'Sending failed' },
-            503: { description: 'SMTP not configured' },
+            502: errorResponse('Sending failed'),
+            503: errorResponse('SMTP not configured'),
           },
         },
       },

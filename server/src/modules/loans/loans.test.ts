@@ -68,7 +68,7 @@ describe('POST /api/copies/:id/loans', () => {
     const res = await lend(app, copyId, { borrowerName: 'Bob' });
 
     expect(res.status).toBe(409);
-    expect(res.body).toEqual({ error: 'already_loaned' });
+    expect(res.body.error.code).toBe('loan.already_loaned');
   });
 
   it('refuse un exemplaire vendu', async () => {
@@ -81,7 +81,7 @@ describe('POST /api/copies/:id/loans', () => {
     const res = await lend(app, copyId);
 
     expect(res.status).toBe(409);
-    expect(res.body).toEqual({ error: 'sold' });
+    expect(res.body.error.code).toBe('loan.copy_sold');
   });
 
   it('accepte un exemplaire en vente (non vendu)', async () => {
@@ -99,7 +99,7 @@ describe('POST /api/copies/:id/loans', () => {
     const res = await lend(app, 99);
 
     expect(res.status).toBe(404);
-    expect(res.body).toEqual({ error: 'not_found' });
+    expect(res.body.error.code).toBe('copy.not_found');
   });
 
   it.each([
@@ -112,7 +112,7 @@ describe('POST /api/copies/:id/loans', () => {
     const res = await lend(app, await createCopy(app), body);
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe('validation');
+    expect(res.body.error.code).toBe('validation.invalid');
   });
 
   it('rejette un identifiant d’exemplaire invalide', async () => {
@@ -167,7 +167,7 @@ describe('POST /api/loans/:id/return', () => {
     const res = await request(app).post(`/api/loans/${loanId}/return`).send({});
 
     expect(res.status).toBe(409);
-    expect(res.body).toEqual({ error: 'already_returned' });
+    expect(res.body.error.code).toBe('loan.already_returned');
   });
 
   it('refuse un retour antérieur au prêt', async () => {
@@ -179,7 +179,7 @@ describe('POST /api/loans/:id/return', () => {
       .send({ returnedAt: '2026-10-09' });
 
     expect(res.status).toBe(400);
-    expect(res.body).toEqual({ error: 'invalid_date' });
+    expect(res.body.error.code).toBe('loan.invalid_date');
   });
 
   it('accepte un retour le jour même du prêt', async () => {

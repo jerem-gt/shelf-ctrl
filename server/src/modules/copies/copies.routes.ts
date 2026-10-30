@@ -2,6 +2,7 @@ import type { CopyItem } from '@shelfctrl/types';
 import type { Database } from 'better-sqlite3';
 import { Router } from 'express';
 
+import { NotFoundError } from '../../lib/errors.js';
 import { currentUserId } from '../../middleware.js';
 import {
   copyIdSchema,
@@ -34,11 +35,10 @@ export function createCopiesRouter(db: Database, hooks: CopiesHooks = {}) {
 
   router.get('/:id', (req, res) => {
     const copy = service.findById(currentUserId(res), copyIdSchema.parse(req.params.id));
-    if (copy) {
-      res.json(copy);
-    } else {
-      res.status(404).json({ error: 'not_found' });
+    if (!copy) {
+      throw new NotFoundError('copy.not_found');
     }
+    res.json(copy);
   });
 
   router.patch('/:id', (req, res) => {
@@ -47,21 +47,19 @@ export function createCopiesRouter(db: Database, hooks: CopiesHooks = {}) {
       copyIdSchema.parse(req.params.id),
       updateCopySchema.parse(req.body),
     );
-    if (copy) {
-      res.json(copy);
-    } else {
-      res.status(404).json({ error: 'not_found' });
+    if (!copy) {
+      throw new NotFoundError('copy.not_found');
     }
+    res.json(copy);
   });
 
   router.delete('/:id', async (req, res) => {
     const files = service.remove(currentUserId(res), copyIdSchema.parse(req.params.id));
-    if (files) {
-      await hooks.onRemoved?.(files);
-      res.status(204).end();
-    } else {
-      res.status(404).json({ error: 'not_found' });
+    if (!files) {
+      throw new NotFoundError('copy.not_found');
     }
+    await hooks.onRemoved?.(files);
+    res.status(204).end();
   });
 
   return router;
