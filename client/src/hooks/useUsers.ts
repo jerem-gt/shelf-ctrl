@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { api, type CreateUserPayload, type UpdateUserPayload } from '@/api/client';
 
-import { ME_KEY } from './useAuth';
+import { DEVICES_KEY, ME_KEY } from './useAuth';
 
 export const USERS_KEY = ['users'] as const;
 
@@ -18,7 +18,10 @@ export function useCreateUser() {
   });
 }
 
-/** Le compte modifié peut être le sien (nom, rôle) : la session est relue aussi. */
+/**
+ * Le compte modifié peut être le sien (nom, rôle, mot de passe qui révoque ses appareils) : la
+ * session et les appareils mémorisés sont relus aussi.
+ */
 export function useUpdateUser() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -28,6 +31,7 @@ export function useUpdateUser() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: USERS_KEY }),
         queryClient.invalidateQueries({ queryKey: ME_KEY }),
+        queryClient.invalidateQueries({ queryKey: DEVICES_KEY }),
       ]);
     },
   });
@@ -50,6 +54,7 @@ export function useDisableUserTotp() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: USERS_KEY }),
         queryClient.invalidateQueries({ queryKey: ME_KEY }),
+        queryClient.invalidateQueries({ queryKey: DEVICES_KEY }),
       ]);
     },
   });

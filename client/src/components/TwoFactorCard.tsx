@@ -12,24 +12,19 @@ import {
   useSetupTotp,
   useTrustedDevices,
 } from '@/hooks/useAuth';
-import { FIELD_CLASS, LABEL_CLASS, PRIMARY_BUTTON_CLASS } from '@/lib/formClasses';
+import {
+  DANGER_BUTTON_CLASS,
+  FIELD_CLASS,
+  LABEL_CLASS,
+  PRIMARY_BUTTON_CLASS,
+  SECONDARY_BUTTON_CLASS as SECONDARY_CLASS,
+  SUCCESS_BADGE_CLASS,
+} from '@/lib/formClasses';
 import { lastUsedParts } from '@/lib/lastUsed';
 
-const SECONDARY_CLASS =
-  'rounded-md border border-slate-300 bg-white px-4 py-2 text-sm disabled:opacity-60';
-const DANGER_CLASS =
-  'rounded-md bg-red-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-60';
-
-function ErrorText({ error }: Readonly<{ error: Error | null }>) {
-  if (!error) {
-    return null;
-  }
-  return (
-    <p role="alert" className="text-sm text-red-700">
-      {error.message}
-    </p>
-  );
-}
+import { ConfirmDialog } from './ConfirmDialog';
+import { ErrorText } from './ErrorText';
+import { TotpCodeInput } from './TotpCodeInput';
 
 function useLastUsedText() {
   const { t } = useTranslation();
@@ -57,9 +52,7 @@ function DeviceRow({ device }: Readonly<{ device: TrustedDeviceItem }>) {
         <p className="flex flex-wrap items-center gap-2 text-sm">
           <span>{name}</span>
           {device.current && (
-            <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-800">
-              {t('twoFactor.deviceCurrent')}
-            </span>
+            <span className={SUCCESS_BADGE_CLASS}>{t('twoFactor.deviceCurrent')}</span>
           )}
         </p>
         <p className="text-xs text-slate-500">{lastUsedText(device.lastUsedAt)}</p>
@@ -84,39 +77,28 @@ function ForgetAllDevices() {
   const forgetAll = useForgetAllDevices();
   const [confirming, setConfirming] = useState(false);
 
-  if (!confirming) {
+  if (confirming) {
     return (
-      <button
-        type="button"
-        onClick={() => setConfirming(true)}
-        className={`self-start ${SECONDARY_CLASS}`}
-      >
-        {t('twoFactor.forgetAll')}
-      </button>
+      <ConfirmDialog
+        label={t('twoFactor.forgetAll')}
+        message={t('twoFactor.forgetAllConfirm')}
+        error={forgetAll.error}
+        confirmLabel={t('twoFactor.forgetAllYes')}
+        cancelLabel={t('twoFactor.cancel')}
+        pending={forgetAll.isPending}
+        onConfirm={() => forgetAll.mutate(undefined, { onSuccess: () => setConfirming(false) })}
+        onCancel={() => setConfirming(false)}
+      />
     );
   }
   return (
-    <div
-      role="alertdialog"
-      aria-label={t('twoFactor.forgetAll')}
-      className="flex flex-col gap-3 rounded-lg border border-red-200 bg-red-50 p-4"
+    <button
+      type="button"
+      onClick={() => setConfirming(true)}
+      className={`self-start ${SECONDARY_CLASS}`}
     >
-      <p className="text-sm text-red-800">{t('twoFactor.forgetAllConfirm')}</p>
-      <ErrorText error={forgetAll.error} />
-      <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          disabled={forgetAll.isPending}
-          onClick={() => forgetAll.mutate(undefined, { onSuccess: () => setConfirming(false) })}
-          className={DANGER_CLASS}
-        >
-          {t('twoFactor.forgetAllYes')}
-        </button>
-        <button type="button" onClick={() => setConfirming(false)} className={SECONDARY_CLASS}>
-          {t('twoFactor.cancel')}
-        </button>
-      </div>
-    </div>
+      {t('twoFactor.forgetAll')}
+    </button>
   );
 }
 
@@ -175,20 +157,12 @@ function SetupForm({
         {setup.secret}
       </p>
       <p className="text-sm text-slate-600">{t('twoFactor.setupConfirm')}</p>
-      <label className={LABEL_CLASS}>
-        {t('twoFactor.code')}
-        <input
-          required
-          autoFocus
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          pattern="\d{6}"
-          maxLength={6}
-          value={code}
-          onChange={(event) => setCode(event.target.value.replaceAll(/\D/g, ''))}
-          className={`${FIELD_CLASS} font-mono tracking-widest sm:w-40`}
-        />
-      </label>
+      <TotpCodeInput
+        label={t('twoFactor.code')}
+        value={code}
+        onChange={setCode}
+        className="sm:w-40"
+      />
       <ErrorText error={enable.error} />
       <div className="flex flex-wrap gap-3">
         <button
@@ -237,7 +211,7 @@ function DisableForm({
       </label>
       <ErrorText error={disable.error} />
       <div className="flex flex-wrap gap-3">
-        <button type="submit" disabled={disable.isPending} className={DANGER_CLASS}>
+        <button type="submit" disabled={disable.isPending} className={DANGER_BUTTON_CLASS}>
           {disable.isPending ? t('twoFactor.disabling') : t('twoFactor.disable')}
         </button>
         <button type="button" onClick={onCancel} className={SECONDARY_CLASS}>

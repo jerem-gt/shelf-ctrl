@@ -6,6 +6,7 @@ import { useCopySale, useRemoveSale } from '@/hooks/useSales';
 import { formatIsoDate } from '@/lib/format';
 import { formatPrice } from '@/lib/money';
 
+import { ConfirmDialog } from './ConfirmDialog';
 import { ListingDraftPanel } from './ListingDraftPanel';
 import { SaleForm, type SaleFormMode } from './SaleForm';
 
@@ -52,27 +53,17 @@ export function SaleSection({ copy }: Readonly<{ copy: CopyItem }>) {
     body = <SaleForm mode={mode} copy={copy} sale={sale} onDone={backToView} />;
   } else if (mode === 'cancel') {
     body = (
-      <div
-        role="alertdialog"
-        aria-label={t('sale.cancelSaleTitle')}
-        className="flex flex-col gap-3 rounded-lg border border-red-200 bg-red-50 p-4"
-      >
-        <p className="font-semibold text-red-900">{t('sale.cancelSaleTitle')}</p>
-        <p className="text-sm text-red-800">{t('sale.cancelSaleText')}</p>
-        <div className="flex gap-3">
-          <button
-            type="button"
-            disabled={remove.isPending}
-            onClick={() => remove.mutate(undefined, { onSuccess: backToView })}
-            className="rounded-md bg-red-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
-          >
-            {t('sale.cancelSaleButton')}
-          </button>
-          <button type="button" onClick={backToView} className={BUTTON_CLASS}>
-            {t('sale.keep')}
-          </button>
-        </div>
-      </div>
+      <ConfirmDialog
+        label={t('sale.cancelSaleTitle')}
+        title={t('sale.cancelSaleTitle')}
+        message={t('sale.cancelSaleText')}
+        error={remove.error}
+        confirmLabel={t('sale.cancelSaleButton')}
+        cancelLabel={t('sale.keep')}
+        pending={remove.isPending}
+        onConfirm={() => remove.mutate(undefined, { onSuccess: backToView })}
+        onCancel={backToView}
+      />
     );
   } else if (sale?.soldAt) {
     body = (

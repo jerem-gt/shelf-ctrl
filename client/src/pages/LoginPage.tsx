@@ -2,12 +2,20 @@ import { type SyntheticEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
+import { ApiError } from '@/api/client';
 import { AUTH_LINK_CLASS, AuthCard } from '@/components/AuthCard';
+import { TotpCodeInput } from '@/components/TotpCodeInput';
 import { useLogin, useVerifyTotp } from '@/hooks/useAuth';
 import { FIELD_CLASS, LABEL_CLASS, PRIMARY_BUTTON_CLASS } from '@/lib/formClasses';
 
-/** Second temps de la connexion quand la 2FA est active : le code, et « se souvenir ». */
-function TotpStep({ onBack }: Readonly<{ onBack: () => void }>) {
+/**
+ * Second temps de la connexion quand la 2FA est active : le code, et « se souvenir ». Passé le
+ * délai du serveur, retour au mot de passe avec le message (`onExpired`).
+ */
+function TotpStep({
+  onBack,
+  onExpired,
+}: Readonly<{ onBack: () => void; onExpired: (error: ApiError) => void }>) {
   const { t } = useTranslation();
   const verify = useVerifyTotp();
   const [code, setCode] = useState('');
@@ -15,27 +23,23 @@ function TotpStep({ onBack }: Readonly<{ onBack: () => void }>) {
 
   const handleSubmit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
-    verify.mutate({ code, remember });
+    verify.mutate(
+      { code, remember },
+      {
+        onError: (error) => {
+          if (error instanceof ApiError && error.code === 'auth.totp_token_invalid') {
+            onExpired(error);
+          }
+        },
+      },
+    );
   };
 
   return (
     <AuthCard subtitle={t('login.totpTitle')} error={verify.error?.message}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <p className="text-sm text-slate-600">{t('login.totpIntro')}</p>
-        <label className={LABEL_CLASS}>
-          {t('login.totpCode')}
-          <input
-            required
-            autoFocus
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            pattern="\d{6}"
-            maxLength={6}
-            value={code}
-            onChange={(event) => setCode(event.target.value.replaceAll(/\D/g, ''))}
-            className={`${FIELD_CLASS} font-mono tracking-widest`}
-          />
-        </label>
+        <TotpCodeInput label={t('login.totpCode')} value={code} onChange={setCode} />
         <label className="flex items-center gap-2 text-sm text-slate-700">
           <input
             type="checkbox"
@@ -64,25 +68,33 @@ export function LoginPage() {
   const login = useLogin();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [expired, setExpired] = useState<ApiError | null>(null);
 
   const handleSubmit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setExpired(null);
     login.mutate({ username: username.trim(), password });
+  };
+
+  const backToPassword = () => {
+    setPassword('');
+    login.reset();
   };
 
   if (login.data && 'totpRequired' in login.data) {
     return (
       <TotpStep
-        onBack={() => {
-          setPassword('');
-          login.reset();
+        onBack={backToPassword}
+        onExpired={(error) => {
+          setExpired(error);
+          backToPassword();
         }}
       />
     );
   }
 
   return (
-    <AuthCard subtitle={t('login.title')} error={login.error?.message}>
+    <AuthCard subtitle={t('login.title')} error={(login.error ?? expired)?.message}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <label className={LABEL_CLASS}>
           {t('login.username')}

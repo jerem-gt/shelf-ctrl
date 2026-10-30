@@ -1,5 +1,4 @@
-import { createHash } from 'node:crypto';
-
+import { sha256Hex as sha256 } from '@jerem-gt/ctrl-shared/server/crypto';
 import * as OTPAuth from 'otpauth';
 import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -13,7 +12,6 @@ const UA = 'Mozilla/5.0 (X11; Linux x86_64; rv:121.0) Gecko/20100101 Firefox/121
 
 type Name = 'alice' | 'bob' | 'root';
 
-const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
 const totpCode = (secret: string, timestamp = Date.now()) =>
   OTPAuth.TOTP.generate({ secret: OTPAuth.Secret.fromBase32(secret), timestamp });
 
@@ -213,6 +211,19 @@ describe('connexion en deux temps', () => {
     db.prepare('UPDATE users SET totp_enabled = 0, totp_secret = NULL WHERE id = ?').run(ids.alice);
     const res = await agent.post('/api/auth/2fa/verify').send({ code });
     expect(res.body.error.code).toBe('auth.totp_token_invalid');
+  });
+
+  it('régénère la session : une connexion précédente ne survit pas à l’attente du code', async () => {
+    const { app, db } = setup();
+    addTestUser(db, 'carol');
+    const agent = request.agent(app);
+    await agent.post('/api/auth/login').send({ username: 'carol', password: PASSWORD });
+    expect((await agent.get('/api/auth/me')).body.username).toBe('carol');
+
+    const res = await agent.post('/api/auth/login').send({ username: 'alice', password: PASSWORD });
+    expect(res.body).toEqual({ totpRequired: true });
+    expect((await agent.get('/api/auth/me')).status).toBe(401);
+    expect((await agent.get('/api/copies')).status).toBe(401);
   });
 
   it('rejette un code mal formé', async () => {

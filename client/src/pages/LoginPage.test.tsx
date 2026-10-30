@@ -114,6 +114,24 @@ describe('LoginPage', () => {
       );
     });
 
+    it('revient au mot de passe avec le message quand l’attente du code a expiré', async () => {
+      requireTotp();
+      server.use(http.post('/api/auth/2fa/verify', () => apiError('auth.totp_token_invalid', 401)));
+      const user = userEvent.setup();
+
+      await fillAndSubmit('admin', 'secret');
+      await user.type(await screen.findByLabelText('Code à 6 chiffres'), '123456');
+      await user.click(screen.getByRole('button', { name: 'Vérifier' }));
+
+      expect(await screen.findByLabelText('Mot de passe')).toHaveValue('');
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'La connexion a expiré : saisis de nouveau ton mot de passe.',
+      );
+      await user.type(screen.getByLabelText('Mot de passe'), 'secret');
+      await user.click(screen.getByRole('button', { name: 'Se connecter' }));
+      expect(await screen.findByLabelText('Code à 6 chiffres')).toBeInTheDocument();
+    });
+
     it('revient au mot de passe, vidé', async () => {
       requireTotp();
       const user = userEvent.setup();

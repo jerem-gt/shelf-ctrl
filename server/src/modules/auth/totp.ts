@@ -15,8 +15,9 @@ export function newTotpSecret(label: string): TotpSetupResponse {
 }
 
 /**
- * Pas (numéro de la période de 30 s) auquel correspond le code, `null` s'il n'est pas valide. Le
- * pas accepté est mémorisé : un code ne sert qu'une fois (anti-rejeu, RFC 6238 §5.2).
+ * Pas (numéro de la période de 30 s) auquel correspond le code, `null` s'il n'est pas valide.
+ * L'appelant mémorise le pas accepté (`consumeTotpStep`, `enableTotp`) : un code ne sert qu'une
+ * fois (anti-rejeu, RFC 6238 §5.2).
  */
 export function matchTotpStep(secret: string, code: string, now = Date.now()): number | null {
   const totp = new OTPAuth.TOTP({ ...TOTP_OPTIONS, secret: OTPAuth.Secret.fromBase32(secret) });

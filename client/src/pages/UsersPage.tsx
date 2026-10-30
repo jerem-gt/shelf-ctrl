@@ -3,6 +3,7 @@ import { Pencil, ShieldOff, Trash2 } from 'lucide-react';
 import { type SyntheticEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useMe } from '@/hooks/useAuth';
 import {
   useCreateUser,
@@ -13,10 +14,15 @@ import {
   useUsers,
 } from '@/hooks/useUsers';
 import { formatDate } from '@/lib/format';
-import { FIELD_CLASS, LABEL_CLASS, PRIMARY_BUTTON_CLASS as PRIMARY_CLASS } from '@/lib/formClasses';
+import {
+  FIELD_CLASS,
+  LABEL_CLASS,
+  PRIMARY_BUTTON_CLASS as PRIMARY_CLASS,
+  SECONDARY_BUTTON_CLASS as SECONDARY_CLASS,
+  SUCCESS_BADGE_CLASS,
+} from '@/lib/formClasses';
 import { MIN_PASSWORD_LENGTH } from '@/lib/passwords';
 
-const SECONDARY_CLASS = 'rounded-md border border-slate-300 bg-white px-4 py-2 text-sm';
 const ICON_CLASS =
   'rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 disabled:opacity-60';
 
@@ -191,34 +197,19 @@ function RemoveUserConfirmation({
 }: Readonly<{ user: UserItem; onCancel: () => void }>) {
   const { t } = useTranslation();
   const remove = useRemoveUser();
-  const title = t('users.remove', { name: user.username });
 
   return (
-    <div
-      role="alertdialog"
-      aria-label={title}
-      className="flex flex-col gap-3 rounded-lg border border-red-200 bg-red-50 p-4"
-    >
-      <p className="text-sm text-red-800">{t('users.confirmRemove', { name: user.username })}</p>
-      {remove.error && (
-        <p role="alert" className="text-sm text-red-700">
-          {remove.error.message}
-        </p>
-      )}
-      <div className="flex gap-3">
-        <button
-          type="button"
-          disabled={remove.isPending}
-          onClick={() => remove.mutate(user.id)}
-          className="rounded-md bg-red-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
-        >
-          {remove.isPending ? t('users.removing') : t('users.removeConfirm')}
-        </button>
-        <button type="button" onClick={onCancel} className={SECONDARY_CLASS}>
-          {t('users.cancel')}
-        </button>
-      </div>
-    </div>
+    <ConfirmDialog
+      label={t('users.remove', { name: user.username })}
+      message={t('users.confirmRemove', { name: user.username })}
+      error={remove.error}
+      confirmLabel={t('users.removeConfirm')}
+      cancelLabel={t('users.cancel')}
+      pending={remove.isPending}
+      pendingLabel={t('users.removing')}
+      onConfirm={() => remove.mutate(user.id)}
+      onCancel={onCancel}
+    />
   );
 }
 
@@ -231,33 +222,17 @@ function DisableTotpConfirmation({
   const disable = useDisableUserTotp();
 
   return (
-    <div
-      role="alertdialog"
-      aria-label={t('users.disableTotp', { name: user.username })}
-      className="flex flex-col gap-3 rounded-lg border border-red-200 bg-red-50 p-4"
-    >
-      <p className="text-sm text-red-800">
-        {t('users.confirmDisableTotp', { name: user.username })}
-      </p>
-      {disable.error && (
-        <p role="alert" className="text-sm text-red-700">
-          {disable.error.message}
-        </p>
-      )}
-      <div className="flex gap-3">
-        <button
-          type="button"
-          disabled={disable.isPending}
-          onClick={() => disable.mutate(user.id, { onSuccess: onDone })}
-          className="rounded-md bg-red-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
-        >
-          {disable.isPending ? t('users.disablingTotp') : t('users.disableTotpConfirm')}
-        </button>
-        <button type="button" onClick={onDone} className={SECONDARY_CLASS}>
-          {t('users.cancel')}
-        </button>
-      </div>
-    </div>
+    <ConfirmDialog
+      label={t('users.disableTotp', { name: user.username })}
+      message={t('users.confirmDisableTotp', { name: user.username })}
+      error={disable.error}
+      confirmLabel={t('users.disableTotpConfirm')}
+      cancelLabel={t('users.cancel')}
+      pending={disable.isPending}
+      pendingLabel={t('users.disablingTotp')}
+      onConfirm={() => disable.mutate(user.id, { onSuccess: onDone })}
+      onCancel={onDone}
+    />
   );
 }
 
@@ -285,9 +260,7 @@ function UserRow({ user, isMe }: Readonly<{ user: UserItem; isMe: boolean }>) {
               </span>
             )}
             {user.totpEnabled && (
-              <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-800">
-                {t('users.twoFactor')}
-              </span>
+              <span className={SUCCESS_BADGE_CLASS}>{t('users.twoFactor')}</span>
             )}
           </p>
           <p className="text-sm break-words text-slate-500">{details.join(' · ')}</p>

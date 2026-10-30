@@ -164,16 +164,23 @@ export function createAuthRouter(
         startSession(req, res, next, user);
         return;
       }
-      // Mot de passe vérifié : la session attend le code (le limiteur se remet à zéro après lui).
-      req.session.pendingUserId = user.id;
-      req.session.pendingTotpAt = Date.now();
-      req.session.save((saveError) => {
-        if (saveError) {
-          next(saveError);
+      // Mot de passe vérifié : une session neuve attend le code (le limiteur se remet à zéro
+      // après lui). Régénérée, elle ne garde rien d'une connexion précédente (autre compte).
+      req.session.regenerate((regenerateError) => {
+        if (regenerateError) {
+          next(regenerateError);
           return;
         }
-        const body: LoginResponse = { totpRequired: true };
-        res.json(body);
+        req.session.pendingUserId = user.id;
+        req.session.pendingTotpAt = Date.now();
+        req.session.save((saveError) => {
+          if (saveError) {
+            next(saveError);
+            return;
+          }
+          const body: LoginResponse = { totpRequired: true };
+          res.json(body);
+        });
       });
       return;
     }
