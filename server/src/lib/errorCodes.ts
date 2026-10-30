@@ -66,6 +66,12 @@ export const ERROR_MESSAGES = {
   'auth.email_missing': "Aucune adresse e-mail n'est renseignée pour ce compte",
   'auth.smtp_not_configured': "L'envoi d'e-mails n'est pas configuré sur le serveur",
   'auth.email_send_failed': "Échec de l'envoi de l'e-mail",
+  'auth.totp_invalid': 'Code invalide ou expiré',
+  'auth.totp_token_invalid': "Session d'authentification expirée, reconnectez-vous",
+  'auth.totp_setup_expired': 'Configuration de la 2FA expirée, recommencez',
+  'auth.totp_already_enabled': 'La double authentification est déjà activée',
+  'auth.totp_not_enabled': "La double authentification n'est pas activée",
+  'auth.device_not_found': 'Appareil mémorisé introuvable',
 } as const;
 
 export type ErrorCode = keyof typeof ERROR_MESSAGES;

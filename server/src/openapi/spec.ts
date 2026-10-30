@@ -5,11 +5,14 @@ import { ERROR_MESSAGES } from '../lib/errorCodes.js';
 import { SESSION_COOKIE } from '../modules/auth/auth.routes.js';
 import {
   changePasswordSchema,
+  disableTotpSchema,
+  enableTotpSchema,
   forgotPasswordSchema,
   loginSchema,
   profileSchema,
   resetPasswordSchema,
   setupSchema,
+  verifyTotpSchema,
 } from '../modules/auth/auth.schema.js';
 import {
   createCopySchema,
@@ -156,9 +159,82 @@ export function buildOpenApiSpec() {
       '/api/auth/login': {
         post: {
           tags: ['Auth'],
-          summary: 'Connexion',
+          summary: 'Connexion (`{ totpRequired: true }` si la 2FA attend un code)',
           requestBody: body(loginSchema),
-          responses: { ...r200('Session started'), ...r400, ...r401, ...r429 },
+          responses: {
+            ...r200('Session started or TOTP code required'),
+            ...r400,
+            ...r401,
+            ...r429,
+          },
+        },
+      },
+      '/api/auth/2fa/verify': {
+        post: {
+          tags: ['Auth'],
+          summary:
+            'Second temps de la connexion : code TOTP (à usage unique), « se souvenir » 30 jours',
+          requestBody: body(verifyTotpSchema),
+          responses: {
+            ...r200('Session started'),
+            ...r400,
+            401: errorResponse('Invalid code or expired login'),
+            ...r429,
+          },
+        },
+      },
+      '/api/auth/2fa/setup': {
+        post: {
+          tags: ['Auth'],
+          summary: 'Proposer un secret TOTP (QR code), gardé en session jusqu’à sa confirmation',
+          security: sessionAuth,
+          responses: { ...r200(), ...r401, 409: errorResponse('2FA already enabled') },
+        },
+      },
+      '/api/auth/2fa/enable': {
+        post: {
+          tags: ['Auth'],
+          summary: 'Activer la 2FA avec un premier code (révoque les appareils mémorisés)',
+          security: sessionAuth,
+          requestBody: body(enableTotpSchema),
+          responses: {
+            ...r204,
+            400: errorResponse('Validation error or no pending secret'),
+            401: errorResponse('Invalid code'),
+            409: errorResponse('2FA already enabled'),
+          },
+        },
+      },
+      '/api/auth/2fa/disable': {
+        post: {
+          tags: ['Auth'],
+          summary: 'Désactiver la 2FA (mot de passe actuel requis, révoque les appareils)',
+          security: sessionAuth,
+          requestBody: body(disableTotpSchema),
+          responses: { ...r204, ...r400, ...r401, 409: errorResponse('2FA not enabled'), ...r429 },
+        },
+      },
+      '/api/auth/devices': {
+        get: {
+          tags: ['Auth'],
+          summary: 'Appareils mémorisés du compte',
+          security: sessionAuth,
+          responses: { ...r200(), ...r401 },
+        },
+        delete: {
+          tags: ['Auth'],
+          summary: 'Oublier tous les appareils mémorisés',
+          security: sessionAuth,
+          responses: { ...r204, ...r401 },
+        },
+      },
+      '/api/auth/devices/{id}': {
+        delete: {
+          tags: ['Auth'],
+          summary: 'Oublier un appareil mémorisé',
+          security: sessionAuth,
+          parameters: pId,
+          responses: { ...r204, ...r400, ...r401, ...r404 },
         },
       },
       '/api/auth/setup': {
@@ -280,6 +356,22 @@ export function buildOpenApiSpec() {
           security: sessionAuth,
           parameters: pId,
           responses: { ...r204, ...r401, ...r403, ...r404, ...r409 },
+        },
+      },
+      '/api/users/{id}/2fa': {
+        delete: {
+          tags: ['Utilisateurs'],
+          summary: 'Désactiver la 2FA d’un compte (téléphone perdu), révoque ses appareils',
+          security: sessionAuth,
+          parameters: pId,
+          responses: {
+            ...r204,
+            ...r400,
+            ...r401,
+            ...r403,
+            ...r404,
+            409: errorResponse('2FA not enabled'),
+          },
         },
       },
 

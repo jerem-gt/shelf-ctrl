@@ -8,6 +8,7 @@ interface UserRow {
   username: string;
   email: string | null;
   is_admin: number;
+  totp_enabled: number;
   created_at: string;
   copy_count: number;
   last_copy_at: string | null;
@@ -19,6 +20,7 @@ function toUserItem(row: UserRow): UserItem {
     username: row.username,
     email: row.email,
     isAdmin: row.is_admin === 1,
+    totpEnabled: row.totp_enabled === 1,
     createdAt: row.created_at,
     copyCount: row.copy_count,
     lastCopyAt: row.last_copy_at,
@@ -26,7 +28,7 @@ function toUserItem(row: UserRow): UserItem {
 }
 
 const SELECT_USERS = `
-  SELECT u.id, u.username, u.email, u.is_admin, u.created_at,
+  SELECT u.id, u.username, u.email, u.is_admin, u.totp_enabled, u.created_at,
          COUNT(c.id) AS copy_count, MAX(c.created_at) AS last_copy_at
   FROM users u
   LEFT JOIN copies c ON c.user_id = u.id`;
@@ -54,6 +56,9 @@ export function createUsersRepo(db: Database) {
   );
   const updatePasswordStmt = db.prepare<[string, number]>(
     'UPDATE users SET password_hash = ? WHERE id = ?',
+  );
+  const disableTotpStmt = db.prepare<[number]>(
+    'UPDATE users SET totp_secret = NULL, totp_enabled = 0, totp_last_step = NULL WHERE id = ?',
   );
   const countAdminsStmt = db.prepare<[], { n: number }>(
     'SELECT COUNT(*) AS n FROM users WHERE is_admin = 1',
@@ -87,6 +92,7 @@ export function createUsersRepo(db: Database) {
     updateEmail: (id: number, email: string | null) => updateEmailStmt.run(email, id),
     updateAdmin: (id: number, isAdmin: boolean) => updateAdminStmt.run(isAdmin ? 1 : 0, id),
     updatePassword: (id: number, hash: string) => updatePasswordStmt.run(hash, id),
+    disableTotp: (id: number) => disableTotpStmt.run(id),
     /**
      * Supprime le compte et ses données (cascade) ; renvoie ses fichiers d'image, à effacer
      * ensuite du disque.
@@ -101,3 +107,5 @@ export function createUsersRepo(db: Database) {
     }),
   };
 }
+
+export type UsersRepo = ReturnType<typeof createUsersRepo>;

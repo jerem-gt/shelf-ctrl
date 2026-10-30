@@ -31,6 +31,25 @@ export const changePasswordSchema = z.object({
   next: newPasswordSchema,
 });
 
+const totpCodeSchema = z.string().length(6);
+
+/** Le secret à confirmer est gardé en session par `/2fa/setup` : seul le code est envoyé. */
+export const enableTotpSchema = z.object({
+  code: totpCodeSchema,
+});
+
+export const disableTotpSchema = z.object({
+  password: z.string().min(1).max(200),
+});
+
+export const verifyTotpSchema = z.object({
+  code: totpCodeSchema,
+  /** Se souvenir de cet appareil pendant 30 jours. */
+  remember: z.boolean().optional().default(false),
+});
+
+export const deviceIdSchema = z.coerce.number().int().positive();
+
 export const forgotPasswordSchema = z.object({
   identifier: z.string().trim().min(1).max(254),
 });

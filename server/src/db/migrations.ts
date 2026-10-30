@@ -26,6 +26,26 @@ const MIGRATIONS: readonly Migration[] = [
   `,
   // 2 — comptes en base (admin = rôle, e-mail, mot de passe oublié) et données par compte.
   migrateToAccounts,
+  // 3 — double authentification (TOTP) et appareils mémorisés.
+  `
+  ALTER TABLE users ADD COLUMN totp_secret TEXT;
+  ALTER TABLE users ADD COLUMN totp_enabled INTEGER NOT NULL DEFAULT 0 CHECK (totp_enabled IN (0, 1));
+  -- Dernier pas TOTP (période de 30 s) accepté : un code déjà utilisé est refusé (anti-rejeu).
+  ALTER TABLE users ADD COLUMN totp_last_step INTEGER;
+
+  -- Appareils mémorisés (2FA sautée) : seule l'empreinte SHA-256 du jeton est stockée.
+  CREATE TABLE trusted_devices
+  (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id      INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+      token_hash   TEXT    NOT NULL UNIQUE,
+      label        TEXT    NOT NULL,
+      created_at   INTEGER NOT NULL,
+      last_used_at INTEGER NOT NULL,
+      expires_at   INTEGER NOT NULL
+  );
+  CREATE INDEX idx_trusted_devices_user ON trusted_devices (user_id);
+  `,
 ];
 
 /** Tables de données rattachées à un compte par la migration 2. */

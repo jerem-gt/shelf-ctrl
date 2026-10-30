@@ -74,6 +74,12 @@
     "reset_token_invalid": "Ce lien est invalide ou a expiré.",
     "email_missing": "Renseigne d'abord ton adresse e-mail dans ton profil (Réglages).",
     "smtp_not_configured": "L'envoi d'e-mails n'est pas configuré sur le serveur (variables SMTP_*).",
-    "email_send_failed": "L'envoi de l'e-mail a échoué : vérifie la configuration SMTP et les logs du serveur."
+    "email_send_failed": "L'envoi de l'e-mail a échoué : vérifie la configuration SMTP et les logs du serveur.",
+    "totp_invalid": "Code invalide ou déjà utilisé : attends le suivant.",
+    "totp_token_invalid": "La connexion a expiré : saisis de nouveau ton mot de passe.",
+    "totp_setup_expired": "L'activation a expiré : recommence.",
+    "totp_already_enabled": "La double authentification est déjà activée.",
+    "totp_not_enabled": "La double authentification n'est pas activée.",
+    "device_not_found": "Appareil mémorisé introuvable."
   }
 }

@@ -130,8 +130,11 @@ export function createApp(db: Database, options: AppOptions = {}) {
         },
       }),
     );
-    const { mailer, setupToken, appUrl, log } = options.auth;
-    app.use('/api/auth', createAuthRouter(db, sessionStore, { mailer, setupToken, appUrl, log }));
+    const { secureCookies, mailer, setupToken, appUrl, log } = options.auth;
+    app.use(
+      '/api/auth',
+      createAuthRouter(db, sessionStore, { secureCookies, mailer, setupToken, appUrl, log }),
+    );
     // /api/health, /api/docs et /api/auth/* sont déclarés avant : tout le reste de l'API exige une session.
     app.use('/api', requireAuth);
     app.use(['/covers', '/photos'], requireAuth);

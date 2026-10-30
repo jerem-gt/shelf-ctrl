@@ -11,6 +11,8 @@ const tables = (db: Db) =>
     db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all() as { name: string }[]
   ).map((row) => row.name);
 const version = (db: Db) => db.pragma('user_version', { simple: true });
+/** Nombre de migrations livrées. */
+const LATEST_VERSION = 3;
 const addUser = (db: Db, username: string) =>
   Number(
     db.prepare("INSERT INTO users (username, password_hash) VALUES (?, 'hash')").run(username)
@@ -54,7 +56,7 @@ describe('runMigrations', () => {
     initDatabase(db);
 
     expect(tables(db)).toEqual(expect.arrayContaining(['platforms', 'password_reset_tokens']));
-    expect(version(db)).toBe(2);
+    expect(version(db)).toBe(LATEST_VERSION);
     expect(db.pragma('foreign_keys', { simple: true })).toBe(1);
   });
 
@@ -68,7 +70,7 @@ describe('runMigrations', () => {
 
     initDatabase(db);
 
-    expect(version(db)).toBe(2);
+    expect(version(db)).toBe(LATEST_VERSION);
     expect(db.prepare('SELECT title FROM works').all()).toEqual([{ title: 'Tintin au Tibet' }]);
   });
 
@@ -77,7 +79,7 @@ describe('runMigrations', () => {
 
     runMigrations(db);
 
-    expect(version(db)).toBe(2);
+    expect(version(db)).toBe(LATEST_VERSION);
     for (const table of [
       'works',
       'editions',
@@ -159,7 +161,7 @@ describe('runMigrations', () => {
     runMigrations(db);
     initDatabase(db);
 
-    expect(version(db)).toBe(2);
+    expect(version(db)).toBe(LATEST_VERSION);
     expect(db.prepare('SELECT name FROM platforms').all()).toEqual([{ name: 'Vinted' }]);
   });
 
@@ -188,6 +190,19 @@ describe('runMigrations', () => {
     expect(() => platform.run(a, 'vinted', 0)).toThrow();
     expect(() => borrower.run(a, 'Paul')).toThrow();
     expect(() => edition.run(a, work.run(a).lastInsertRowid)).toThrow();
+  });
+
+  it('laisse la 2FA désactivée sur les comptes existants', () => {
+    const { db, adminId } = legacyDb();
+
+    runMigrations(db);
+
+    expect(
+      db
+        .prepare('SELECT totp_secret, totp_enabled, totp_last_step FROM users WHERE id = ?')
+        .get(adminId),
+    ).toEqual({ totp_secret: null, totp_enabled: 0, totp_last_step: null });
+    expect(tables(db)).toContain('trusted_devices');
   });
 
   it('refuse deux e-mails identiques', () => {

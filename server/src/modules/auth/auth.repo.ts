@@ -15,6 +15,14 @@ export function createAuthRepo(db: Database) {
   const updatePasswordStmt = db.prepare<[string, number]>(
     'UPDATE users SET password_hash = ? WHERE id = ?',
   );
+  const enableTotpStmt = db.prepare<[string, number, number]>(
+    'UPDATE users SET totp_secret = ?, totp_enabled = 1, totp_last_step = ? WHERE id = ?',
+  );
+  // Conditionnel : de deux requêtes simultanées avec le même code, une seule passe.
+  const consumeTotpStepStmt = db.prepare<[number, number, number]>(
+    `UPDATE users SET totp_last_step = ?
+     WHERE id = ? AND (totp_last_step IS NULL OR totp_last_step < ?)`,
+  );
   const deleteTokensForUserStmt = db.prepare<[number]>(
     'DELETE FROM password_reset_tokens WHERE user_id = ?',
   );
@@ -37,6 +45,12 @@ export function createAuthRepo(db: Database) {
     createAdmin: (username: string, hash: string): number =>
       Number(insertAdminStmt.run(username, hash).lastInsertRowid),
     updatePassword: (userId: number, hash: string) => updatePasswordStmt.run(hash, userId),
+    /** Le pas du code de confirmation est déjà consommé : ce code ne sert pas à se connecter. */
+    enableTotp: (userId: number, secret: string, step: number) =>
+      enableTotpStmt.run(secret, step, userId),
+    /** Vrai si le pas est postérieur au dernier accepté, qu'il remplace ; faux pour un rejeu. */
+    consumeTotpStep: (userId: number, step: number): boolean =>
+      consumeTotpStepStmt.run(step, userId, step).changes === 1,
     deleteResetTokensForUser: (userId: number) => deleteTokensForUserStmt.run(userId),
     purgeExpiredResetTokens: (now: number) => purgeExpiredTokensStmt.run(now),
     insertResetToken: (tokenHash: string, userId: number, expiresAt: number) =>

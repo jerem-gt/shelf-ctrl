@@ -7,6 +7,8 @@ import type {
   SaleItem,
   SaleListItem,
   SessionResponse,
+  TotpSetupResponse,
+  TrustedDeviceItem,
   UserItem,
 } from '@shelfctrl/types';
 
@@ -153,6 +155,7 @@ export const SESSION_ADMIN: SessionResponse = {
   username: 'admin',
   email: 'admin@example.com',
   isAdmin: true,
+  totpEnabled: false,
 };
 
 export const USER_ADMIN: UserItem = {
@@ -160,6 +163,7 @@ export const USER_ADMIN: UserItem = {
   username: 'admin',
   email: 'admin@example.com',
   isAdmin: true,
+  totpEnabled: false,
   createdAt: '2026-01-05 10:00:00',
   copyCount: 2,
   lastCopyAt: '2026-10-14 10:00:00',
@@ -170,7 +174,31 @@ export const USER_BOB: UserItem = {
   username: 'bob',
   email: null,
   isAdmin: false,
+  totpEnabled: false,
   createdAt: '2026-02-01 10:00:00',
   copyCount: 0,
   lastCopyAt: null,
+};
+
+export const TOTP_SETUP: TotpSetupResponse = {
+  uri: 'otpauth://totp/ShelfCtrl:admin?issuer=ShelfCtrl&secret=JBSWY3DPEHPK3PXP&algorithm=SHA1&digits=6&period=30',
+  secret: 'JBSWY3DPEHPK3PXP',
+};
+
+export const DEVICE_CURRENT: TrustedDeviceItem = {
+  id: 1,
+  label: 'Firefox · Linux',
+  createdAt: new Date(2026, 9, 1, 9, 0).getTime(),
+  lastUsedAt: new Date(2026, 9, 12, 18, 40).getTime(),
+  expiresAt: new Date(2026, 9, 31, 9, 0).getTime(),
+  current: true,
+};
+
+export const DEVICE_OTHER: TrustedDeviceItem = {
+  id: 2,
+  label: '',
+  createdAt: new Date(2026, 9, 2, 9, 0).getTime(),
+  lastUsedAt: new Date(2026, 9, 5, 8, 15).getTime(),
+  expiresAt: new Date(2026, 10, 1, 9, 0).getTime(),
+  current: false,
 };

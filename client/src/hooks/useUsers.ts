@@ -41,6 +41,20 @@ export function useRemoveUser() {
   });
 }
 
+/** Téléphone perdu : l'admin désactive la 2FA d'un compte (le sien compris). */
+export function useDisableUserTotp() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.users.disableTotp(id),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: USERS_KEY }),
+        queryClient.invalidateQueries({ queryKey: ME_KEY }),
+      ]);
+    },
+  });
+}
+
 export function useTestEmail() {
   return useMutation({ mutationFn: api.auth.testEmail });
 }

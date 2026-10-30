@@ -6,6 +6,11 @@ import { sendError } from './lib/errorCodes.js';
 declare module 'express-session' {
   interface SessionData {
     userId?: number;
+    /** Mot de passe vérifié, code TOTP attendu (`POST /api/auth/2fa/verify`). */
+    pendingUserId?: number;
+    pendingTotpAt?: number;
+    /** Secret proposé par `/2fa/setup`, en attente de confirmation par `/2fa/enable`. */
+    pendingTotpSecret?: string;
   }
 }
 

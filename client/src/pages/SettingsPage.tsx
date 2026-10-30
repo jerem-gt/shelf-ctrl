@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { ApiError } from '@/api/client';
 import { ProfileCard } from '@/components/ProfileCard';
+import { TwoFactorCard } from '@/components/TwoFactorCard';
 import {
   useAddPlatform,
   usePlatforms,
@@ -274,6 +275,8 @@ export function SettingsPage() {
       <h2 className="text-xl font-semibold">{t('settings.title')}</h2>
       <h3 className="text-lg font-semibold">{t('profile.title')}</h3>
       <ProfileCard />
+      <h3 className="text-lg font-semibold">{t('twoFactor.title')}</h3>
+      <TwoFactorCard />
       <h3 className="text-lg font-semibold">{t('settings.platformsTitle')}</h3>
       <PlatformsSettings />
     </section>

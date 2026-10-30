@@ -71,7 +71,7 @@ async function setup() {
   const photoPath = ((await alice.get(`/api/copies/${loaned.id}`)).body as { photoPath: string })
     .photoPath;
 
-  return { app, alice, bob, loaned, listed, loan, platform, cover, photoPath, png };
+  return { db, app, alice, bob, loaned, listed, loan, platform, cover, photoPath, png };
 }
 
 describe('isolation des comptes', () => {
@@ -127,6 +127,22 @@ describe('isolation des comptes', () => {
       () => bob.put('/api/platforms/default').send({ id: platform.id }),
     ]);
     expect(responses.map((res) => res.status)).toEqual(Array(responses.length).fill(404));
+  });
+
+  it('les appareils mémorisés d’un compte ne sont ni listés ni oubliables par un autre', async () => {
+    const { db, alice, bob } = await setup();
+    const { id: aliceId } = (await alice.get('/api/auth/me')).body as { id: number };
+    db.prepare(
+      `INSERT INTO trusted_devices (user_id, token_hash, label, created_at, last_used_at, expires_at)
+       VALUES (?, 'hash', 'Firefox · Linux', 1, 1, ?)`,
+    ).run(aliceId, Date.now() + 60_000);
+
+    expect((await bob.get('/api/auth/devices')).body).toEqual({ items: [] });
+    expect((await alice.get('/api/auth/devices')).body.items).toHaveLength(1);
+    const { id } = (await alice.get('/api/auth/devices')).body.items[0] as { id: number };
+    expect((await bob.delete(`/api/auth/devices/${id}`)).status).toBe(404);
+    expect((await bob.delete('/api/auth/devices')).status).toBe(204);
+    expect((await alice.get('/api/auth/devices')).body.items).toHaveLength(1);
   });
 
   it('les images d’un compte ne sont servies qu’à lui', async () => {

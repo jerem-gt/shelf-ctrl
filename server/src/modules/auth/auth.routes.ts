@@ -2,7 +2,7 @@ import { createMailer, type Mailer } from '@jerem-gt/ctrl-shared/server/mailer';
 import { FailureRateLimiter } from '@jerem-gt/ctrl-shared/server/rateLimit';
 import type { SQLiteSessionStore } from '@jerem-gt/ctrl-shared/server/session-store';
 import { SetupToken } from '@jerem-gt/ctrl-shared/server/setup';
-import type { SessionResponse, SetupStatusResponse } from '@shelfctrl/types';
+import type { LoginResponse, SessionResponse, SetupStatusResponse } from '@shelfctrl/types';
 import bcrypt from 'bcrypt';
 import type { Database } from 'better-sqlite3';
 import { type NextFunction, type Request, type Response, Router } from 'express';
@@ -11,10 +11,20 @@ import { ConflictError, HttpError } from '../../lib/errors.js';
 import { currentUserId, requireAuth } from '../../middleware.js';
 import { createUsersRepo } from '../users/users.repo.js';
 import { BCRYPT_COST, createAuthRepo } from './auth.repo.js';
-import { changePasswordSchema, loginSchema, profileSchema, setupSchema } from './auth.schema.js';
+import {
+  changePasswordSchema,
+  loginSchema,
+  profileSchema,
+  setupSchema,
+  verifyTotpSchema,
+} from './auth.schema.js';
 import type { AuthLogger, User } from './auth.types.js';
+import { createDeviceCookies } from './deviceCookie.js';
 import { createMailRouter } from './mail.routes.js';
 import { createPasswordRouter } from './password.routes.js';
+import { matchTotpStep } from './totp.js';
+import { createTotpRouter } from './totp.routes.js';
+import { createTrustedDevicesRepo } from './trustedDevices.js';
 
 export const SESSION_COOKIE = 'shelfctrl.sid';
 
@@ -29,8 +39,12 @@ export function sessionResponse(user: User): SessionResponse {
     username: user.username,
     email: user.email,
     isAdmin: user.is_admin === 1,
+    totpEnabled: user.totp_enabled === 1,
   };
 }
+
+/** Délai pour donner le code TOTP après le mot de passe. */
+const TOTP_PENDING_TTL_MS = 5 * 60 * 1000;
 
 /** Régénère la session (anti-fixation) puis y pose l'utilisateur authentifié. */
 function startSession(req: Request, res: Response, next: NextFunction, user: User): void {
@@ -51,6 +65,8 @@ function startSession(req: Request, res: Response, next: NextFunction, user: Use
 }
 
 export interface AuthRouterOptions {
+  /** Cookie d'appareil mémorisé en `Secure` derrière HTTPS (SECURE_COOKIE=true). */
+  secureCookies?: boolean;
   mailer?: Mailer;
   setupToken?: SetupToken;
   /** URL publique de l'application (sans slash final), pour les liens des e-mails. */
@@ -71,6 +87,8 @@ export function createAuthRouter(
   const mailer = options.mailer ?? createMailer();
   const setupToken = options.setupToken ?? new SetupToken();
   const log = options.log ?? console;
+  const devices = createTrustedDevicesRepo(db);
+  const deviceCookies = createDeviceCookies(devices, options.secureCookies === true);
 
   /** Vérifie le mot de passe actuel, échecs limités ; lève 429/401 sinon. */
   async function checkCurrentPassword(user: User, candidate: string): Promise<void> {
@@ -140,7 +158,61 @@ export function createAuthRouter(
       log.warn(`[auth] échec de connexion depuis ${key}`);
       throw new HttpError(401, 'auth.invalid_credentials');
     }
+    if (user.totp_enabled === 1) {
+      if (deviceCookies.isTrusted(req, res, user.id)) {
+        limiter.reset(key);
+        startSession(req, res, next, user);
+        return;
+      }
+      // Mot de passe vérifié : la session attend le code (le limiteur se remet à zéro après lui).
+      req.session.pendingUserId = user.id;
+      req.session.pendingTotpAt = Date.now();
+      req.session.save((saveError) => {
+        if (saveError) {
+          next(saveError);
+          return;
+        }
+        const body: LoginResponse = { totpRequired: true };
+        res.json(body);
+      });
+      return;
+    }
     limiter.reset(key);
+    startSession(req, res, next, user);
+  });
+
+  /** Second temps de la connexion : échecs limités par IP et par compte, code à usage unique. */
+  router.post('/2fa/verify', (req, res, next) => {
+    const key = req.ip ?? 'unknown';
+    if (!limiter.isAllowed(key)) {
+      throw new HttpError(429, 'auth.too_many_attempts');
+    }
+    const { code, remember } = verifyTotpSchema.parse(req.body);
+    const { pendingUserId, pendingTotpAt } = req.session;
+    const expired =
+      pendingUserId === undefined ||
+      pendingTotpAt === undefined ||
+      Date.now() - pendingTotpAt > TOTP_PENDING_TTL_MS;
+    const user = expired ? undefined : repo.getById(pendingUserId);
+    if (user?.totp_enabled !== 1 || !user.totp_secret) {
+      throw new HttpError(401, 'auth.totp_token_invalid');
+    }
+    const accountKey = `totp:${user.id}`;
+    if (!limiter.isAllowed(accountKey)) {
+      throw new HttpError(429, 'auth.too_many_attempts');
+    }
+    const step = matchTotpStep(user.totp_secret, code);
+    if (step === null || !repo.consumeTotpStep(user.id, step)) {
+      limiter.recordFailure(key);
+      limiter.recordFailure(accountKey);
+      log.warn(`[auth] code 2FA refusé pour « ${user.username} » depuis ${key}`);
+      throw new HttpError(401, 'auth.totp_invalid');
+    }
+    limiter.reset(key);
+    limiter.reset(accountKey);
+    if (remember) {
+      deviceCookies.remember(req, res, user.id);
+    }
     startSession(req, res, next, user);
   });
 
@@ -191,12 +263,29 @@ export function createAuthRouter(
     const data = changePasswordSchema.parse(req.body);
     const user = sessionUser(res);
     await checkCurrentPassword(user, data.current);
-    repo.updatePassword(user.id, await bcrypt.hash(data.next, BCRYPT_COST));
+    const hash = await bcrypt.hash(data.next, BCRYPT_COST);
+    db.transaction(() => {
+      repo.updatePassword(user.id, hash);
+      devices.revokeAll(user.id);
+    })();
     sessionStore.destroyOtherSessions(user.id, req.sessionID);
     res.status(204).end();
   });
 
-  router.use(createPasswordRouter({ db, repo, sessionStore, mailer, appUrl: options.appUrl, log }));
+  router.use(
+    createTotpRouter({
+      db,
+      repo,
+      usersRepo,
+      devices,
+      deviceCookies,
+      sessionUser,
+      checkCurrentPassword,
+    }),
+  );
+  router.use(
+    createPasswordRouter({ db, repo, devices, sessionStore, mailer, appUrl: options.appUrl, log }),
+  );
   router.use(createMailRouter({ db, repo, mailer, log }));
 
   return router;

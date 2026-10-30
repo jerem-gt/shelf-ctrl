@@ -18,16 +18,27 @@ interface TestUserOptions {
   password?: string;
   email?: string | null;
   isAdmin?: boolean;
+  /** Secret TOTP (base32) : la 2FA du compte est active. */
+  totpSecret?: string;
 }
 
 /** Crée un compte et renvoie son id ; mot de passe « password » par défaut. */
 export function addTestUser(db: TestDb, username: string, options: TestUserOptions = {}): number {
-  const { password = 'password', email = null, isAdmin = false } = options;
+  const { password = 'password', email = null, isAdmin = false, totpSecret = null } = options;
   return Number(
     db
-      .prepare('INSERT INTO users (username, password_hash, email, is_admin) VALUES (?, ?, ?, ?)')
-      .run(username, bcrypt.hashSync(password, TEST_BCRYPT_COST), email, isAdmin ? 1 : 0)
-      .lastInsertRowid,
+      .prepare(
+        `INSERT INTO users (username, password_hash, email, is_admin, totp_secret, totp_enabled)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        username,
+        bcrypt.hashSync(password, TEST_BCRYPT_COST),
+        email,
+        isAdmin ? 1 : 0,
+        totpSecret,
+        totpSecret === null ? 0 : 1,
+      ).lastInsertRowid,
   );
 }
 

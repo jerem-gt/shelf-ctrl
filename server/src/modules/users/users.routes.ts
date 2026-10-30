@@ -6,6 +6,7 @@ import { Router } from 'express';
 import { ConflictError, NotFoundError } from '../../lib/errors.js';
 import { createRequireAdmin, currentUserId } from '../../middleware.js';
 import { BCRYPT_COST } from '../auth/auth.repo.js';
+import { createTrustedDevicesRepo } from '../auth/trustedDevices.js';
 import type { AccountImages } from '../images/index.js';
 import { createUsersRepo } from './users.repo.js';
 import { createUserSchema, updateUserSchema, userIdSchema } from './users.schema.js';
@@ -20,6 +21,7 @@ export interface UsersRouterDeps {
 export function createUsersRouter(db: Database, deps: UsersRouterDeps): Router {
   const { sessionStore, removeAccountImages } = deps;
   const repo = createUsersRepo(db);
+  const devices = createTrustedDevicesRepo(db);
   const router = Router();
 
   router.use(createRequireAdmin(db));
@@ -97,6 +99,7 @@ export function createUsersRouter(db: Database, deps: UsersRouterDeps): Router {
       }
       if (hash !== null) {
         repo.updatePassword(id, hash);
+        devices.revokeAll(id);
       }
     })();
     // Mot de passe changé : son propre compte garde la session courante, un autre les perd toutes.
@@ -108,6 +111,23 @@ export function createUsersRouter(db: Database, deps: UsersRouterDeps): Router {
       }
     }
     res.json(repo.getById(id));
+  });
+
+  /** Téléphone perdu : l'admin désactive la 2FA du compte, ses appareils mémorisés tombent. */
+  router.delete('/:id/2fa', (req, res) => {
+    const id = userIdSchema.parse(req.params.id);
+    const user = repo.getById(id);
+    if (!user) {
+      throw new NotFoundError('user.not_found');
+    }
+    if (!user.totpEnabled) {
+      throw new ConflictError('auth.totp_not_enabled');
+    }
+    db.transaction(() => {
+      repo.disableTotp(id);
+      devices.revokeAll(id);
+    })();
+    res.status(204).end();
   });
 
   router.delete('/:id', async (req, res) => {

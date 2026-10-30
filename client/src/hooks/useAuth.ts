@@ -5,6 +5,7 @@ import { api, type LoginPayload, type ProfilePayload, type SetupPayload } from '
 
 export const ME_KEY = ['me'] as const;
 export const SETUP_KEY = ['auth', 'setup'] as const;
+export const DEVICES_KEY = ['auth', 'devices'] as const;
 
 /** Utilisateur connecté ; une erreur 401 signifie « pas de session », ce n'est pas à réessayer. */
 export function useMe() {
@@ -22,10 +23,24 @@ function startSession(queryClient: QueryClient, session: SessionResponse) {
   queryClient.setQueryData(ME_KEY, session);
 }
 
+/** Avec la 2FA active, la session n'est ouverte qu'après le code (`useVerifyTotp`). */
 export function useLogin() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: LoginPayload) => api.auth.login(payload),
+    onSuccess: (response) => {
+      if (!('totpRequired' in response)) {
+        startSession(queryClient, response);
+      }
+    },
+  });
+}
+
+export function useVerifyTotp() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ code, remember }: { code: string; remember: boolean }) =>
+      api.auth.verifyTotp(code, remember),
     onSuccess: (session) => startSession(queryClient, session),
   });
 }
@@ -60,10 +75,59 @@ export function useUpdateProfile() {
   });
 }
 
+/** Le mot de passe changé révoque les appareils mémorisés. */
 export function useChangePassword() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ current, next }: { current: string; next: string }) =>
       api.auth.changePassword(current, next),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: DEVICES_KEY }),
+  });
+}
+
+export function useSetupTotp() {
+  return useMutation({ mutationFn: api.auth.setupTotp });
+}
+
+/** Activer ou désactiver la 2FA change la session et révoque les appareils mémorisés. */
+function useTotpToggle<T>(mutationFn: (variables: T) => Promise<undefined>, totpEnabled: boolean) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: async () => {
+      queryClient.setQueryData<SessionResponse>(ME_KEY, (old) =>
+        old ? { ...old, totpEnabled } : old,
+      );
+      await queryClient.invalidateQueries({ queryKey: DEVICES_KEY });
+    },
+  });
+}
+
+export function useEnableTotp() {
+  return useTotpToggle((code: string) => api.auth.enableTotp(code), true);
+}
+
+export function useDisableTotp() {
+  return useTotpToggle((password: string) => api.auth.disableTotp(password), false);
+}
+
+export function useTrustedDevices() {
+  return useQuery({ queryKey: DEVICES_KEY, queryFn: api.auth.devices });
+}
+
+export function useForgetDevice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.auth.forgetDevice(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: DEVICES_KEY }),
+  });
+}
+
+export function useForgetAllDevices() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.auth.forgetAllDevices,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: DEVICES_KEY }),
   });
 }
 

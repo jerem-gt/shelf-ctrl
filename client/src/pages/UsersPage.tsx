@@ -1,11 +1,12 @@
 import type { UserItem } from '@shelfctrl/types';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, ShieldOff, Trash2 } from 'lucide-react';
 import { type SyntheticEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useMe } from '@/hooks/useAuth';
 import {
   useCreateUser,
+  useDisableUserTotp,
   useRemoveUser,
   useTestEmail,
   useUpdateUser,
@@ -221,7 +222,46 @@ function RemoveUserConfirmation({
   );
 }
 
-type RowMode = 'view' | 'edit' | 'remove';
+/** Téléphone perdu : la 2FA du compte est désactivée, ses appareils mémorisés oubliés. */
+function DisableTotpConfirmation({
+  user,
+  onDone,
+}: Readonly<{ user: UserItem; onDone: () => void }>) {
+  const { t } = useTranslation();
+  const disable = useDisableUserTotp();
+
+  return (
+    <div
+      role="alertdialog"
+      aria-label={t('users.disableTotp', { name: user.username })}
+      className="flex flex-col gap-3 rounded-lg border border-red-200 bg-red-50 p-4"
+    >
+      <p className="text-sm text-red-800">
+        {t('users.confirmDisableTotp', { name: user.username })}
+      </p>
+      {disable.error && (
+        <p role="alert" className="text-sm text-red-700">
+          {disable.error.message}
+        </p>
+      )}
+      <div className="flex gap-3">
+        <button
+          type="button"
+          disabled={disable.isPending}
+          onClick={() => disable.mutate(user.id, { onSuccess: onDone })}
+          className="rounded-md bg-red-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+        >
+          {disable.isPending ? t('users.disablingTotp') : t('users.disableTotpConfirm')}
+        </button>
+        <button type="button" onClick={onDone} className={SECONDARY_CLASS}>
+          {t('users.cancel')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+type RowMode = 'view' | 'edit' | 'remove' | 'disableTotp';
 
 function UserRow({ user, isMe }: Readonly<{ user: UserItem; isMe: boolean }>) {
   const { t } = useTranslation();
@@ -244,6 +284,11 @@ function UserRow({ user, isMe }: Readonly<{ user: UserItem; isMe: boolean }>) {
                 {t('users.admin')}
               </span>
             )}
+            {user.totpEnabled && (
+              <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-800">
+                {t('users.twoFactor')}
+              </span>
+            )}
           </p>
           <p className="text-sm break-words text-slate-500">{details.join(' · ')}</p>
         </div>
@@ -257,6 +302,17 @@ function UserRow({ user, isMe }: Readonly<{ user: UserItem; isMe: boolean }>) {
           >
             <Pencil aria-hidden className="size-4" />
           </button>
+          {user.totpEnabled && (
+            <button
+              type="button"
+              onClick={() => setMode('disableTotp')}
+              aria-label={t('users.disableTotp', { name: user.username })}
+              title={t('users.disableTotp', { name: user.username })}
+              className={`${ICON_CLASS} hover:text-red-700`}
+            >
+              <ShieldOff aria-hidden className="size-4" />
+            </button>
+          )}
           {!isMe && (
             <button
               type="button"
@@ -272,6 +328,9 @@ function UserRow({ user, isMe }: Readonly<{ user: UserItem; isMe: boolean }>) {
       </div>
       {mode === 'edit' && <EditUserForm user={user} onDone={() => setMode('view')} />}
       {mode === 'remove' && <RemoveUserConfirmation user={user} onCancel={() => setMode('view')} />}
+      {mode === 'disableTotp' && (
+        <DisableTotpConfirmation user={user} onDone={() => setMode('view')} />
+      )}
     </li>
   );
 }

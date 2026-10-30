@@ -70,6 +70,7 @@ describe('POST /api/auth/login', () => {
       username: 'admin',
       email: 'admin@example.com',
       isAdmin: true,
+      totpEnabled: false,
     });
     const cookie = cookieOf(res);
     expect(cookie).toMatch(/^shelfctrl\.sid=/);
@@ -155,6 +156,7 @@ describe('GET /api/auth/me et POST /api/auth/logout', () => {
       username: 'admin',
       email: 'admin@example.com',
       isAdmin: true,
+      totpEnabled: false,
     });
   });
 

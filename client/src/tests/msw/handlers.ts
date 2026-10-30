@@ -9,6 +9,7 @@ import {
   SALE_LISTED,
   SALE_SOLD,
   SESSION_ADMIN,
+  TOTP_SETUP,
   USER_ADMIN,
   USER_BOB,
 } from '../fixtures';
@@ -29,6 +30,15 @@ export const handlers = [
     });
   }),
   http.post('/api/auth/change-password', () => new HttpResponse(null, { status: 204 })),
+  http.post('/api/auth/2fa/verify', () =>
+    HttpResponse.json({ ...SESSION_ADMIN, totpEnabled: true }),
+  ),
+  http.post('/api/auth/2fa/setup', () => HttpResponse.json(TOTP_SETUP)),
+  http.post('/api/auth/2fa/enable', () => new HttpResponse(null, { status: 204 })),
+  http.post('/api/auth/2fa/disable', () => new HttpResponse(null, { status: 204 })),
+  http.get('/api/auth/devices', () => HttpResponse.json({ items: [] })),
+  http.delete('/api/auth/devices/:id', () => new HttpResponse(null, { status: 204 })),
+  http.delete('/api/auth/devices', () => new HttpResponse(null, { status: 204 })),
   http.post('/api/auth/password/forgot', () => new HttpResponse(null, { status: 204 })),
   http.post('/api/auth/password/reset', () => new HttpResponse(null, { status: 204 })),
   http.post('/api/auth/test-email', () => new HttpResponse(null, { status: 204 })),
@@ -39,6 +49,7 @@ export const handlers = [
   }),
   http.patch('/api/users/:id', () => HttpResponse.json(USER_BOB)),
   http.delete('/api/users/:id', () => new HttpResponse(null, { status: 204 })),
+  http.delete('/api/users/:id/2fa', () => new HttpResponse(null, { status: 204 })),
   http.get('/api/copies', () => HttpResponse.json({ items: COPIES, total: COPIES.length })),
   http.post('/api/copies', () => HttpResponse.json(COPY_TINTIN, { status: 201 })),
   http.get('/api/copies/:id', ({ params }) => {

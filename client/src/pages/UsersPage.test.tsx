@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
 
+import { USER_ADMIN, USER_BOB } from '@/tests/fixtures';
 import { apiError } from '@/tests/msw/apiError';
 import { server } from '@/tests/msw/server';
 import { renderWithProviders } from '@/tests/renderWithProviders';
@@ -139,5 +140,71 @@ describe('UsersPage', () => {
     server.use(http.post('/api/auth/test-email', () => apiError('auth.smtp_not_configured', 503)));
     await user.click(screen.getByRole('button', { name: 'Envoyer un e-mail de test' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('SMTP_');
+  });
+
+  describe('double authentification', () => {
+    const withBobTotp = () => {
+      let bob = { ...USER_BOB, totpEnabled: true };
+      const disabled: string[] = [];
+      server.use(
+        http.get('/api/users', () => HttpResponse.json({ items: [USER_ADMIN, bob] })),
+        http.delete('/api/users/:id/2fa', ({ params }) => {
+          disabled.push(String(params.id));
+          bob = { ...bob, totpEnabled: false };
+          return new HttpResponse(null, { status: 204 });
+        }),
+      );
+      return disabled;
+    };
+
+    it('signale les comptes à la 2FA active, seuls à proposer sa désactivation', async () => {
+      withBobTotp();
+      renderWithProviders(<UsersPage />);
+
+      const bob = await rowOf('bob');
+      expect(within(bob).getByText('2FA')).toBeInTheDocument();
+      expect(
+        within(bob).getByRole('button', { name: 'Désactiver la 2FA de bob' }),
+      ).toBeInTheDocument();
+      const admin = await rowOf('admin');
+      expect(within(admin).queryByText('2FA')).not.toBeInTheDocument();
+      expect(
+        within(admin).queryByRole('button', { name: 'Désactiver la 2FA de admin' }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('désactive la 2FA d’un compte après confirmation', async () => {
+      const disabled = withBobTotp();
+      const user = userEvent.setup();
+      renderWithProviders(<UsersPage />);
+
+      const bob = await rowOf('bob');
+      await user.click(within(bob).getByRole('button', { name: 'Désactiver la 2FA de bob' }));
+      const dialog = within(bob).getByRole('alertdialog', { name: 'Désactiver la 2FA de bob' });
+      expect(dialog).toHaveTextContent('téléphone perdu');
+      await user.click(within(dialog).getByRole('button', { name: 'Annuler' }));
+      expect(disabled).toEqual([]);
+
+      await user.click(within(bob).getByRole('button', { name: 'Désactiver la 2FA de bob' }));
+      await user.click(within(bob).getByRole('button', { name: 'Désactiver la 2FA' }));
+
+      await vi.waitFor(() => expect(within(bob).queryByText('2FA')).not.toBeInTheDocument());
+      expect(disabled).toEqual(['2']);
+    });
+
+    it('affiche le refus du serveur', async () => {
+      withBobTotp();
+      server.use(http.delete('/api/users/:id/2fa', () => apiError('auth.totp_not_enabled', 409)));
+      const user = userEvent.setup();
+      renderWithProviders(<UsersPage />);
+
+      const bob = await rowOf('bob');
+      await user.click(within(bob).getByRole('button', { name: 'Désactiver la 2FA de bob' }));
+      await user.click(within(bob).getByRole('button', { name: 'Désactiver la 2FA' }));
+
+      expect(await within(bob).findByRole('alert')).toHaveTextContent(
+        "La double authentification n'est pas activée.",
+      );
+    });
   });
 });

@@ -8,6 +8,7 @@ import type {
   ImportJob,
   ImportPreview,
   LoanItem,
+  LoginResponse,
   MediaFormat,
   OpenLoanItem,
   PlatformItem,
@@ -16,6 +17,8 @@ import type {
   SessionResponse,
   SetupStatusResponse,
   TitleSearchResponse,
+  TotpSetupResponse,
+  TrustedDeviceItem,
   UserItem,
 } from '@shelfctrl/types';
 
@@ -248,7 +251,16 @@ export const api = {
   },
   auth: {
     me: () => request<SessionResponse>('GET', '/api/auth/me'),
-    login: (payload: LoginPayload) => request<SessionResponse>('POST', '/api/auth/login', payload),
+    login: (payload: LoginPayload) => request<LoginResponse>('POST', '/api/auth/login', payload),
+    verifyTotp: (code: string, remember: boolean) =>
+      request<SessionResponse>('POST', '/api/auth/2fa/verify', { code, remember }),
+    setupTotp: () => request<TotpSetupResponse>('POST', '/api/auth/2fa/setup'),
+    enableTotp: (code: string) => request<undefined>('POST', '/api/auth/2fa/enable', { code }),
+    disableTotp: (password: string) =>
+      request<undefined>('POST', '/api/auth/2fa/disable', { password }),
+    devices: () => request<{ items: TrustedDeviceItem[] }>('GET', '/api/auth/devices'),
+    forgetDevice: (id: number) => request<undefined>('DELETE', `/api/auth/devices/${id}`),
+    forgetAllDevices: () => request<undefined>('DELETE', '/api/auth/devices'),
     logout: () => request<undefined>('POST', '/api/auth/logout'),
     setupStatus: () => request<SetupStatusResponse>('GET', '/api/auth/setup'),
     setup: (payload: SetupPayload) => request<SessionResponse>('POST', '/api/auth/setup', payload),
@@ -268,6 +280,7 @@ export const api = {
     update: (id: number, payload: UpdateUserPayload) =>
       request<UserItem>('PATCH', `/api/users/${id}`, payload),
     remove: (id: number) => request<undefined>('DELETE', `/api/users/${id}`),
+    disableTotp: (id: number) => request<undefined>('DELETE', `/api/users/${id}/2fa`),
   },
   sales: {
     all: () => request<SaleListItem[]>('GET', '/api/sales'),

@@ -71,4 +71,58 @@ describe('LoginPage', () => {
 
     expect(await screen.findByRole('button', { name: 'Connexion…' })).toBeDisabled();
   });
+
+  describe('double authentification', () => {
+    const requireTotp = () =>
+      server.use(http.post('/api/auth/login', () => HttpResponse.json({ totpRequired: true })));
+
+    it('demande le code après le mot de passe et l’envoie avec « se souvenir »', async () => {
+      requireTotp();
+      let received: unknown;
+      server.use(
+        http.post('/api/auth/2fa/verify', async ({ request }) => {
+          received = await request.json();
+          return HttpResponse.json({ id: 1, username: 'admin' });
+        }),
+      );
+      const user = userEvent.setup();
+
+      await fillAndSubmit('admin', 'secret');
+
+      const code = await screen.findByLabelText('Code à 6 chiffres');
+      expect(code).toHaveAttribute('autocomplete', 'one-time-code');
+      expect(screen.getByRole('button', { name: 'Vérifier' })).toBeDisabled();
+      await user.type(code, '12 34-56');
+      expect(code).toHaveValue('123456');
+      await user.click(screen.getByLabelText('Se souvenir de cet appareil pendant 30 jours'));
+      await user.click(screen.getByRole('button', { name: 'Vérifier' }));
+
+      await vi.waitFor(() => expect(received).toEqual({ code: '123456', remember: true }));
+    });
+
+    it('affiche l’erreur d’un code refusé', async () => {
+      requireTotp();
+      server.use(http.post('/api/auth/2fa/verify', () => apiError('auth.totp_invalid', 401)));
+      const user = userEvent.setup();
+
+      await fillAndSubmit('admin', 'secret');
+      await user.type(await screen.findByLabelText('Code à 6 chiffres'), '000000');
+      await user.click(screen.getByRole('button', { name: 'Vérifier' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Code invalide ou déjà utilisé : attends le suivant.',
+      );
+    });
+
+    it('revient au mot de passe, vidé', async () => {
+      requireTotp();
+      const user = userEvent.setup();
+
+      await fillAndSubmit('admin', 'secret');
+      await user.click(await screen.findByRole('button', { name: 'Retour' }));
+
+      expect(screen.getByLabelText('Identifiant')).toHaveValue('admin');
+      expect(screen.getByLabelText('Mot de passe')).toHaveValue('');
+    });
+  });
 });

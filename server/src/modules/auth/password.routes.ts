@@ -13,10 +13,12 @@ import { MAIL_TEXTS } from '../../lib/mailTexts.js';
 import { type AuthRepo, BCRYPT_COST } from './auth.repo.js';
 import { emailSchema, forgotPasswordSchema, resetPasswordSchema } from './auth.schema.js';
 import type { AuthLogger, User } from './auth.types.js';
+import type { TrustedDevicesRepo } from './trustedDevices.js';
 
 export interface PasswordRouterDeps {
   db: Database;
   repo: AuthRepo;
+  devices: TrustedDevicesRepo;
   sessionStore: SQLiteSessionStore;
   mailer: Mailer;
   /** URL publique de l'application, sans slash final (jamais déduite de l'en-tête Host). */
@@ -29,7 +31,7 @@ const FORGOT_MAX_REQUESTS = 5;
 
 /** Mot de passe oublié : lien à usage unique par e-mail (ou dans les logs, sans SMTP). */
 export function createPasswordRouter(deps: PasswordRouterDeps): Router {
-  const { db, repo, sessionStore, mailer, appUrl, log } = deps;
+  const { db, repo, devices, sessionStore, mailer, appUrl, log } = deps;
   const router = Router();
   const forgotLimiter = new FailureRateLimiter(db, FORGOT_MAX_REQUESTS);
   const resetLimiter = new FailureRateLimiter(db);
@@ -110,6 +112,8 @@ export function createPasswordRouter(deps: PasswordRouterDeps): Router {
       }
       repo.updatePassword(row.user_id, hash);
       repo.deleteResetTokensForUser(row.user_id);
+      // Les appareils mémorisés tombent ; la 2FA reste active (un admin peut la désactiver).
+      devices.revokeAll(row.user_id);
       return row.user_id;
     })();
     if (userId === null) {
