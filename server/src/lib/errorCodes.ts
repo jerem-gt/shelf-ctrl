@@ -1,5 +1,8 @@
+import { BASE_ERROR_MESSAGES, createErrorRegistry } from '@jerem-gt/ctrl-shared/server/apiErrors';
+
 /**
- * Registre unique des codes d'erreur de l'API et de leurs messages FR de repli.
+ * Registre unique des codes d'erreur de l'API et de leurs messages FR de repli : les codes de base
+ * de ctrl-shared (`common.*`, `validation.*`) puis ceux de ShelfCtrl.
  *
  * Le serveur renvoie `{ error: { code, message, params? } }` : `code` est la clé
  * stable traduite côté client (namespace i18n `errors`), `message` est le rendu FR
@@ -7,24 +10,7 @@
  * utilisent des placeholders `{{param}}` interpolés par `renderMessage`.
  */
 export const ERROR_MESSAGES = {
-  // ── Communs ───────────────────────────────────────────────────────────────
-  'common.unauthorized': 'Non authentifié',
-  'common.forbidden': 'Accès refusé',
-  'common.invalid_request': 'Requête invalide',
-  'common.internal': 'Erreur interne du serveur.',
-  'common.payload_too_large': 'Requête trop volumineuse',
-  'common.unsupported_media_type': 'Type de contenu non pris en charge',
-
-  // ── Validation (par champ) ────────────────────────────────────────────────
-  'validation.invalid': 'Données invalides',
-  'validation.required': 'Ce champ est requis',
-  'validation.invalid_type': 'Type de valeur incorrect',
-  'validation.too_small': 'La valeur doit être au moins {{minimum}}',
-  'validation.too_big': 'La valeur ne doit pas dépasser {{maximum}}',
-  'validation.too_short': 'Doit contenir au moins {{minimum}} caractère(s)',
-  'validation.too_long': 'Doit contenir au plus {{maximum}} caractère(s)',
-  'validation.invalid_format': 'Format invalide',
-  'validation.invalid_value': 'Valeur non autorisée',
+  ...BASE_ERROR_MESSAGES,
 
   // ── Exemplaires et éditions ───────────────────────────────────────────────
   'copy.not_found': 'Exemplaire introuvable',
@@ -83,32 +69,7 @@ export const ERROR_MESSAGES = {
 } as const;
 
 export type ErrorCode = keyof typeof ERROR_MESSAGES;
-export type ErrorParams = Record<string, string | number>;
 
-export interface ApiErrorField {
-  path: string;
-  code: ErrorCode;
-  params?: ErrorParams;
-  message: string;
-}
-
-export interface ApiErrorBody {
-  code: ErrorCode;
-  message: string;
-  params?: ErrorParams;
-  fields?: ApiErrorField[];
-}
-
-/** Interpole les placeholders `{{key}}` d'un template avec les params fournis. */
-export function renderMessage(code: ErrorCode, params?: ErrorParams): string {
-  const template = ERROR_MESSAGES[code];
-  if (!params) return template;
-  return template.replaceAll(/\{\{(\w+)\}\}/g, (_match, key: string) =>
-    key in params ? String(params[key]) : `{{${key}}}`,
-  );
-}
-
-/** Construit le corps d'erreur structuré renvoyé au client. */
-export function buildError(code: ErrorCode, params?: ErrorParams): ApiErrorBody {
-  return { code, message: renderMessage(code, params), ...(params ? { params } : {}) };
-}
+/** `renderMessage`, `buildError` et `sendError` sur ce registre (cf. ctrl-shared `apiErrors`). */
+export const errorRegistry = createErrorRegistry(ERROR_MESSAGES);
+export const { renderMessage, buildError, sendError } = errorRegistry;

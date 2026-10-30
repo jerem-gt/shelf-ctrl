@@ -1,7 +1,7 @@
 import type { Database } from 'better-sqlite3';
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 
-import { sendError } from './lib/routeHelpers.js';
+import { sendError } from './lib/errorCodes.js';
 
 declare module 'express-session' {
   interface SessionData {

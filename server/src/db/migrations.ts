@@ -1,3 +1,7 @@
+import {
+  type Migration,
+  runMigrations as runSharedMigrations,
+} from '@jerem-gt/ctrl-shared/server/migrations';
 import type { Database } from 'better-sqlite3';
 
 /**
@@ -5,7 +9,7 @@ import type { Database } from 'better-sqlite3';
  * l'ordre : la version de la base (`PRAGMA user_version`) est le nombre de migrations passées.
  * Ne jamais modifier une migration déjà livrée : en ajouter une.
  */
-const MIGRATIONS: ReadonlyArray<string | ((db: Database) => void)> = [
+const MIGRATIONS: readonly Migration[] = [
   // 1 — plateformes de vente du compte (réglages).
   `
   CREATE TABLE platforms
@@ -186,32 +190,10 @@ function migrateToAccounts(db: Database) {
   `);
 }
 
+/**
+ * Une transaction par migration, clés étrangères coupées (les reconstructions de tables ne
+ * déclenchent pas les cascades) puis contrôlées avant validation : runner de ctrl-shared.
+ */
 export function runMigrations(db: Database) {
-  const current = db.pragma('user_version', { simple: true }) as number;
-  if (current >= MIGRATIONS.length) {
-    return;
-  }
-  // Hors transaction (sans effet dedans) : les reconstructions de tables ne doivent pas déclencher
-  // les cascades. L'intégrité est contrôlée avant chaque validation.
-  const foreignKeys = db.pragma('foreign_keys', { simple: true }) as number;
-  db.pragma('foreign_keys = OFF');
-  try {
-    for (let version = current; version < MIGRATIONS.length; version++) {
-      db.transaction(() => {
-        const migration = MIGRATIONS[version];
-        if (typeof migration === 'string') {
-          db.exec(migration);
-        } else {
-          migration(db);
-        }
-        const violations = db.pragma('foreign_key_check') as unknown[];
-        if (violations.length > 0) {
-          throw new Error(`Migration ${version + 1} : clés étrangères invalides.`);
-        }
-        db.pragma(`user_version = ${version + 1}`);
-      })();
-    }
-  } finally {
-    db.pragma(`foreign_keys = ${foreignKeys ? 'ON' : 'OFF'}`);
-  }
+  runSharedMigrations(db, MIGRATIONS);
 }

@@ -1,17 +1,16 @@
+import { createErrorHandler } from '@jerem-gt/ctrl-shared/server/errorHandler';
 import type { Mailer } from '@jerem-gt/ctrl-shared/server/mailer';
 import { SQLiteSessionStore } from '@jerem-gt/ctrl-shared/server/session-store';
 import type { SetupToken } from '@jerem-gt/ctrl-shared/server/setup';
 import type { HealthResponse } from '@shelfctrl/types';
 import type { Database } from 'better-sqlite3';
 import compression from 'compression';
-import express, { type ErrorRequestHandler } from 'express';
+import express from 'express';
 import session from 'express-session';
 import helmet from 'helmet';
-import { ZodError } from 'zod';
 
-import type { ErrorCode } from './lib/errorCodes.js';
+import { errorRegistry } from './lib/errorCodes.js';
 import { HttpError } from './lib/errors.js';
-import { sendError, zodToApiError } from './lib/routeHelpers.js';
 import { actAs, requireAuth } from './middleware.js';
 import { createAuthRouter, SESSION_COOKIE } from './modules/auth/auth.routes.js';
 import type { AuthLogger } from './modules/auth/auth.types.js';
@@ -67,38 +66,22 @@ export interface AuthOptions {
   log?: AuthLogger;
 }
 
-/** Erreur 4xx des lecteurs de corps (JSON illisible, corps trop gros…), avec son code. */
-function bodyParserError(err: unknown): { status: number; code: ErrorCode } | null {
-  if (typeof err !== 'object' || err === null || !('status' in err)) {
-    return null;
-  }
-  const { status } = err;
-  if (typeof status !== 'number' || status < 400 || status >= 500) {
-    return null;
-  }
-  const code: ErrorCode = status === 413 ? 'common.payload_too_large' : 'common.invalid_request';
-  return { status, code };
-}
+const IS_TEST = process.env.NODE_ENV === 'test';
 
-// 4 params requis pour qu'Express reconnaisse le gestionnaire d'erreur (fn.length === 4)
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const errorHandler: ErrorRequestHandler = (err: unknown, _req, res, _next) => {
-  if (err instanceof HttpError) {
-    sendError(res, err.status, err.code, err.params);
-    return;
-  }
-  if (err instanceof ZodError) {
-    res.status(400).json({ error: zodToApiError(err) });
-    return;
-  }
-  const bodyError = bodyParserError(err);
-  if (bodyError) {
-    sendError(res, bodyError.status, bodyError.code);
-    return;
-  }
-  console.error(err);
-  sendError(res, 500, 'common.internal');
-};
+/**
+ * Gestionnaire d'erreur global de ctrl-shared (HttpError, Zod, lecteurs de corps, 500) : les 4xx
+ * en avertissement (muets en test), les 500 avec leur pile.
+ */
+const errorHandler = createErrorHandler({
+  HttpError,
+  registry: errorRegistry,
+  log: {
+    warn: (msg) => {
+      if (!IS_TEST) console.warn(msg);
+    },
+    error: (msg) => console.error(msg),
+  },
+});
 
 export function createApp(db: Database, options: AppOptions = {}) {
   const app = express();
