@@ -241,9 +241,12 @@ type RowMode = 'view' | 'edit' | 'remove' | 'disableTotp';
 function UserRow({ user, isMe }: Readonly<{ user: UserItem; isMe: boolean }>) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<RowMode>('view');
-  const details = [user.email ?? t('users.noEmail'), t('users.copies', { count: user.copyCount })];
-  if (user.lastCopyAt) {
-    details.push(t('users.lastCopy', { date: formatDate(user.lastCopyAt) }));
+  const details = [
+    user.email ?? t('users.noEmail'),
+    t('users.copies', { count: user.stats.copyCount }),
+  ];
+  if (user.stats.lastCopyAt) {
+    details.push(t('users.lastCopy', { date: formatDate(user.stats.lastCopyAt) }));
   }
   details.push(t('users.createdOn', { date: formatDate(user.createdAt) }));
 

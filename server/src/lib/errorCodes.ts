@@ -1,4 +1,5 @@
 import { BASE_ERROR_MESSAGES, createErrorRegistry } from '@jerem-gt/ctrl-shared/server/apiErrors';
+import { AUTH_ERROR_MESSAGES } from '@jerem-gt/ctrl-shared/server/auth';
 
 /**
  * Registre unique des codes d'erreur de l'API et de leurs messages FR de repli : les codes de base
@@ -11,6 +12,8 @@ import { BASE_ERROR_MESSAGES, createErrorRegistry } from '@jerem-gt/ctrl-shared/
  */
 export const ERROR_MESSAGES = {
   ...BASE_ERROR_MESSAGES,
+  // Comptes et authentification : module d'auth de ctrl-shared.
+  ...AUTH_ERROR_MESSAGES,
 
   // ── Exemplaires et éditions ───────────────────────────────────────────────
   'copy.not_found': 'Exemplaire introuvable',
@@ -48,30 +51,6 @@ export const ERROR_MESSAGES = {
   'import.too_many_rows': 'Le fichier dépasse {{max}} lignes',
   'import.running': 'Un import est déjà en cours',
   'import.not_found': 'Import introuvable',
-
-  // ── Utilisateurs ──────────────────────────────────────────────────────────
-  'user.not_found': 'Utilisateur introuvable',
-  'user.username_taken': "Nom d'utilisateur déjà utilisé",
-  'user.email_taken': 'Adresse e-mail déjà utilisée',
-  'user.last_admin': 'Il doit rester au moins un administrateur',
-  'user.cannot_delete_self': 'Vous ne pouvez pas supprimer votre propre compte',
-
-  // ── Authentification ──────────────────────────────────────────────────────
-  'auth.invalid_credentials': 'Identifiants invalides',
-  'auth.too_many_attempts': 'Trop de tentatives. Réessayez plus tard.',
-  'auth.current_password_incorrect': 'Mot de passe actuel incorrect',
-  'auth.setup_done': 'La configuration initiale est déjà terminée',
-  'auth.setup_token_invalid': 'Jeton de configuration invalide',
-  'auth.reset_token_invalid': 'Lien de réinitialisation invalide ou expiré',
-  'auth.email_missing': "Aucune adresse e-mail n'est renseignée pour ce compte",
-  'auth.smtp_not_configured': "L'envoi d'e-mails n'est pas configuré sur le serveur",
-  'auth.email_send_failed': "Échec de l'envoi de l'e-mail",
-  'auth.totp_invalid': 'Code invalide ou expiré',
-  'auth.totp_token_invalid': "Session d'authentification expirée, reconnectez-vous",
-  'auth.totp_setup_expired': 'Configuration de la 2FA expirée, recommencez',
-  'auth.totp_already_enabled': 'La double authentification est déjà activée',
-  'auth.totp_not_enabled': "La double authentification n'est pas activée",
-  'auth.device_not_found': 'Appareil mémorisé introuvable',
 } as const;
 
 export type ErrorCode = keyof typeof ERROR_MESSAGES;

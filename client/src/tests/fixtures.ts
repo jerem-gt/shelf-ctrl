@@ -165,8 +165,7 @@ export const USER_ADMIN: UserItem = {
   isAdmin: true,
   totpEnabled: false,
   createdAt: '2026-01-05 10:00:00',
-  copyCount: 2,
-  lastCopyAt: '2026-10-14 10:00:00',
+  stats: { copyCount: 2, lastCopyAt: '2026-10-14 10:00:00' },
 };
 
 export const USER_BOB: UserItem = {
@@ -176,8 +175,7 @@ export const USER_BOB: UserItem = {
   isAdmin: false,
   totpEnabled: false,
   createdAt: '2026-02-01 10:00:00',
-  copyCount: 0,
-  lastCopyAt: null,
+  stats: { copyCount: 0, lastCopyAt: null },
 };
 
 export const TOTP_SETUP: TotpSetupResponse = {

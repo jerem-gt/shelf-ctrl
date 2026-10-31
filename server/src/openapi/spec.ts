@@ -1,19 +1,19 @@
+import {
+  changePasswordSchema,
+  createLangSchemas,
+  disableTotpSchema,
+  enableTotpSchema,
+  loginSchema,
+  profileSchema,
+  resetPasswordSchema,
+  updateUserSchema,
+  verifyTotpSchema,
+} from '@jerem-gt/ctrl-shared/server/auth';
 import type { ZodType } from 'zod';
 import { toJSONSchema } from 'zod';
 
 import { ERROR_MESSAGES } from '../lib/errorCodes.js';
-import { SESSION_COOKIE } from '../modules/auth/auth.routes.js';
-import {
-  changePasswordSchema,
-  disableTotpSchema,
-  enableTotpSchema,
-  forgotPasswordSchema,
-  loginSchema,
-  profileSchema,
-  resetPasswordSchema,
-  setupSchema,
-  verifyTotpSchema,
-} from '../modules/auth/auth.schema.js';
+import { SESSION_COOKIE } from '../modules/accounts/accounts.js';
 import {
   createCopySchema,
   listCopiesSchema,
@@ -27,7 +27,9 @@ import {
 } from '../modules/platforms/platforms.schema.js';
 import { listSchema, sellSchema, updateSaleSchema } from '../modules/sales/sales.schema.js';
 import { querySchema as titleQuerySchema } from '../modules/titles/titles.routes.js';
-import { createUserSchema, updateUserSchema } from '../modules/users/users.schema.js';
+
+// Schémas qui portent la langue : mêmes langues que le module d'auth (`shelfAuthOptions`).
+const { setupSchema, forgotPasswordSchema, createUserSchema } = createLangSchemas(['fr'] as const);
 
 // ─── helpers ───────────────────────────────────────────────────────────────
 

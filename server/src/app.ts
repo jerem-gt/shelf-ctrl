@@ -1,3 +1,4 @@
+import { type AuthLogger, createAuthModule } from '@jerem-gt/ctrl-shared/server/auth';
 import { createErrorHandler } from '@jerem-gt/ctrl-shared/server/errorHandler';
 import type { Mailer } from '@jerem-gt/ctrl-shared/server/mailer';
 import { SQLiteSessionStore } from '@jerem-gt/ctrl-shared/server/session-store';
@@ -11,9 +12,8 @@ import helmet from 'helmet';
 
 import { errorRegistry } from './lib/errorCodes.js';
 import { HttpError } from './lib/errors.js';
-import { actAs, requireAuth } from './middleware.js';
-import { createAuthRouter, SESSION_COOKIE } from './modules/auth/auth.routes.js';
-import type { AuthLogger } from './modules/auth/auth.types.js';
+import { actAs } from './middleware.js';
+import { SESSION_COOKIE, shelfAuthOptions } from './modules/accounts/accounts.js';
 import { parseBarcode } from './modules/barcodes/barcode.js';
 import { createBarcodesRouter } from './modules/barcodes/barcodes.routes.js';
 import { createBarcodesService } from './modules/barcodes/barcodes.service.js';
@@ -28,7 +28,6 @@ import { createSalesRouter } from './modules/sales/sales.routes.js';
 import { createDefaultTitleSearchProviders } from './modules/titles/providers/index.js';
 import type { TitleSearchProvider } from './modules/titles/providers/types.js';
 import { createTitlesRouter } from './modules/titles/titles.routes.js';
-import { createUsersRouter } from './modules/users/users.routes.js';
 import { createDocsRouter } from './openapi/router.js';
 
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -131,17 +130,23 @@ export function createApp(db: Database, options: AppOptions = {}) {
       }),
     );
     const { secureCookies, mailer, setupToken, appUrl, log } = options.auth;
-    app.use(
-      '/api/auth',
-      createAuthRouter(db, sessionStore, { secureCookies, mailer, setupToken, appUrl, log }),
+    const auth = createAuthModule(
+      db,
+      sessionStore,
+      shelfAuthOptions(db, {
+        secureCookies,
+        mailer,
+        setupToken,
+        appUrl,
+        log,
+        removeAccountImages: images?.removeAccountImages,
+      }),
     );
+    app.use('/api/auth', auth.authRouter);
     // /api/health, /api/docs et /api/auth/* sont déclarés avant : tout le reste de l'API exige une session.
-    app.use('/api', requireAuth);
-    app.use(['/covers', '/photos'], requireAuth);
-    app.use(
-      '/api/users',
-      createUsersRouter(db, { sessionStore, removeAccountImages: images?.removeAccountImages }),
-    );
+    app.use('/api', auth.requireAuth);
+    app.use(['/covers', '/photos'], auth.requireAuth);
+    app.use('/api/users', auth.usersRouter);
   } else {
     app.use(['/api', '/covers', '/photos'], actAs(options.actAsUserId ?? 1));
   }
