@@ -13,7 +13,7 @@ import helmet from 'helmet';
 import { errorRegistry } from './lib/errorCodes.js';
 import { HttpError } from './lib/errors.js';
 import { actAs } from './middleware.js';
-import { SESSION_COOKIE, shelfAuthOptions } from './modules/accounts/accounts.js';
+import { SESSION_COOKIE, shelfAuthOptions } from './modules/auth/authOptions.js';
 import { parseBarcode } from './modules/barcodes/barcode.js';
 import { createBarcodesRouter } from './modules/barcodes/barcodes.routes.js';
 import { createBarcodesService } from './modules/barcodes/barcodes.service.js';

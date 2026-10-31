@@ -1,4 +1,3 @@
-import type { Mailer, MailMessage } from '@jerem-gt/ctrl-shared/server/mailer';
 import request from 'supertest';
 import { vi } from 'vitest';
 
@@ -7,41 +6,17 @@ import { createTestDb, type TestDb } from './testDb.js';
 
 export const TEST_SECRET = 'a'.repeat(40);
 
-export interface FakeMailer extends Mailer {
-  sent: MailMessage[];
-}
-
-/** Mailer de test : mémorise les messages, aucun SMTP réel. */
-export function createFakeMailer(
-  options: { configured?: boolean; fail?: boolean } = {},
-): FakeMailer {
-  const { configured = true, fail = false } = options;
-  const sent: MailMessage[] = [];
-  return {
-    sent,
-    isConfigured: () => configured,
-    send: (message) => {
-      if (fail) {
-        return Promise.reject(new Error('smtp down'));
-      }
-      sent.push(message);
-      return Promise.resolve();
-    },
-  };
-}
-
-/** Application avec authentification, mailer factice et journal espionné. */
-export function createAuthApp(
-  options: Partial<Omit<AuthOptions, 'mailer'>> & { db?: TestDb; mailer?: FakeMailer } = {},
-) {
-  const { db = createTestDb(), mailer = createFakeMailer(), ...auth } = options;
+/** Application avec authentification, sans SMTP, journal espionné. */
+export function createAuthApp(options: Partial<AuthOptions> & { db?: TestDb } = {}) {
+  const { db = createTestDb(), ...auth } = options;
+  const mailer = { isConfigured: () => false, send: () => Promise.resolve() };
   const log = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
   const app = createApp(db, {
     barcodeProviders: [],
     titleSearchProviders: [],
     auth: { sessionSecret: TEST_SECRET, secureCookies: false, mailer, log, ...auth },
   });
-  return { db, app, mailer, log };
+  return { db, app, log };
 }
 
 export type TestApp = ReturnType<typeof createAuthApp>['app'];

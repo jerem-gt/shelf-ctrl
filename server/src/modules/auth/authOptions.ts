@@ -1,6 +1,4 @@
-import type { AuthLogger, AuthModuleOptions } from '@jerem-gt/ctrl-shared/server/auth';
-import type { Mailer } from '@jerem-gt/ctrl-shared/server/mailer';
-import type { SetupToken } from '@jerem-gt/ctrl-shared/server/setup';
+import type { AuthModuleOptions, AuthRuntimeOptions } from '@jerem-gt/ctrl-shared/server/auth';
 import type { ShelfLang, UserStats } from '@shelfctrl/types';
 import type { Database } from 'better-sqlite3';
 
@@ -11,12 +9,10 @@ import type { AccountImages } from '../images/index.js';
 /** Nom propre à l'appli : cookies et noms d'hôte sont partagés avec cash-ctrl sur le NAS. */
 export const SESSION_COOKIE = 'shelfctrl.sid';
 
-export interface AccountsOptions {
-  secureCookies: boolean;
-  appUrl?: string;
-  mailer?: Mailer;
-  setupToken?: SetupToken;
-  log?: AuthLogger;
+/** Langues de l'interface : français seul pour l'instant (une langue ajoutée l'est aussi au client). */
+export const LANGUAGES = ['fr'] as const satisfies readonly ShelfLang[];
+
+export interface ShelfAuthOptions extends AuthRuntimeOptions {
   /** Efface les fichiers d'image d'un compte supprimé (absent : pas de stockage d'images). */
   removeAccountImages?: (files: AccountImages) => Promise<void>;
 }
@@ -24,7 +20,7 @@ export interface AccountsOptions {
 /** Options du module d'auth de ctrl-shared propres à ShelfCtrl. */
 export function shelfAuthOptions(
   db: Database,
-  options: AccountsOptions,
+  options: ShelfAuthOptions,
 ): AuthModuleOptions<ShelfLang, UserStats> {
   const { removeAccountImages, ...auth } = options;
   const statsStmt = db.prepare<[number], { copy_count: number; last_copy_at: string | null }>(
@@ -42,15 +38,8 @@ export function shelfAuthOptions(
     HttpError,
     sessionCookie: SESSION_COOKIE,
     deviceCookie: 'shelfctrl_device',
-    // Français seul pour l'instant ; une langue ajoutée ici l'est aussi au client.
-    languages: ['fr'],
-    mailTexts: {
-      reset: (_lang, link, minutes) => ({
-        subject: MAIL_TEXTS.subject,
-        text: MAIL_TEXTS.reset(link, minutes),
-      }),
-      test: () => ({ subject: MAIL_TEXTS.testSubject, text: MAIL_TEXTS.test }),
-    },
+    languages: LANGUAGES,
+    mailTexts: MAIL_TEXTS,
     userStats: (userId) => {
       const row = statsStmt.get(userId);
       return { copyCount: row?.copy_count ?? 0, lastCopyAt: row?.last_copy_at ?? null };

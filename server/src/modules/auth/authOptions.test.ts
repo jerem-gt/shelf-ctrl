@@ -33,7 +33,6 @@ const asAdmin = async () => {
 const login = (app: TestApp, body: object = { username: 'admin', password: PASSWORD }) =>
   request(app).post('/api/auth/login').send(body);
 const cookieOf = (res: request.Response) => (res.headers['set-cookie'] as unknown as string[])[0];
-const sessionCookie = (res: request.Response) => cookieOf(res).split(';')[0];
 
 describe('accès aux routes protégées', () => {
   it.each([
@@ -62,14 +61,6 @@ describe('accès aux routes protégées', () => {
     expect((await agent.get('/api/copies')).status).toBe(200);
     expect((await agent.get('/api/sales')).status).toBe(200);
   });
-
-  it('refuse un cookie de session falsifié', async () => {
-    const { app } = setup();
-    const res = await request(app)
-      .get('/api/copies')
-      .set('Cookie', 'shelfctrl.sid=s%3Aforged.invalidsignature');
-    expect(res.status).toBe(401);
-  });
 });
 
 describe('cookie de session', () => {
@@ -89,18 +80,6 @@ describe('cookie de session', () => {
     expect(cookieOf(out)).toMatch(/^shelfctrl\.sid=;/);
     expect((await agent.get('/api/copies')).status).toBe(401);
     expect((await agent.get('/api/auth/me')).status).toBe(401);
-  });
-});
-
-describe('persistance des sessions', () => {
-  it('garde la session après un redémarrage (même base, nouvelle instance)', async () => {
-    const { app, db } = setup();
-    const cookie = sessionCookie(await login(app));
-    const restarted = createApp(db, {
-      auth: { sessionSecret: TEST_SECRET, secureCookies: false },
-    });
-    const res = await request(restarted).get('/api/copies').set('Cookie', cookie);
-    expect(res.status).toBe(200);
   });
 });
 

@@ -13,7 +13,7 @@ import type { ZodType } from 'zod';
 import { toJSONSchema } from 'zod';
 
 import { ERROR_MESSAGES } from '../lib/errorCodes.js';
-import { SESSION_COOKIE } from '../modules/accounts/accounts.js';
+import { LANGUAGES, SESSION_COOKIE } from '../modules/auth/authOptions.js';
 import {
   createCopySchema,
   listCopiesSchema,
@@ -28,8 +28,8 @@ import {
 import { listSchema, sellSchema, updateSaleSchema } from '../modules/sales/sales.schema.js';
 import { querySchema as titleQuerySchema } from '../modules/titles/titles.routes.js';
 
-// Schémas qui portent la langue : mêmes langues que le module d'auth (`shelfAuthOptions`).
-const { setupSchema, forgotPasswordSchema, createUserSchema } = createLangSchemas(['fr'] as const);
+// Schémas qui portent la langue : mêmes langues que le module d'auth.
+const { setupSchema, forgotPasswordSchema, createUserSchema } = createLangSchemas(LANGUAGES);
 
 // ─── helpers ───────────────────────────────────────────────────────────────
 
