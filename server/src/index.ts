@@ -44,13 +44,15 @@ const app = createApp(db, {
 app.set('trust proxy', 1);
 
 if (IS_PROD) {
-  // Assets Vite à noms hashés → cache immuable 1 an ; index.html ne doit jamais être caché
+  // Seuls les fichiers de assets/ ont une empreinte dans leur nom : cache immuable 1 an. Les autres
+  // (index.html, sw.js, manifestes…) gardent leur nom d'un déploiement à l'autre : revalidés à
+  // chaque requête (ETag, 304 s'ils n'ont pas changé).
   app.use(
     express.static(CLIENT_DIST, {
       maxAge: '1y',
       immutable: true,
       setHeaders: (res, filePath) => {
-        if (filePath.endsWith('index.html')) {
+        if (path.relative(CLIENT_DIST, filePath).split(path.sep)[0] !== 'assets') {
           res.setHeader('Cache-Control', 'no-cache');
         }
       },
