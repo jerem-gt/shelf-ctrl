@@ -17,7 +17,6 @@ export function TotpCodeInput({
       {label}
       <input
         required
-        autoFocus
         inputMode="numeric"
         autoComplete="one-time-code"
         pattern="\d{6}"

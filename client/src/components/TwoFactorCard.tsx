@@ -201,7 +201,6 @@ function DisableForm({
         {t('twoFactor.password')}
         <input
           required
-          autoFocus
           type="password"
           autoComplete="current-password"
           value={password}
