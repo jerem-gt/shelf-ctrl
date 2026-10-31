@@ -1,6 +1,19 @@
-/** Date SQLite (`datetime('now')`, UTC, sans fuseau) affichée au format français local. */
+import type { Lang } from '@/api/client';
+import i18n from '@/i18n';
+
+/** Langue de l'interface réduite aux langues supportées (fr par défaut). */
+export function currentLang(): Lang {
+  return i18n.language.startsWith('en') ? 'en' : 'fr';
+}
+
+export function currentLocale(): string {
+  if (currentLang() === 'en') return 'en-GB';
+  return 'fr-FR';
+}
+
+/** Date SQLite (`datetime('now')`, UTC, sans fuseau) affichée dans la langue de l'interface. */
 export function formatDate(sqliteUtc: string): string {
-  return new Date(`${sqliteUtc.replace(' ', 'T')}Z`).toLocaleDateString('fr-FR');
+  return new Date(`${sqliteUtc.replace(' ', 'T')}Z`).toLocaleDateString(currentLocale());
 }
 
 /** Date du jour dans le fuseau de l'utilisateur, au format AAAA-MM-JJ. */
@@ -11,9 +24,9 @@ export function localToday(): string {
   return `${now.getFullYear()}-${month}-${day}`;
 }
 
-/** Date AAAA-MM-JJ (sans heure) affichée au format français, sans décalage de fuseau. */
+/** Date AAAA-MM-JJ (sans heure) affichée dans la langue de l'interface, sans décalage de fuseau. */
 export function formatIsoDate(iso: string): string {
-  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('fr-FR', { timeZone: 'UTC' });
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString(currentLocale(), { timeZone: 'UTC' });
 }
 
 /** Nombre de jours entre deux dates AAAA-MM-JJ. */

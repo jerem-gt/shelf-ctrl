@@ -27,7 +27,7 @@ describe('ForgotPasswordPage', () => {
     await user.click(screen.getByRole('button', { name: 'Envoyer le lien' }));
 
     expect(await screen.findByRole('status')).toHaveTextContent('Si un compte correspond');
-    expect(received).toEqual({ identifier: 'alice@example.com' });
+    expect(received).toEqual({ identifier: 'alice@example.com', lang: 'fr' });
   });
 
   it('affiche la limitation des demandes', async () => {

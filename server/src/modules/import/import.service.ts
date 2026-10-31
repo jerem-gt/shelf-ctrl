@@ -7,13 +7,14 @@ import type {
   ImportPreview,
   ImportRowFailure,
   ImportRowPreview,
+  ShelfLang,
 } from '@shelfctrl/types';
 import type { Database } from 'better-sqlite3';
 
 import { BadRequestError, ConflictError } from '../../lib/errors.js';
 import { createCopySchema } from '../copies/copies.schema.js';
 import { createCopiesService } from '../copies/copies.service.js';
-import { decodeCsv, parseCsv, toCsvCell } from './csv.js';
+import { decodeCsv, parseCsv } from './csv.js';
 import { MAX_ROWS, needsCompletion, type ParsedRow, parseTable, type RowDraft } from './rows.js';
 
 export interface ImportDeps {
@@ -28,57 +29,37 @@ const KEPT_JOBS = 5;
 /** Marque d'ordre des octets UTF-8 : sans elle, Excel lit le fichier en Windows-1252. */
 const BOM = String.fromCodePoint(0xfeff);
 
-const TEMPLATE_HEADER = [
-  'Titre',
-  'Série',
-  'Tome',
-  'Auteurs',
-  'Format',
-  'Code-barres',
-  'Éditeur',
-  'Année',
-  'Langue',
-  'État',
-  'Note',
-  'Emplacement',
-];
-const TEMPLATE_ROWS = [
-  [
-    'Tintin au Tibet',
-    'Tintin',
-    '20',
-    'Hergé',
-    'Livre',
-    '9782203001190',
-    'Casterman',
-    '1960',
-    'fr',
-    'Très bon état',
-    '',
-    'Salon',
-  ],
-  [
-    'Alien',
-    '',
-    '',
-    'Ridley Scott',
-    'Blu-ray',
-    '',
-    '',
-    '1979',
-    'fr',
-    'Bon état',
-    'Boîtier fissuré',
-    'Chambre',
-  ],
-  ['', '', '', '', '', '9782070612758', '', '', '', '', '', ''],
-];
+/**
+ * Modèle par langue, une ligne par chaîne : en-têtes et valeurs reconnus par l'aperçu
+ * (cf. `columns.ts`). Les exemples ne contiennent ni `;` ni guillemets : rien à échapper.
+ */
+const TEMPLATES: Record<ShelfLang, { fileName: string; lines: readonly string[] }> = {
+  fr: {
+    fileName: 'shelfctrl-modele.csv',
+    lines: [
+      'Titre;Série;Tome;Auteurs;Format;Code-barres;Éditeur;Année;Langue;État;Note;Emplacement',
+      'Tintin au Tibet;Tintin;20;Hergé;Livre;9782203001190;Casterman;1960;fr;Très bon état;;Salon',
+      'Alien;;;Ridley Scott;Blu-ray;;;1979;fr;Bon état;Boîtier fissuré;Chambre',
+      ';;;;;9782070612758;;;;;;',
+    ],
+  },
+  en: {
+    fileName: 'shelfctrl-template.csv',
+    lines: [
+      'Title;Series;Volume;Authors;Format;Barcode;Publisher;Year;Language;Condition;Note;Location',
+      'Tintin in Tibet;Tintin;20;Hergé;Book;;Egmont;1962;en;Very good;;Living room',
+      'Alien;;;Ridley Scott;Blu-ray;;;1979;en;Good;Cracked case;Bedroom',
+      ';;;;;9780156012195;;;;;;',
+    ],
+  },
+};
+
+/** Nom du fichier modèle téléchargé, dans la langue demandée. */
+export const templateFileName = (lang: ShelfLang): string => TEMPLATES[lang].fileName;
 
 /** Fichier modèle : séparateur `;` et BOM UTF-8, pour qu'Excel (français) l'ouvre correctement. */
-export function buildTemplate(): string {
-  const lines = [TEMPLATE_HEADER, ...TEMPLATE_ROWS].map((row) =>
-    row.map((value) => toCsvCell(value)).join(';'),
-  );
+export function buildTemplate(lang: ShelfLang = 'fr'): string {
+  const { lines } = TEMPLATES[lang];
   return `${BOM}${lines.join('\r\n')}\r\n`;
 }
 

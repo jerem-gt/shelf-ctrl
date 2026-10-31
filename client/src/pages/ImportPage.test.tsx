@@ -63,7 +63,7 @@ describe('ImportPage — fichier', () => {
 
     expect(screen.getByRole('link', { name: /fichier modèle/ })).toHaveAttribute(
       'href',
-      '/api/import/template',
+      '/api/import/template?lang=fr',
     );
     expect(screen.getByLabelText('Choisir un fichier CSV')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Importer/ })).not.toBeInTheDocument();

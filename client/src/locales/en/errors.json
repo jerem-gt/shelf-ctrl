@@ -1,0 +1,85 @@
+{
+  "common": {
+    "network": "Unable to reach the server.",
+    "unauthorized": "Your session has expired: please log in again.",
+    "forbidden": "This action is reserved for administrators.",
+    "invalid_request": "Invalid request.",
+    "internal": "An error occurred.",
+    "payload_too_large": "The file is too large (12 MB maximum for an image).",
+    "unsupported_media_type": "This file type is not supported."
+  },
+  "validation": {
+    "invalid": "Some fields are invalid.",
+    "required": "This field is required.",
+    "invalid_type": "Wrong value type.",
+    "too_small": "The value must be at least {{minimum}}.",
+    "too_big": "The value must not exceed {{maximum}}.",
+    "too_short": "Must contain at least {{minimum}} character(s).",
+    "too_long": "Must contain at most {{maximum}} character(s).",
+    "invalid_format": "Invalid format.",
+    "invalid_value": "Value not allowed."
+  },
+  "copy": {
+    "not_found": "This copy does not exist or no longer exists."
+  },
+  "edition": {
+    "not_found": "This edition does not exist or no longer exists."
+  },
+  "loan": {
+    "not_found": "This loan does not exist or no longer exists.",
+    "copy_sold": "This copy has been sold: it can no longer be lent.",
+    "already_loaned": "This copy is already lent.",
+    "already_returned": "This loan has already been returned.",
+    "invalid_date": "The return date cannot be before the loan date."
+  },
+  "sale": {
+    "not_found": "This copy is neither for sale nor sold.",
+    "already_listed": "This copy is already for sale.",
+    "already_sold": "This copy has already been sold.",
+    "copy_loaned": "This copy is lent: it cannot be sold until it is returned.",
+    "invalid_date": "The sale date cannot be before the listing date."
+  },
+  "platform": {
+    "not_found": "This platform does not exist or no longer exists.",
+    "duplicate": "This platform already exists."
+  },
+  "image": {
+    "invalid": "This file is not a usable image (JPEG, PNG, WebP…).",
+    "no_cover_found": "No cover found online."
+  },
+  "barcode": {
+    "invalid": "Invalid barcode: check what you entered.",
+    "not_found": "Nothing found for this code."
+  },
+  "import": {
+    "empty_file": "The file is empty.",
+    "no_columns": "No “title” or “barcode” column: check the file's header row.",
+    "too_many_rows": "The file has too many rows ({{max}} maximum): split it into several files.",
+    "running": "An import is already in progress: wait for it to finish.",
+    "not_found": "This import is no longer tracked (the server may have restarted)."
+  },
+  "user": {
+    "not_found": "This account does not exist or no longer exists.",
+    "username_taken": "This username is already taken.",
+    "email_taken": "This email address is already used by another account.",
+    "last_admin": "At least one administrator must remain.",
+    "cannot_delete_self": "You cannot delete your own account."
+  },
+  "auth": {
+    "invalid_credentials": "Incorrect username or password.",
+    "too_many_attempts": "Too many attempts: try again in a few minutes.",
+    "current_password_incorrect": "Incorrect current password.",
+    "setup_done": "The first account has already been created: please log in.",
+    "setup_token_invalid": "Incorrect setup token.",
+    "reset_token_invalid": "This link is invalid or has expired.",
+    "email_missing": "First enter your email address in your profile (Settings).",
+    "smtp_not_configured": "Sending emails is not configured on the server (SMTP_* variables).",
+    "email_send_failed": "Sending the email failed: check the SMTP configuration and the server logs.",
+    "totp_invalid": "Invalid or already used code: wait for the next one.",
+    "totp_token_invalid": "The login has expired: enter your password again.",
+    "totp_setup_expired": "The activation has expired: start again.",
+    "totp_already_enabled": "Two-factor authentication is already enabled.",
+    "totp_not_enabled": "Two-factor authentication is not enabled.",
+    "device_not_found": "Remembered device not found."
+  }
+}

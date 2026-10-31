@@ -6,6 +6,7 @@ import { Link, useSearchParams } from 'react-router';
 
 import { api, ApiError } from '@/api/client';
 import { useImportJob, usePreviewImport, useStartImport } from '@/hooks/useImport';
+import { currentLang } from '@/lib/format';
 
 const BUTTON_CLASS =
   'rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium disabled:opacity-60';
@@ -152,7 +153,7 @@ function ImportUpload({ onStarted }: Readonly<{ onStarted: (jobId: string) => vo
       <p className="text-sm text-slate-600">{t('import.intro')}</p>
       <div className="flex flex-wrap items-center gap-3">
         <a
-          href={api.import.templateUrl}
+          href={api.import.templateUrl(currentLang())}
           download
           className={`${BUTTON_CLASS} inline-flex items-center gap-1`}
         >

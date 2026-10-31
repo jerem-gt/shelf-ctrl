@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import i18n from '@/i18n';
+
 import { formatPrice, parsePrice, priceToInput } from './money';
 
 describe('parsePrice', () => {
@@ -38,5 +40,11 @@ describe('formatPrice', () => {
     expect(formatPrice(1250)).toMatch(/^12,50\s€$/);
     expect(formatPrice(0)).toMatch(/^0,00\s€$/);
     expect(formatPrice(123456)).toMatch(/^1\s234,56\s€$/);
+  });
+
+  it('suit la langue de l’interface en anglais (prix et champ au point décimal)', async () => {
+    await i18n.changeLanguage('en');
+    expect(formatPrice(123456)).toBe('€1,234.56');
+    expect(priceToInput(1250)).toBe('12.50');
   });
 });

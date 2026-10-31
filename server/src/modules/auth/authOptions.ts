@@ -9,8 +9,8 @@ import type { AccountImages } from '../images/index.js';
 /** Nom propre à l'appli : cookies et noms d'hôte sont partagés avec cash-ctrl sur le NAS. */
 export const SESSION_COOKIE = 'shelfctrl.sid';
 
-/** Langues de l'interface : français seul pour l'instant (une langue ajoutée l'est aussi au client). */
-export const LANGUAGES = ['fr'] as const satisfies readonly ShelfLang[];
+/** Langues de l'interface : `lang` choisit la langue des e-mails et du modèle d'import. */
+export const LANGUAGES = ['fr', 'en'] as const satisfies readonly ShelfLang[];
 
 export interface ShelfAuthOptions extends AuthRuntimeOptions {
   /** Efface les fichiers d'image d'un compte supprimé (absent : pas de stockage d'images). */

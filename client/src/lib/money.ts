@@ -1,3 +1,5 @@
+import { currentLang, currentLocale } from './format';
+
 const PRICE_FORMAT = /^\d+([.,]\d{1,2})?$/;
 
 /** Motif HTML d'un prix saisi en euros : « 12 », « 12,5 » ou « 12.50 ». */
@@ -12,13 +14,24 @@ export function parsePrice(input: string): number | null {
   return Math.round(Number(value.replace(',', '.')) * 100);
 }
 
-/** 1250 → « 12,50 » pour préremplir un champ ; `null` → champ vide. */
+/** 1250 → « 12,50 » (« 12.50 » en anglais) pour préremplir un champ ; `null` → champ vide. */
 export function priceToInput(cents: number | null): string {
-  return cents === null ? '' : (cents / 100).toFixed(2).replace('.', ',');
+  if (cents === null) {
+    return '';
+  }
+  const value = (cents / 100).toFixed(2);
+  return currentLang() === 'en' ? value : value.replace('.', ',');
 }
 
-const EURO = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
+const EURO = new Map<string, Intl.NumberFormat>();
 
+/** Montant en euros dans la langue de l'interface (formateur gardé par locale). */
 export function formatPrice(cents: number): string {
-  return EURO.format(cents / 100);
+  const locale = currentLocale();
+  let format = EURO.get(locale);
+  if (format === undefined) {
+    format = new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR' });
+    EURO.set(locale, format);
+  }
+  return format.format(cents / 100);
 }

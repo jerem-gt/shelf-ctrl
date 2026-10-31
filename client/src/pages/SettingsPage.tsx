@@ -4,6 +4,7 @@ import { type SyntheticEvent, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ApiError } from '@/api/client';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ProfileCard } from '@/components/ProfileCard';
 import { TwoFactorCard } from '@/components/TwoFactorCard';
 import {
@@ -277,6 +278,8 @@ export function SettingsPage() {
       <ProfileCard />
       <h3 className="text-lg font-semibold">{t('twoFactor.title')}</h3>
       <TwoFactorCard />
+      <h3 className="text-lg font-semibold">{t('language.title')}</h3>
+      <LanguageSwitcher />
       <h3 className="text-lg font-semibold">{t('settings.platformsTitle')}</h3>
       <PlatformsSettings />
     </section>

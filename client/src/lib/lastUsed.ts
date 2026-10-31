@@ -1,3 +1,5 @@
+import { currentLocale } from './format';
+
 export interface LastUsedParts {
   kind: 'today' | 'yesterday' | 'date';
   time: string;
@@ -12,7 +14,7 @@ function sameDay(a: Date, b: Date): boolean {
   );
 }
 
-/** Décompose un horodatage en « aujourd'hui / hier / date » et heure locale, au format français. */
+/** Horodatage décomposé en « aujourd'hui / hier / date » et heure, dans la langue de l'interface. */
 export function lastUsedParts(timestamp: number, now: Date = new Date()): LastUsedParts {
   const d = new Date(timestamp);
   const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
@@ -24,7 +26,7 @@ export function lastUsedParts(timestamp: number, now: Date = new Date()): LastUs
   }
   return {
     kind,
-    time: d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-    date: d.toLocaleDateString('fr-FR'),
+    time: d.toLocaleTimeString(currentLocale(), { hour: '2-digit', minute: '2-digit' }),
+    date: d.toLocaleDateString(currentLocale()),
   };
 }

@@ -318,6 +318,11 @@
       "invalid": "Nom ou adresse invalide : l'adresse doit commencer par http:// ou https://."
     }
   },
+  "language": {
+    "title": "Langue",
+    "fr": "Français",
+    "en": "English"
+  },
   "salesPage": {
     "title": "Ventes",
     "listedTab": "En vente",

@@ -19,6 +19,7 @@ import {
   listCopiesSchema,
   updateCopySchema,
 } from '../modules/copies/copies.schema.js';
+import { templateQuerySchema } from '../modules/import/import.routes.js';
 import { lendSchema, returnSchema } from '../modules/loans/loans.schema.js';
 import {
   createPlatformSchema,
@@ -628,8 +629,9 @@ export function buildOpenApiSpec() {
       '/api/import/template': {
         get: {
           tags: ['Import'],
-          summary: 'Modèle de fichier CSV',
+          summary: 'Modèle de fichier CSV (en-têtes et exemples dans la langue demandée)',
           security: sessionAuth,
+          parameters: queryParams(templateQuerySchema),
           responses: r200('CSV file download'),
         },
       },

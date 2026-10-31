@@ -229,8 +229,8 @@ export type {
   TrustedDeviceItem,
 } from '@jerem-gt/ctrl-shared/server/auth/types';
 
-/** Langues de l'interface (français seul pour l'instant). */
-export type ShelfLang = 'fr';
+/** Langues de l'interface (le client a un dossier `locales/<langue>/` par langue). */
+export type ShelfLang = 'fr' | 'en';
 
 /** Statistiques d'un compte sur la page Utilisateurs. */
 export interface UserStats {

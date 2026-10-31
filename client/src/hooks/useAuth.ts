@@ -2,6 +2,7 @@ import type { SessionResponse } from '@shelfctrl/types';
 import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { api, type LoginPayload, type ProfilePayload, type SetupPayload } from '@/api/client';
+import { currentLang } from '@/lib/format';
 
 export const ME_KEY = ['me'] as const;
 export const SETUP_KEY = ['auth', 'setup'] as const;
@@ -132,7 +133,9 @@ export function useForgetAllDevices() {
 }
 
 export function useForgotPassword() {
-  return useMutation({ mutationFn: (identifier: string) => api.auth.forgotPassword(identifier) });
+  return useMutation({
+    mutationFn: (identifier: string) => api.auth.forgotPassword(identifier, currentLang()),
+  });
 }
 
 export function useResetPassword() {

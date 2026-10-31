@@ -191,6 +191,9 @@ export interface SalePayload {
   priceCents?: number | null;
 }
 
+/** Langue de l'interface, transmise au serveur (e-mails, modèle d'import). */
+export type Lang = 'fr' | 'en';
+
 export interface LoginPayload {
   username: string;
   password: string;
@@ -232,7 +235,7 @@ export const api = {
     setDefault: (id: number | null) => request<undefined>('PUT', '/api/platforms/default', { id }),
   },
   import: {
-    templateUrl: '/api/import/template',
+    templateUrl: (lang: Lang) => `/api/import/template?lang=${lang}`,
     preview: (file: Blob) =>
       request<ImportPreview>('POST', '/api/import/preview', asOctetStream(file)),
     start: (file: Blob) => request<ImportJob>('POST', '/api/import', asOctetStream(file)),
@@ -268,8 +271,8 @@ export const api = {
       request<SessionResponse>('PATCH', '/api/auth/profile', payload),
     changePassword: (current: string, next: string) =>
       request<undefined>('POST', '/api/auth/change-password', { current, next }),
-    forgotPassword: (identifier: string) =>
-      request<undefined>('POST', '/api/auth/password/forgot', { identifier }),
+    forgotPassword: (identifier: string, lang: Lang) =>
+      request<undefined>('POST', '/api/auth/password/forgot', { identifier, lang }),
     resetPassword: (token: string, password: string) =>
       request<undefined>('POST', '/api/auth/password/reset', { token, password }),
     testEmail: () => request<undefined>('POST', '/api/auth/test-email'),

@@ -79,7 +79,19 @@ export function mapHeaders(headers: readonly string[]): HeaderMapping {
 }
 
 const FORMAT_VALUES: Record<MediaFormat, readonly string[]> = {
-  book: ['book', 'livre', 'bd', 'bande dessinee', 'album', 'manga', 'roman', 'comic'],
+  book: [
+    'book',
+    'livre',
+    'bd',
+    'bande dessinee',
+    'album',
+    'manga',
+    'roman',
+    'comic',
+    // Libellés de l'interface (« Livre / BD », « Book / Comic »).
+    'livre bd',
+    'book comic',
+  ],
   dvd: ['dvd'],
   bluray: ['bluray', 'blu ray', 'bluray disc'],
   uhd4k: ['uhd4k', 'uhd', '4k', '4k uhd', 'uhd 4k', 'ultra hd'],

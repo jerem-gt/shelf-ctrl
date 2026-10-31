@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { decodeCsv, detectDelimiter, parseCsv, toCsvCell } from './csv.js';
+import { decodeCsv, detectDelimiter, parseCsv } from './csv.js';
 
 describe('detectDelimiter', () => {
   it.each([
@@ -65,14 +65,5 @@ describe('decodeCsv', () => {
 
   it('se replie sur Windows-1252 quand ce n’est pas de l’UTF-8', () => {
     expect(decodeCsv(Buffer.from([0x48, 0x65, 0x72, 0x67, 0xe9]))).toBe('Hergé');
-  });
-});
-
-describe('toCsvCell', () => {
-  it('protège les séparateurs, guillemets et retours à la ligne', () => {
-    expect(toCsvCell('simple')).toBe('simple');
-    expect(toCsvCell('a;b')).toBe('"a;b"');
-    expect(toCsvCell('il dit "oui"')).toBe('"il dit ""oui"""');
-    expect(toCsvCell('a\nb')).toBe('"a\nb"');
   });
 });

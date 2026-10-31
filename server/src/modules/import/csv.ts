@@ -87,10 +87,3 @@ export function parseCsv(text: string): string[][] {
   }
   return rows;
 }
-
-/** Valeur d'une cellule protégée pour un export : guillemets si elle contient un séparateur. */
-export function toCsvCell(value: string, delimiter = ';'): string {
-  return /["\n\r]/.test(value) || value.includes(delimiter)
-    ? `"${value.replaceAll('"', '""')}"`
-    : value;
-}

@@ -131,6 +131,26 @@ describe('GET /api/import/template', () => {
     expect(check.status).toBe(200);
     expect((check.body as ImportPreview).invalid).toBe(0);
   });
+
+  it('fournit le modèle en anglais, que l’aperçu accepte aussi', async () => {
+    const app = setup();
+
+    const res = await request(app).get('/api/import/template?lang=en');
+
+    expect(res.status).toBe(200);
+    expect(res.headers['content-disposition']).toContain('shelfctrl-template.csv');
+    expect(res.text.startsWith('﻿Title;Series;Volume;')).toBe(true);
+
+    const check = await preview(app, res.text);
+    expect(check.status).toBe(200);
+    expect((check.body as ImportPreview).invalid).toBe(0);
+  });
+
+  it('refuse une langue inconnue', async () => {
+    const res = await request(setup()).get('/api/import/template?lang=de');
+
+    expect(res.status).toBe(400);
+  });
 });
 
 describe('POST /api/import/preview', () => {

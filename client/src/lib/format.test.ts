@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { daysBetween, formatDate, formatIsoDate, localToday } from './format';
+import i18n from '@/i18n';
+
+import { currentLang, daysBetween, formatDate, formatIsoDate, localToday } from './format';
 
 describe('formatDate', () => {
   it('lit une date SQLite en UTC et l’affiche au format français', () => {
@@ -24,6 +26,13 @@ describe('dates de prêt', () => {
   it('affiche une date AAAA-MM-JJ au format français, sans décalage de fuseau', () => {
     expect(formatIsoDate('2026-10-14')).toBe('14/10/2026');
     expect(formatIsoDate('2026-01-01')).toBe('01/01/2026');
+  });
+
+  it('suit la langue de l’interface (anglais britannique : jour/mois/année)', async () => {
+    await i18n.changeLanguage('en');
+    expect(currentLang()).toBe('en');
+    expect(formatIsoDate('2026-10-14')).toBe('14/10/2026');
+    expect(formatDate('2026-01-05 10:00:00')).toBe('05/01/2026');
   });
 
   it('compte les jours entre deux dates, y compris au changement d’heure', () => {

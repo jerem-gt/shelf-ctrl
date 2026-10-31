@@ -1,9 +1,19 @@
 import type { Database } from 'better-sqlite3';
 import express, { type Request, Router } from 'express';
+import { z } from 'zod';
 
 import { BadRequestError, NotFoundError } from '../../lib/errors.js';
 import { currentUserId } from '../../middleware.js';
-import { buildTemplate, createImportService, type ImportDeps } from './import.service.js';
+import { LANGUAGES } from '../auth/authOptions.js';
+import {
+  buildTemplate,
+  createImportService,
+  type ImportDeps,
+  templateFileName,
+} from './import.service.js';
+
+/** Langue du modèle (en-têtes, exemples, nom du fichier) : celle de l'interface, français par défaut. */
+export const templateQuerySchema = z.object({ lang: z.enum(LANGUAGES).default('fr') });
 
 /** Corps brut en octet-stream uniquement : text/plain, envoyable par un formulaire cross-site, est ignoré (anti-CSRF). */
 const rawFile = express.raw({ type: 'application/octet-stream', limit: '2mb' });
@@ -24,11 +34,12 @@ export function createImportRouter(db: Database, deps: ImportDeps) {
   const router = Router();
   const service = createImportService(db, deps);
 
-  router.get('/template', (_req, res) => {
+  router.get('/template', (req, res) => {
+    const { lang } = templateQuerySchema.parse(req.query);
     res
       .type('text/csv; charset=utf-8')
-      .set('Content-Disposition', 'attachment; filename="shelfctrl-modele.csv"')
-      .send(buildTemplate());
+      .set('Content-Disposition', `attachment; filename="${templateFileName(lang)}"`)
+      .send(buildTemplate(lang));
   });
 
   router.post('/preview', rawFile, (req, res) => {
