@@ -1,4 +1,5 @@
 import type { SQLiteSessionStore } from '@jerem-gt/ctrl-shared/server/session-store';
+import { createTrustedDevicesRepo } from '@jerem-gt/ctrl-shared/server/trustedDevices';
 import bcrypt from 'bcrypt';
 import type { Database } from 'better-sqlite3';
 import { Router } from 'express';
@@ -6,7 +7,6 @@ import { Router } from 'express';
 import { ConflictError, NotFoundError } from '../../lib/errors.js';
 import { createRequireAdmin, currentUserId } from '../../middleware.js';
 import { BCRYPT_COST } from '../auth/auth.repo.js';
-import { createTrustedDevicesRepo } from '../auth/trustedDevices.js';
 import type { AccountImages } from '../images/index.js';
 import { createUsersRepo } from './users.repo.js';
 import { createUserSchema, updateUserSchema, userIdSchema } from './users.schema.js';

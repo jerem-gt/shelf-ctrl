@@ -1,7 +1,10 @@
+import { createDeviceCookies } from '@jerem-gt/ctrl-shared/server/deviceCookie';
 import { createMailer, type Mailer } from '@jerem-gt/ctrl-shared/server/mailer';
 import { FailureRateLimiter } from '@jerem-gt/ctrl-shared/server/rateLimit';
 import type { SQLiteSessionStore } from '@jerem-gt/ctrl-shared/server/session-store';
 import { SetupToken } from '@jerem-gt/ctrl-shared/server/setup';
+import { matchTotpStep } from '@jerem-gt/ctrl-shared/server/totp';
+import { createTrustedDevicesRepo } from '@jerem-gt/ctrl-shared/server/trustedDevices';
 import type { LoginResponse, SessionResponse, SetupStatusResponse } from '@shelfctrl/types';
 import bcrypt from 'bcrypt';
 import type { Database } from 'better-sqlite3';
@@ -19,12 +22,9 @@ import {
   verifyTotpSchema,
 } from './auth.schema.js';
 import type { AuthLogger, User } from './auth.types.js';
-import { createDeviceCookies } from './deviceCookie.js';
 import { createMailRouter } from './mail.routes.js';
 import { createPasswordRouter } from './password.routes.js';
-import { matchTotpStep } from './totp.js';
 import { createTotpRouter } from './totp.routes.js';
-import { createTrustedDevicesRepo } from './trustedDevices.js';
 
 export const SESSION_COOKIE = 'shelfctrl.sid';
 
@@ -88,7 +88,11 @@ export function createAuthRouter(
   const setupToken = options.setupToken ?? new SetupToken();
   const log = options.log ?? console;
   const devices = createTrustedDevicesRepo(db);
-  const deviceCookies = createDeviceCookies(devices, options.secureCookies === true);
+  // Nom propre à l'appli : cookies et noms d'hôte sont partagés avec cash-ctrl sur le NAS.
+  const deviceCookies = createDeviceCookies(devices, {
+    name: 'shelfctrl_device',
+    secure: options.secureCookies === true,
+  });
 
   /** Vérifie le mot de passe actuel, échecs limités ; lève 429/401 sinon. */
   async function checkCurrentPassword(user: User, candidate: string): Promise<void> {

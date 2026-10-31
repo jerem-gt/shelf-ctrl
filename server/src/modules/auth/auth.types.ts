@@ -16,16 +16,6 @@ export interface ResetTokenRow {
   expires_at: number;
 }
 
-export interface TrustedDeviceRow {
-  id: number;
-  user_id: number;
-  token_hash: string;
-  label: string;
-  created_at: number;
-  last_used_at: number;
-  expires_at: number;
-}
-
 /** Journal des événements d'authentification (la console par défaut). */
 export interface AuthLogger {
   info: (msg: string) => void;

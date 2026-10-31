@@ -4,6 +4,7 @@ import { sha256Hex } from '@jerem-gt/ctrl-shared/server/crypto';
 import type { Mailer } from '@jerem-gt/ctrl-shared/server/mailer';
 import { FailureRateLimiter } from '@jerem-gt/ctrl-shared/server/rateLimit';
 import type { SQLiteSessionStore } from '@jerem-gt/ctrl-shared/server/session-store';
+import type { TrustedDevicesRepo } from '@jerem-gt/ctrl-shared/server/trustedDevices';
 import bcrypt from 'bcrypt';
 import type { Database } from 'better-sqlite3';
 import { Router } from 'express';
@@ -13,7 +14,6 @@ import { MAIL_TEXTS } from '../../lib/mailTexts.js';
 import { type AuthRepo, BCRYPT_COST } from './auth.repo.js';
 import { emailSchema, forgotPasswordSchema, resetPasswordSchema } from './auth.schema.js';
 import type { AuthLogger, User } from './auth.types.js';
-import type { TrustedDevicesRepo } from './trustedDevices.js';
 
 export interface PasswordRouterDeps {
   db: Database;

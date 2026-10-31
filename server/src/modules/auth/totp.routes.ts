@@ -1,3 +1,6 @@
+import type { DeviceCookies } from '@jerem-gt/ctrl-shared/server/deviceCookie';
+import { matchTotpStep, newTotpSecret } from '@jerem-gt/ctrl-shared/server/totp';
+import type { TrustedDevicesRepo } from '@jerem-gt/ctrl-shared/server/trustedDevices';
 import type { TotpSetupResponse, TrustedDeviceItem } from '@shelfctrl/types';
 import type { Database } from 'better-sqlite3';
 import { type Response, Router } from 'express';
@@ -8,9 +11,9 @@ import type { UsersRepo } from '../users/users.repo.js';
 import type { AuthRepo } from './auth.repo.js';
 import { deviceIdSchema, disableTotpSchema, enableTotpSchema } from './auth.schema.js';
 import type { User } from './auth.types.js';
-import type { DeviceCookies } from './deviceCookie.js';
-import { matchTotpStep, newTotpSecret } from './totp.js';
-import type { TrustedDevicesRepo } from './trustedDevices.js';
+
+/** Nom affiché par l'application d'authentification. */
+const TOTP_ISSUER = 'ShelfCtrl';
 
 export interface TotpRouterDeps {
   db: Database;
@@ -37,7 +40,7 @@ export function createTotpRouter(deps: TotpRouterDeps): Router {
     if (user.totp_enabled === 1) {
       throw new ConflictError('auth.totp_already_enabled');
     }
-    const body: TotpSetupResponse = newTotpSecret(user.username);
+    const body: TotpSetupResponse = newTotpSecret(TOTP_ISSUER, user.username);
     req.session.pendingTotpSecret = body.secret;
     res.json(body);
   });
