@@ -38,7 +38,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       workbox: {
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api/, /^\/covers/, /^\/photos/],
@@ -51,8 +51,13 @@ export default defineConfig({
         background_color: '#0f172a',
         display: 'standalone',
         start_url: '/',
-        // À faire : ajouter les icônes PNG 192x192 et 512x512 (requises pour l'installation sur Android)
-        icons: [],
+        // Tirées de favicon.svg ; la variante maskable a un fond plein bord et un dessin réduit à
+        // 80 % pour rester dans la zone visible quelle que soit la forme découpée par Android.
+        icons: [
+          { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'maskable-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
       },
     }),
     englishManifest(),
