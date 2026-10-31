@@ -1,16 +1,22 @@
+import { createAuthOpenApiPaths } from '@jerem-gt/ctrl-shared/server/auth';
 import {
-  changePasswordSchema,
-  createLangSchemas,
-  disableTotpSchema,
-  enableTotpSchema,
-  loginSchema,
-  profileSchema,
-  resetPasswordSchema,
-  updateUserSchema,
-  verifyTotpSchema,
-} from '@jerem-gt/ctrl-shared/server/auth';
-import type { ZodType } from 'zod';
-import { toJSONSchema } from 'zod';
+  body,
+  errorResponse,
+  errorSchema,
+  optionalBody,
+  pId,
+  queryParams,
+  r200,
+  r201,
+  r202,
+  r204,
+  r400,
+  r404,
+  r409,
+  rawBody,
+  sessionAuth,
+  sessionCookieScheme,
+} from '@jerem-gt/ctrl-shared/server/openapi';
 
 import { ERROR_MESSAGES } from '../lib/errorCodes.js';
 import { LANGUAGES, SESSION_COOKIE } from '../modules/auth/authOptions.js';
@@ -29,109 +35,8 @@ import {
 import { listSchema, sellSchema, updateSaleSchema } from '../modules/sales/sales.schema.js';
 import { querySchema as titleQuerySchema } from '../modules/titles/titles.routes.js';
 
-// Schémas qui portent la langue : mêmes langues que le module d'auth.
-const { setupSchema, forgotPasswordSchema, createUserSchema } = createLangSchemas(LANGUAGES);
-
-// ─── helpers ───────────────────────────────────────────────────────────────
-
-const TO_JSON_OPTS = { unrepresentable: 'any' } as const;
-
-function schema(zod: ZodType) {
-  return toJSONSchema(zod, TO_JSON_OPTS);
-}
-
-function body(zod: ZodType) {
-  return {
-    required: true,
-    content: { 'application/json': { schema: schema(zod) } },
-  };
-}
-
-/** Corps facultatif : les dates par défaut valent aujourd'hui. */
-function optionalBody(zod: ZodType) {
-  return { ...body(zod), required: false };
-}
-
-/** Corps brut (fichier envoyé tel quel), comme `express.raw`. */
-function rawBody(mediaTypes: readonly string[]) {
-  return {
-    required: true,
-    content: Object.fromEntries(
-      mediaTypes.map((type) => [type, { schema: { type: 'string', format: 'binary' } }]),
-    ),
-  };
-}
-
-// Convertit les propriétés d'un schéma Zod objet en paramètres de requête OpenAPI.
-function queryParams(zod: ZodType) {
-  const js = toJSONSchema(zod, { ...TO_JSON_OPTS, io: 'input' }) as {
-    properties?: Record<string, unknown>;
-    required?: string[];
-  };
-  if (!js.properties) return [];
-  return Object.entries(js.properties).map(([name, propSchema]) => ({
-    name,
-    in: 'query',
-    required: (js.required ?? []).includes(name),
-    schema: propSchema,
-  }));
-}
-
-const r200 = (description = 'OK') => ({ 200: { description } });
-const r201 = { 201: { description: 'Created' } };
-const r202 = { 202: { description: 'Accepted' } };
-const r204 = { 204: { description: 'No Content' } };
-// Corps `{ error: { code, message, params?, fields? } }` (cf. lib/errorCodes.ts).
-const ERROR_CODES = Object.keys(ERROR_MESSAGES);
-const errorBodySchema = {
-  type: 'object',
-  required: ['error'],
-  properties: {
-    error: {
-      type: 'object',
-      required: ['code', 'message'],
-      properties: {
-        code: { type: 'string', enum: ERROR_CODES },
-        message: { type: 'string', description: 'Message FR de repli' },
-        params: { type: 'object', additionalProperties: { type: ['string', 'number'] } },
-        fields: {
-          type: 'array',
-          description: 'Détail par champ (validation)',
-          items: {
-            type: 'object',
-            required: ['path', 'code', 'message'],
-            properties: {
-              path: { type: 'string' },
-              code: { type: 'string', enum: ERROR_CODES },
-              message: { type: 'string' },
-              params: { type: 'object', additionalProperties: { type: ['string', 'number'] } },
-            },
-          },
-        },
-      },
-    },
-  },
-};
-const errorResponse = (description: string) => ({
-  description,
-  content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
-});
-
-const r400 = { 400: errorResponse('Validation error') };
-const r401 = { 401: errorResponse('Unauthorized') };
-const r403 = { 403: errorResponse('Forbidden (admin only)') };
-const r404 = { 404: errorResponse('Not found') };
-const r409 = { 409: errorResponse('Conflict') };
+// Helpers communs avec cash-ctrl : @jerem-gt/ctrl-shared/server/openapi.
 const r415 = { 415: errorResponse('Unsupported image') };
-const r429 = { 429: errorResponse('Too many failures') };
-
-const sessionAuth = [{ sessionCookie: [] }];
-
-function pathInt(name: string) {
-  return { name, in: 'path', required: true, schema: { type: 'integer' } };
-}
-
-const pId = [pathInt('id')];
 
 const IMAGE_TYPES = ['image/*', 'application/octet-stream'] as const;
 const CSV_TYPES = ['application/octet-stream'] as const;
@@ -147,236 +52,15 @@ export function buildOpenApiSpec() {
       description: 'API REST interne de ShelfCtrl (collection de BD, DVD et Blu-ray).',
     },
     components: {
-      schemas: { Error: errorBodySchema },
-      securitySchemes: {
-        sessionCookie: {
-          type: 'apiKey',
-          in: 'cookie',
-          name: SESSION_COOKIE,
-          description: 'Cookie de session posé par POST /api/auth/login.',
-        },
-      },
+      schemas: { Error: errorSchema(Object.keys(ERROR_MESSAGES)) },
+      securitySchemes: sessionCookieScheme(SESSION_COOKIE),
     },
     paths: {
-      // ── Auth ─────────────────────────────────────────────────────────────
-      '/api/auth/login': {
-        post: {
-          tags: ['Auth'],
-          summary: 'Connexion (`{ totpRequired: true }` si la 2FA attend un code)',
-          requestBody: body(loginSchema),
-          responses: {
-            ...r200('Session started or TOTP code required'),
-            ...r400,
-            ...r401,
-            ...r429,
-          },
-        },
-      },
-      '/api/auth/2fa/verify': {
-        post: {
-          tags: ['Auth'],
-          summary:
-            'Second temps de la connexion : code TOTP (à usage unique), « se souvenir » 30 jours',
-          requestBody: body(verifyTotpSchema),
-          responses: {
-            ...r200('Session started'),
-            ...r400,
-            401: errorResponse('Invalid code or expired login'),
-            ...r429,
-          },
-        },
-      },
-      '/api/auth/2fa/setup': {
-        post: {
-          tags: ['Auth'],
-          summary: 'Proposer un secret TOTP (QR code), gardé en session jusqu’à sa confirmation',
-          security: sessionAuth,
-          responses: { ...r200(), ...r401, 409: errorResponse('2FA already enabled') },
-        },
-      },
-      '/api/auth/2fa/enable': {
-        post: {
-          tags: ['Auth'],
-          summary: 'Activer la 2FA avec un premier code (révoque les appareils mémorisés)',
-          security: sessionAuth,
-          requestBody: body(enableTotpSchema),
-          responses: {
-            ...r204,
-            400: errorResponse('Validation error or no pending secret'),
-            401: errorResponse('Invalid code'),
-            409: errorResponse('2FA already enabled'),
-          },
-        },
-      },
-      '/api/auth/2fa/disable': {
-        post: {
-          tags: ['Auth'],
-          summary: 'Désactiver la 2FA (mot de passe actuel requis, révoque les appareils)',
-          security: sessionAuth,
-          requestBody: body(disableTotpSchema),
-          responses: { ...r204, ...r400, ...r401, 409: errorResponse('2FA not enabled'), ...r429 },
-        },
-      },
-      '/api/auth/devices': {
-        get: {
-          tags: ['Auth'],
-          summary: 'Appareils mémorisés du compte',
-          security: sessionAuth,
-          responses: { ...r200(), ...r401 },
-        },
-        delete: {
-          tags: ['Auth'],
-          summary: 'Oublier tous les appareils mémorisés',
-          security: sessionAuth,
-          responses: { ...r204, ...r401 },
-        },
-      },
-      '/api/auth/devices/{id}': {
-        delete: {
-          tags: ['Auth'],
-          summary: 'Oublier un appareil mémorisé',
-          security: sessionAuth,
-          parameters: pId,
-          responses: { ...r204, ...r400, ...r401, ...r404 },
-        },
-      },
-      '/api/auth/setup': {
-        get: {
-          tags: ['Auth'],
-          summary: 'Premier démarrage : création du premier compte attendue ?',
-          responses: r200(),
-        },
-        post: {
-          tags: ['Auth'],
-          summary: 'Créer le premier compte (admin), avec le jeton écrit dans les logs',
-          requestBody: body(setupSchema),
-          responses: {
-            ...r200('Session started'),
-            ...r400,
-            403: errorResponse('Invalid setup token'),
-            409: errorResponse('An account already exists'),
-            ...r429,
-          },
-        },
-      },
-      '/api/auth/profile': {
-        patch: {
-          tags: ['Auth'],
-          summary: 'Modifier son nom ou son e-mail (mot de passe actuel requis)',
-          security: sessionAuth,
-          requestBody: body(profileSchema),
-          responses: { ...r200(), ...r400, ...r401, ...r409, ...r429 },
-        },
-      },
-      '/api/auth/change-password': {
-        post: {
-          tags: ['Auth'],
-          summary: 'Changer son mot de passe (ferme les autres sessions)',
-          security: sessionAuth,
-          requestBody: body(changePasswordSchema),
-          responses: { ...r204, ...r400, ...r401, ...r429 },
-        },
-      },
-      '/api/auth/password/forgot': {
-        post: {
-          tags: ['Auth'],
-          summary:
-            'Mot de passe oublié : lien par e-mail (réponse identique si le compte est inconnu)',
-          requestBody: body(forgotPasswordSchema),
-          responses: { ...r204, ...r400, ...r429 },
-        },
-      },
-      '/api/auth/password/reset': {
-        post: {
-          tags: ['Auth'],
-          summary: 'Nouveau mot de passe avec le jeton reçu (ferme toutes les sessions)',
-          requestBody: body(resetPasswordSchema),
-          responses: {
-            ...r204,
-            400: errorResponse('Validation error or invalid token'),
-            ...r429,
-          },
-        },
-      },
-      '/api/auth/test-email': {
-        post: {
-          tags: ['Auth'],
-          summary: "Envoyer un e-mail de test à l'admin connecté",
-          security: sessionAuth,
-          responses: {
-            ...r204,
-            400: errorResponse('No email on the account'),
-            ...r401,
-            ...r403,
-            502: errorResponse('Sending failed'),
-            503: errorResponse('SMTP not configured'),
-          },
-        },
-      },
-      '/api/auth/logout': {
-        post: {
-          tags: ['Auth'],
-          summary: 'Déconnexion',
-          responses: r204,
-        },
-      },
-      '/api/auth/me': {
-        get: {
-          tags: ['Auth'],
-          summary: 'Utilisateur connecté',
-          responses: { ...r200(), ...r401 },
-        },
-      },
-
-      // ── Utilisateurs (admin) ─────────────────────────────────────────────
-      '/api/users': {
-        get: {
-          tags: ['Utilisateurs'],
-          summary: 'Liste des comptes',
-          security: sessionAuth,
-          responses: { ...r200(), ...r401, ...r403 },
-        },
-        post: {
-          tags: ['Utilisateurs'],
-          summary: 'Créer un compte',
-          security: sessionAuth,
-          requestBody: body(createUserSchema),
-          responses: { ...r201, ...r400, ...r401, ...r403, ...r409 },
-        },
-      },
-      '/api/users/{id}': {
-        patch: {
-          tags: ['Utilisateurs'],
-          summary: 'Modifier un compte (nom, e-mail, mot de passe, rôle admin)',
-          security: sessionAuth,
-          parameters: pId,
-          requestBody: body(updateUserSchema),
-          responses: { ...r200(), ...r400, ...r401, ...r403, ...r404, ...r409 },
-        },
-        delete: {
-          tags: ['Utilisateurs'],
-          summary: 'Supprimer un compte, ses données et ses images',
-          security: sessionAuth,
-          parameters: pId,
-          responses: { ...r204, ...r401, ...r403, ...r404, ...r409 },
-        },
-      },
-      '/api/users/{id}/2fa': {
-        delete: {
-          tags: ['Utilisateurs'],
-          summary: 'Désactiver la 2FA d’un compte (téléphone perdu), révoque ses appareils',
-          security: sessionAuth,
-          parameters: pId,
-          responses: {
-            ...r204,
-            ...r400,
-            ...r401,
-            ...r403,
-            ...r404,
-            409: errorResponse('2FA not enabled'),
-          },
-        },
-      },
+      // ── Auth et utilisateurs (admin) : module d'auth de ctrl-shared ─────
+      ...createAuthOpenApiPaths({
+        languages: LANGUAGES,
+        tags: { auth: 'Auth', users: 'Utilisateurs' },
+      }),
 
       // ── Exemplaires ──────────────────────────────────────────────────────
       '/api/copies': {
@@ -401,7 +85,7 @@ export function buildOpenApiSpec() {
           summary: "Fiche d'un exemplaire",
           security: sessionAuth,
           parameters: pId,
-          responses: { ...r200(), ...r404 },
+          responses: { ...r200(), ...r400, ...r404 },
         },
         patch: {
           tags: ['Exemplaires'],
@@ -416,7 +100,7 @@ export function buildOpenApiSpec() {
           summary: 'Supprimer un exemplaire',
           security: sessionAuth,
           parameters: pId,
-          responses: { ...r204, ...r404 },
+          responses: { ...r204, ...r400, ...r404 },
         },
       },
 
@@ -428,14 +112,14 @@ export function buildOpenApiSpec() {
           security: sessionAuth,
           parameters: pId,
           requestBody: rawBody(IMAGE_TYPES),
-          responses: { ...r200(), ...r404, ...r415 },
+          responses: { ...r200(), ...r400, ...r404, ...r415 },
         },
         delete: {
           tags: ['Images'],
           summary: "Retirer la pochette d'une édition",
           security: sessionAuth,
           parameters: pId,
-          responses: { ...r204, ...r404 },
+          responses: { ...r204, ...r400, ...r404 },
         },
       },
       '/api/editions/{id}/cover/fetch': {
@@ -444,7 +128,7 @@ export function buildOpenApiSpec() {
           summary: 'Rechercher la pochette en ligne et remplacer la pochette actuelle',
           security: sessionAuth,
           parameters: pId,
-          responses: { ...r200(), ...r404 },
+          responses: { ...r200(), ...r400, ...r404 },
         },
       },
       '/api/copies/{id}/photo': {
@@ -454,14 +138,14 @@ export function buildOpenApiSpec() {
           security: sessionAuth,
           parameters: pId,
           requestBody: rawBody(IMAGE_TYPES),
-          responses: { ...r200(), ...r404, ...r415 },
+          responses: { ...r200(), ...r400, ...r404, ...r415 },
         },
         delete: {
           tags: ['Images'],
           summary: "Retirer la photo d'un exemplaire",
           security: sessionAuth,
           parameters: pId,
-          responses: { ...r204, ...r404 },
+          responses: { ...r204, ...r400, ...r404 },
         },
       },
 
@@ -472,7 +156,7 @@ export function buildOpenApiSpec() {
           summary: "Historique des prêts d'un exemplaire",
           security: sessionAuth,
           parameters: pId,
-          responses: { ...r200(), ...r404 },
+          responses: { ...r200(), ...r400, ...r404 },
         },
         post: {
           tags: ['Prêts'],
@@ -517,7 +201,7 @@ export function buildOpenApiSpec() {
           summary: "Annonce ou vente d'un exemplaire",
           security: sessionAuth,
           parameters: pId,
-          responses: { ...r200(), ...r404 },
+          responses: { ...r200(), ...r400, ...r404 },
         },
         post: {
           tags: ['Ventes'],
@@ -540,7 +224,7 @@ export function buildOpenApiSpec() {
           summary: "Retirer l'annonce ou annuler la vente",
           security: sessionAuth,
           parameters: pId,
-          responses: { ...r204, ...r404 },
+          responses: { ...r204, ...r400, ...r404 },
         },
       },
       '/api/copies/{id}/sale/sold': {
@@ -601,7 +285,7 @@ export function buildOpenApiSpec() {
           summary: 'Retirer une plateforme',
           security: sessionAuth,
           parameters: pId,
-          responses: { ...r204, ...r404 },
+          responses: { ...r204, ...r400, ...r404 },
         },
       },
 
@@ -632,7 +316,7 @@ export function buildOpenApiSpec() {
           summary: 'Modèle de fichier CSV (en-têtes et exemples dans la langue demandée)',
           security: sessionAuth,
           parameters: queryParams(templateQuerySchema),
-          responses: r200('CSV file download'),
+          responses: { ...r200('CSV file download'), ...r400 },
         },
       },
       '/api/import/preview': {
