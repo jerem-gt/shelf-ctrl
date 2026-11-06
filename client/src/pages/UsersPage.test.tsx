@@ -131,11 +131,20 @@ describe('UsersPage', () => {
   });
 
   it('envoie un e-mail de test et affiche une configuration SMTP absente', async () => {
+    let body: unknown;
+    server.use(
+      http.post('/api/auth/test-email', async ({ request }) => {
+        body = await request.json();
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
     const user = userEvent.setup();
     renderWithProviders(<UsersPage />);
 
     await user.click(await screen.findByRole('button', { name: 'Envoyer un e-mail de test' }));
     expect(await screen.findByRole('status')).toHaveTextContent('E-mail de test envoyé');
+    // Dans la langue de l'interface.
+    expect(body).toEqual({ lang: 'fr' });
 
     server.use(http.post('/api/auth/test-email', () => apiError('auth.smtp_not_configured', 503)));
     await user.click(screen.getByRole('button', { name: 'Envoyer un e-mail de test' }));

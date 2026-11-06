@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { api, type CreateUserPayload, type UpdateUserPayload } from '@/api/client';
+import { currentLang } from '@/lib/format';
 
 import { DEVICES_KEY, ME_KEY } from './useAuth';
 
@@ -61,5 +62,6 @@ export function useDisableUserTotp() {
 }
 
 export function useTestEmail() {
-  return useMutation({ mutationFn: api.auth.testEmail });
+  // E-mail dans la langue de l'interface.
+  return useMutation({ mutationFn: () => api.auth.testEmail(currentLang()) });
 }

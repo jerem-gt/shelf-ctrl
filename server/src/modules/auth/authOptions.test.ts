@@ -208,8 +208,8 @@ describe('e-mails', () => {
   });
 
   it.each([
-    ['', 'ShelfCtrl : E-mail de test / Test email'],
-    ['Dev', 'ShelfCtrl Dev : E-mail de test / Test email'],
+    ['', 'ShelfCtrl : e-mail de test'],
+    ['Dev', 'ShelfCtrl Dev : e-mail de test'],
   ])(
     'portent le nom (APP_INSTANCE=%j), les couleurs et le logo de ShelfCtrl',
     async (instance, subject) => {

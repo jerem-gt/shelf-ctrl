@@ -275,7 +275,7 @@ export const api = {
       request<undefined>('POST', '/api/auth/password/forgot', { identifier, lang }),
     resetPassword: (token: string, password: string) =>
       request<undefined>('POST', '/api/auth/password/reset', { token, password }),
-    testEmail: () => request<undefined>('POST', '/api/auth/test-email'),
+    testEmail: (lang: Lang) => request<undefined>('POST', '/api/auth/test-email', { lang }),
   },
   users: {
     list: () => request<{ items: UserItem[] }>('GET', '/api/users'),

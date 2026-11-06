@@ -256,7 +256,7 @@ describe('api.auth', () => {
   it('reprend le message du serveur quand le code n’est pas traduit', async () => {
     server.use(http.post('/api/auth/test-email', () => apiError('code.inconnu', 409)));
 
-    await expect(api.auth.testEmail()).rejects.toMatchObject({
+    await expect(api.auth.testEmail('fr')).rejects.toMatchObject({
       code: 'code.inconnu',
       message: '[repli] code.inconnu',
     });
