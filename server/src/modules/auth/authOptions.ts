@@ -1,9 +1,12 @@
-import type { AuthModuleOptions, AuthRuntimeOptions } from '@jerem-gt/ctrl-shared/server/auth';
+import {
+  type AuthModuleOptions,
+  type AuthRuntimeOptions,
+  createMailTexts,
+} from '@jerem-gt/ctrl-shared/server/auth';
 import type { ShelfLang, UserStats } from '@shelfctrl/types';
 import type { Database } from 'better-sqlite3';
 
 import { HttpError } from '../../lib/errors.js';
-import { MAIL_TEXTS } from '../../lib/mailTexts.js';
 import type { AccountImages } from '../images/index.js';
 
 /** Nom propre à l'appli : cookies et noms d'hôte sont partagés avec cash-ctrl sur le NAS. */
@@ -15,14 +18,19 @@ export const LANGUAGES = ['fr', 'en'] as const satisfies readonly ShelfLang[];
 export interface ShelfAuthOptions extends AuthRuntimeOptions {
   /** Efface les fichiers d'image d'un compte supprimé (absent : pas de stockage d'images). */
   removeAccountImages?: (files: AccountImages) => Promise<void>;
+  /** Logo PNG des e-mails (absent ou illisible : sans logo). */
+  mailLogoPath?: string;
 }
+
+/** Couleurs des e-mails, reprises de l'icône (fond ardoise, livres bleu ciel). */
+const MAIL_COLORS = { headerColor: '#0f172a', buttonColor: '#0284c7' };
 
 /** Options du module d'auth de ctrl-shared propres à ShelfCtrl. */
 export function shelfAuthOptions(
   db: Database,
   options: ShelfAuthOptions,
 ): AuthModuleOptions<ShelfLang, UserStats> {
-  const { removeAccountImages, ...auth } = options;
+  const { removeAccountImages, mailLogoPath, ...auth } = options;
   const statsStmt = db.prepare<[number], { copy_count: number; last_copy_at: string | null }>(
     'SELECT COUNT(*) AS copy_count, MAX(created_at) AS last_copy_at FROM copies WHERE user_id = ?',
   );
@@ -39,7 +47,7 @@ export function shelfAuthOptions(
     sessionCookie: SESSION_COOKIE,
     deviceCookie: 'shelfctrl_device',
     languages: LANGUAGES,
-    mailTexts: MAIL_TEXTS,
+    mailTexts: createMailTexts({ appName: 'ShelfCtrl', ...MAIL_COLORS, logoPath: mailLogoPath }),
     userStats: (userId) => {
       const row = statsStmt.get(userId);
       return { copyCount: row?.copy_count ?? 0, lastCopyAt: row?.last_copy_at ?? null };

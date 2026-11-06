@@ -16,6 +16,10 @@ const IS_PROD = process.env.NODE_ENV === 'production';
 const CLIENT_DIST = path.join(import.meta.dirname, '../../client/dist');
 
 const auth = loadAuthConfig(process.env);
+const MAIL_LOGO = path.join(CLIENT_DIST, 'apple-touch-icon.png');
+if (IS_PROD && !fs.existsSync(MAIL_LOGO)) {
+  console.warn(`[auth] logo des e-mails introuvable (${MAIL_LOGO}) : e-mails sans logo.`);
+}
 
 const db = createDb();
 initDatabase(db);
@@ -34,6 +38,7 @@ const app = createApp(db, {
     secureCookies: auth.secureCookies,
     appUrl: auth.appUrl,
     setupToken,
+    mailLogoPath: MAIL_LOGO,
   },
   images: { dataDir: DATA_DIR, coverProviders: createDefaultCoverProviders() },
   healthExtraCheck: IS_PROD

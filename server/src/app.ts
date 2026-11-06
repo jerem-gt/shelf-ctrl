@@ -63,6 +63,8 @@ export interface AuthOptions {
   /** Jeton de création du premier compte (par défaut : un nouveau, inconnu des logs). */
   setupToken?: SetupToken;
   log?: AuthLogger;
+  /** Logo PNG des e-mails (icône du client construit). */
+  mailLogoPath?: string;
 }
 
 const IS_TEST = process.env.NODE_ENV === 'test';
@@ -129,7 +131,7 @@ export function createApp(db: Database, options: AppOptions = {}) {
         },
       }),
     );
-    const { secureCookies, mailer, setupToken, appUrl, log } = options.auth;
+    const { secureCookies, mailer, setupToken, appUrl, log, mailLogoPath } = options.auth;
     const auth = createAuthModule(
       db,
       sessionStore,
@@ -140,6 +142,7 @@ export function createApp(db: Database, options: AppOptions = {}) {
         appUrl,
         log,
         removeAccountImages: images?.removeAccountImages,
+        mailLogoPath,
       }),
     );
     app.use('/api/auth', auth.authRouter);

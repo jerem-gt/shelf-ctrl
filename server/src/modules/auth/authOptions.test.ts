@@ -2,8 +2,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
+import type { MailMessage } from '@jerem-gt/ctrl-shared/server/mailer';
 import request from 'supertest';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createApp } from '../../app.js';
 import { createAuthApp, loginAgent, TEST_SECRET, type TestApp } from '../../tests/authApp.js';
@@ -14,8 +15,8 @@ import { addTestUser, createTestDb } from '../../tests/testDb.js';
 
 const PASSWORD = 'correct-horse';
 
-function setup() {
-  const ctx = createAuthApp();
+function setup(options: Parameters<typeof createAuthApp>[0] = {}) {
+  const ctx = createAuthApp(options);
   const userId = addTestUser(ctx.db, 'admin', {
     password: PASSWORD,
     email: 'admin@example.com',
@@ -195,6 +196,46 @@ describe('comptes (page Utilisateurs)', () => {
     expect(fs.readdirSync(covers)).toEqual(['1-aaaaaaaaaa.webp']);
     expect(fs.readdirSync(photos)).toEqual(['1-bbbbbbbbbb.webp']);
   });
+});
+
+describe('e-mails', () => {
+  const dirs: string[] = [];
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    for (const dir of dirs.splice(0)) {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it.each([
+    ['', 'ShelfCtrl : E-mail de test / Test email'],
+    ['Dev', 'ShelfCtrl Dev : E-mail de test / Test email'],
+  ])(
+    'portent le nom (APP_INSTANCE=%j), les couleurs et le logo de ShelfCtrl',
+    async (instance, subject) => {
+      vi.stubEnv('APP_INSTANCE', instance);
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'shelfctrl-mail-'));
+      dirs.push(dir);
+      const mailLogoPath = path.join(dir, 'logo.png');
+      fs.writeFileSync(mailLogoPath, 'png');
+      const sent: MailMessage[] = [];
+      const mailer = {
+        isConfigured: () => true,
+        send: (message: MailMessage) => {
+          sent.push(message);
+          return Promise.resolve();
+        },
+      };
+      const { app } = setup({ mailer, mailLogoPath });
+      const agent = await loginAgent(app, 'admin', PASSWORD);
+
+      expect((await agent.post('/api/auth/test-email')).status).toBe(204);
+
+      expect(sent[0]).toMatchObject({ to: 'admin@example.com', subject });
+      expect(sent[0].html).toContain('background:#0f172a');
+      expect(sent[0].attachments?.[0].content.toString()).toBe('png');
+    },
+  );
 });
 
 describe('sans authentification (tests de modules)', () => {
