@@ -193,7 +193,9 @@ export function AddCopyPage() {
       { query, kind },
       {
         onSuccess: (response) => {
-          if (response.results.length === 0) {
+          if (!response.configured) {
+            setSearchMessage(t(`add.titleSearch.unconfigured.${kind}`));
+          } else if (response.results.length === 0) {
             setSearchMessage(t('add.titleSearch.none'));
           }
         },

@@ -137,9 +137,20 @@ describe('GET /api/titles/search', () => {
     await request(app).get('/api/titles/search').query({ q: 'tintin', kind: 'book' });
     expect(called).toEqual(['bnf', 'openlibrary']);
 
+    expect(games.body.configured).toBe(true);
+
     called.length = 0;
     await request(app).get('/api/titles/search').query({ q: 'tout' });
     expect(called).toHaveLength(4);
+  });
+
+  it('signale un type sans source configurée, sans erreur', async () => {
+    const app = setup([stubProvider('bnf', () => Promise.resolve([result(null, 'Livre')]))]);
+
+    const res = await request(app).get('/api/titles/search').query({ q: 'zelda', kind: 'game' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ results: [], configured: false });
   });
 
   it('refuse un type inconnu', async () => {
@@ -165,7 +176,7 @@ describe('GET /api/titles/search', () => {
 
     const res = await request(app).get('/api/titles/search').query({ q: 'zzzz' });
 
-    expect(res.body).toEqual({ results: [] });
+    expect(res.body).toEqual({ results: [], configured: true });
   });
 
   it('rejette une requête absente ou trop courte', async () => {
