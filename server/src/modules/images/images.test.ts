@@ -157,6 +157,9 @@ describe('pochette d’une édition', () => {
     expect(files('covers')).toEqual([]);
     expect((await getCopy(app, copy.id)).edition.coverPath).toBeNull();
     expect((await request(app).delete('/api/editions/999/cover')).status).toBe(404);
+    const invalid = await request(app).delete('/api/editions/1e2/cover');
+    expect(invalid.status).toBe(400);
+    expect(invalid.body.error.code).toBe('common.invalid_param');
   });
 });
 

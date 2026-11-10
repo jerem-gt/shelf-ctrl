@@ -106,6 +106,9 @@ describe('PATCH /api/platforms/:id', () => {
     expect((await request(app).patch('/api/platforms/999').send({ publishUrl: null })).status).toBe(
       404,
     );
+    const invalid = await request(app).delete('/api/platforms/0x10');
+    expect(invalid.status).toBe(400);
+    expect(invalid.body.error.code).toBe('common.invalid_param');
   });
 });
 
