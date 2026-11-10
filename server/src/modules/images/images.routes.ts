@@ -1,8 +1,8 @@
 import express, { type Request, Router } from 'express';
 
 import { HttpError, NotFoundError } from '../../lib/errors.js';
+import { parseIdParam } from '../../lib/routeHelpers.js';
 import { currentUserId } from '../../middleware.js';
-import { copyIdSchema } from '../copies/copies.schema.js';
 import type { CoverService } from './covers/covers.service.js';
 import type { createPhotoService } from './photos.service.js';
 
@@ -33,7 +33,7 @@ export function createImagesRouter(
   const router = Router();
 
   router.put('/editions/:id/cover', rawImage, async (req, res) => {
-    const editionId = copyIdSchema.parse(req.params.id);
+    const editionId = parseIdParam(req);
     const coverPath = await covers.setCover(currentUserId(res), editionId, imageBody(req));
     if (coverPath === null) {
       throw new NotFoundError('edition.not_found');
@@ -42,7 +42,7 @@ export function createImagesRouter(
   });
 
   router.delete('/editions/:id/cover', async (req, res) => {
-    if (!(await covers.clearCover(currentUserId(res), copyIdSchema.parse(req.params.id)))) {
+    if (!(await covers.clearCover(currentUserId(res), parseIdParam(req)))) {
       throw new NotFoundError('edition.not_found');
     }
     res.status(204).end();
@@ -50,11 +50,7 @@ export function createImagesRouter(
 
   /** Remplace la pochette par celle trouvée en ligne ; 404 si aucune source n'en a. */
   router.post('/editions/:id/cover/fetch', async (req, res) => {
-    const outcome = await covers.fetchForEdition(
-      currentUserId(res),
-      copyIdSchema.parse(req.params.id),
-      true,
-    );
+    const outcome = await covers.fetchForEdition(currentUserId(res), parseIdParam(req), true);
     if (outcome === 'unknown_edition') {
       throw new NotFoundError('edition.not_found');
     }
@@ -65,7 +61,7 @@ export function createImagesRouter(
   });
 
   router.put('/copies/:id/photo', rawImage, async (req, res) => {
-    const copyId = copyIdSchema.parse(req.params.id);
+    const copyId = parseIdParam(req);
     const photoPath = await photos.set(currentUserId(res), copyId, imageBody(req));
     if (photoPath === null) {
       throw new NotFoundError('copy.not_found');
@@ -74,7 +70,7 @@ export function createImagesRouter(
   });
 
   router.delete('/copies/:id/photo', async (req, res) => {
-    if (!(await photos.clear(currentUserId(res), copyIdSchema.parse(req.params.id)))) {
+    if (!(await photos.clear(currentUserId(res), parseIdParam(req)))) {
       throw new NotFoundError('copy.not_found');
     }
     res.status(204).end();

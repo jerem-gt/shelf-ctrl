@@ -254,9 +254,21 @@ describe('GET/PATCH/DELETE /api/copies/:id', () => {
     expect((await request(app).delete('/api/copies/99')).status).toBe(404);
   });
 
-  it('rejette un identifiant invalide et une modification vide', async () => {
+  it.each(['abc', '0', '1e2', '12abc'])(
+    'rejette l’identifiant « %s » : 400 common.invalid_param',
+    async (id) => {
+      const { app } = setup();
+      const res = await request(app).get(`/api/copies/${id}`);
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatchObject({
+        code: 'common.invalid_param',
+        params: { param: 'id' },
+      });
+    },
+  );
+
+  it('rejette une modification vide', async () => {
     const { app } = setup();
-    expect((await request(app).get('/api/copies/abc')).status).toBe(400);
     const created = await request(app).post('/api/copies').send(tintin);
     expect((await request(app).patch(`/api/copies/${created.body.id}`).send({})).status).toBe(400);
   });

@@ -1,8 +1,8 @@
 import type { Database } from 'better-sqlite3';
 import { Router } from 'express';
 
+import { parseIdParam } from '../../lib/routeHelpers.js';
 import { currentUserId } from '../../middleware.js';
-import { copyIdSchema } from '../copies/copies.schema.js';
 import {
   createPlatformSchema,
   setDefaultSchema,
@@ -31,16 +31,12 @@ export function createPlatformsRouter(db: Database) {
 
   router.patch('/:id', (req, res) => {
     res.json(
-      service.update(
-        currentUserId(res),
-        copyIdSchema.parse(req.params.id),
-        updatePlatformSchema.parse(req.body),
-      ),
+      service.update(currentUserId(res), parseIdParam(req), updatePlatformSchema.parse(req.body)),
     );
   });
 
   router.delete('/:id', (req, res) => {
-    service.remove(currentUserId(res), copyIdSchema.parse(req.params.id));
+    service.remove(currentUserId(res), parseIdParam(req));
     res.status(204).end();
   });
 

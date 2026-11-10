@@ -4,6 +4,7 @@
     "unauthorized": "Ta session a expiré : reconnecte-toi.",
     "forbidden": "Action réservée aux administrateurs.",
     "invalid_request": "Requête invalide.",
+    "invalid_param": "Paramètre {{param}} invalide.",
     "internal": "Une erreur est survenue.",
     "payload_too_large": "Le fichier est trop lourd (12 Mo au maximum pour une image).",
     "unsupported_media_type": "Ce type de fichier n'est pas pris en charge."

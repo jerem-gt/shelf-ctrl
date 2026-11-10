@@ -4,6 +4,7 @@
     "unauthorized": "Your session has expired: please log in again.",
     "forbidden": "This action is reserved for administrators.",
     "invalid_request": "Invalid request.",
+    "invalid_param": "Invalid parameter {{param}}.",
     "internal": "An error occurred.",
     "payload_too_large": "The file is too large (12 MB maximum for an image).",
     "unsupported_media_type": "This file type is not supported."

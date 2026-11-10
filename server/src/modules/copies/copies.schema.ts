@@ -48,8 +48,6 @@ export const updateCopySchema = z
   .partial()
   .refine((value) => Object.keys(value).length > 0, { message: 'Aucun champ à modifier' });
 
-export const copyIdSchema = z.coerce.number().int().positive();
-
 export const listCopiesSchema = z.object({
   q: z.string().trim().max(100).optional(),
   format: z.enum(MEDIA_FORMATS).optional(),

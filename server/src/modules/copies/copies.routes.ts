@@ -3,13 +3,9 @@ import type { Database } from 'better-sqlite3';
 import { Router } from 'express';
 
 import { NotFoundError } from '../../lib/errors.js';
+import { parseIdParam } from '../../lib/routeHelpers.js';
 import { currentUserId } from '../../middleware.js';
-import {
-  copyIdSchema,
-  createCopySchema,
-  listCopiesSchema,
-  updateCopySchema,
-} from './copies.schema.js';
+import { createCopySchema, listCopiesSchema, updateCopySchema } from './copies.schema.js';
 import { createCopiesService, type RemovedFiles } from './copies.service.js';
 
 /** Réactions de modules voisins (images) aux créations et suppressions d'exemplaires. */
@@ -34,7 +30,7 @@ export function createCopiesRouter(db: Database, hooks: CopiesHooks = {}) {
   });
 
   router.get('/:id', (req, res) => {
-    const copy = service.findById(currentUserId(res), copyIdSchema.parse(req.params.id));
+    const copy = service.findById(currentUserId(res), parseIdParam(req));
     if (!copy) {
       throw new NotFoundError('copy.not_found');
     }
@@ -44,7 +40,7 @@ export function createCopiesRouter(db: Database, hooks: CopiesHooks = {}) {
   router.patch('/:id', (req, res) => {
     const copy = service.update(
       currentUserId(res),
-      copyIdSchema.parse(req.params.id),
+      parseIdParam(req),
       updateCopySchema.parse(req.body),
     );
     if (!copy) {
@@ -54,7 +50,7 @@ export function createCopiesRouter(db: Database, hooks: CopiesHooks = {}) {
   });
 
   router.delete('/:id', async (req, res) => {
-    const files = service.remove(currentUserId(res), copyIdSchema.parse(req.params.id));
+    const files = service.remove(currentUserId(res), parseIdParam(req));
     if (!files) {
       throw new NotFoundError('copy.not_found');
     }
