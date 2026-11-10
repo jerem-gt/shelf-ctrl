@@ -73,6 +73,11 @@
       "results": "Résultats de la recherche",
       "choose": "Choisir",
       "none": "Aucun résultat : saisis les informations à la main.",
+      "unconfigured": {
+        "book": "Aucune source de recherche de livres n'est configurée sur le serveur : saisis les informations à la main.",
+        "movie": "La recherche de films n'est pas configurée : il faut une clé TMDB (variable TMDB_API_KEY du serveur). En attendant, scanne le code-barres ou saisis les informations à la main.",
+        "game": "La recherche de jeux vidéo n'est pas configurée : il faut les identifiants IGDB (variables IGDB_CLIENT_ID et IGDB_CLIENT_SECRET du serveur). En attendant, scanne le code-barres ou saisis les informations à la main."
+      },
       "tooShort": "Saisis au moins 2 caractères.",
       "applied": "Fiche reprise de {{source}} : vérifie les informations avant d'enregistrer.",
       "volume": "tome {{number}}"

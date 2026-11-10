@@ -71,7 +71,10 @@ export function createTitlesRouter(providers: readonly TitleSearchProvider[]) {
       }
     });
 
-    const body: TitleSearchResponse = { results: dedupe(interleave(lists)).slice(0, MAX_RESULTS) };
+    const body: TitleSearchResponse = {
+      results: dedupe(interleave(lists)).slice(0, MAX_RESULTS),
+      configured: selected.length > 0,
+    };
     res.json(body);
   });
 

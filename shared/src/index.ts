@@ -188,6 +188,11 @@ export interface TitleSearchResult {
 
 export interface TitleSearchResponse {
   results: TitleSearchResult[];
+  /**
+   * Faux quand aucune source n'est configurée pour le type demandé (clé TMDB ou identifiants
+   * IGDB absents) : la liste est alors vide quelle que soit la recherche.
+   */
+  configured: boolean;
 }
 
 /** Plateforme de vente du compte (réglages). */

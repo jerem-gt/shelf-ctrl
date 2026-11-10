@@ -1,3 +1,4 @@
+import type { TitleSearchResponse } from '@shelfctrl/types';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse, type JsonBodyType } from 'msw';
@@ -339,7 +340,13 @@ describe('AddCopyPage — recherche par titre', () => {
             creators: 'Hergé',
             year: null,
           },
-          edition: { format: 'book', publisher: 'Casterman', releaseYear: 2006, language: 'fr' },
+          edition: {
+            format: 'book',
+            publisher: 'Casterman',
+            releaseYear: 2006,
+            language: 'fr',
+            console: null,
+          },
         },
       },
       {
@@ -357,7 +364,8 @@ describe('AddCopyPage — recherche par titre', () => {
         },
       },
     ],
-  };
+    configured: true,
+  } satisfies TitleSearchResponse;
 
   it('préremplit le formulaire avec le résultat choisi', async () => {
     let query: string | null = null;
@@ -467,7 +475,9 @@ describe('AddCopyPage — recherche par titre', () => {
   });
 
   it('signale une recherche sans résultat', async () => {
-    server.use(http.get('/api/titles/search', () => HttpResponse.json({ results: [] })));
+    server.use(
+      http.get('/api/titles/search', () => HttpResponse.json({ results: [], configured: true })),
+    );
     const user = userEvent.setup();
     renderPage();
 
@@ -475,6 +485,24 @@ describe('AddCopyPage — recherche par titre', () => {
     await user.click(screen.getByRole('button', { name: 'Rechercher' }));
 
     expect(await screen.findByText(/Aucun résultat/)).toBeInTheDocument();
+  });
+
+  it.each([
+    ['Film', 'La recherche de films n’est pas configurée', 'TMDB_API_KEY'],
+    ['Jeu vidéo', 'La recherche de jeux vidéo n’est pas configurée', 'IGDB_CLIENT_ID'],
+  ])('explique qu’aucune source n’est configurée (%s)', async (kind, message, variable) => {
+    server.use(
+      http.get('/api/titles/search', () => HttpResponse.json({ results: [], configured: false })),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('radio', { name: kind }));
+    await user.type(screen.getByLabelText('Titre, série ou auteur'), 'zelda{Enter}');
+
+    const status = await screen.findByText(new RegExp(message.replace('’', "'")));
+    expect(status).toHaveTextContent(variable);
+    expect(screen.queryByText(/Aucun résultat/)).not.toBeInTheDocument();
   });
 
   it('demande au moins deux caractères sans appeler le serveur', async () => {
