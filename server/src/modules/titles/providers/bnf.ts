@@ -16,6 +16,7 @@ function toCqlTerms(query: string): string {
 export function createBnfTitleSearch(fetchFn: FetchFn = fetch): TitleSearchProvider {
   return {
     source: 'bnf',
+    kind: 'book',
     async search(query) {
       const terms = toCqlTerms(query);
       if (terms === '') {

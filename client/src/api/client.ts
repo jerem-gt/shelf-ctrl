@@ -10,6 +10,7 @@ import type {
   LoanItem,
   LoginResponse,
   MediaFormat,
+  MediaKind,
   OpenLoanItem,
   PlatformItem,
   SaleItem,
@@ -317,8 +318,11 @@ export const api = {
       request<LoanItem>('POST', `/api/loans/${loanId}/return`, { returnedAt }),
   },
   titles: {
-    search: (query: string) =>
-      request<TitleSearchResponse>('GET', `/api/titles/search?q=${encodeURIComponent(query)}`),
+    search: (query: string, kind: MediaKind) =>
+      request<TitleSearchResponse>(
+        'GET',
+        `/api/titles/search?${new URLSearchParams({ q: query, kind }).toString()}`,
+      ),
   },
   barcodes: {
     lookup: (code: string) =>

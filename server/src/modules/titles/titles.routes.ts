@@ -1,4 +1,4 @@
-import type { TitleSearchResponse, TitleSearchResult } from '@shelfctrl/types';
+import { MEDIA_KINDS, type TitleSearchResponse, type TitleSearchResult } from '@shelfctrl/types';
 import { Router } from 'express';
 import { z } from 'zod';
 
@@ -6,7 +6,11 @@ import type { TitleSearchProvider } from './providers/types.js';
 
 const MAX_RESULTS = 20;
 
-export const querySchema = z.object({ q: z.string().trim().min(2).max(100) });
+export const querySchema = z.object({
+  q: z.string().trim().min(2).max(100),
+  /** Type de média cherché ; sans type, toutes les sources sont interrogées. */
+  kind: z.enum(MEDIA_KINDS).optional(),
+});
 
 /** Un résultat de chaque source à tour de rôle : aucune ne monopolise la liste tronquée. */
 function interleave(lists: TitleSearchResult[][]): TitleSearchResult[] {
@@ -45,15 +49,17 @@ function dedupe(results: TitleSearchResult[]): TitleSearchResult[] {
 }
 
 /**
- * Monté sur `/api/titles` : `GET /search?q=` interroge toutes les sources en parallèle.
+ * Monté sur `/api/titles` : `GET /search?q=&kind=` interroge en parallèle les sources du type
+ * demandé (livres, films ou jeux vidéo), toutes sans type.
  * Une source en erreur est ignorée ; sans résultat, la liste est vide (pas de 404).
  */
 export function createTitlesRouter(providers: readonly TitleSearchProvider[]) {
   const router = Router();
 
   router.get('/search', async (req, res) => {
-    const { q } = querySchema.parse(req.query);
-    const settled = await Promise.allSettled(providers.map((provider) => provider.search(q)));
+    const { q, kind } = querySchema.parse(req.query);
+    const selected = providers.filter((provider) => kind === undefined || provider.kind === kind);
+    const settled = await Promise.allSettled(selected.map((provider) => provider.search(q)));
 
     const lists: TitleSearchResult[][] = [];
     settled.forEach((outcome, index) => {
@@ -61,7 +67,7 @@ export function createTitlesRouter(providers: readonly TitleSearchProvider[]) {
         lists.push(outcome.value);
       } else {
         const reason = outcome.reason instanceof Error ? outcome.reason.message : 'erreur inconnue';
-        console.warn(`[titles] ${providers[index].source} : ${reason}`);
+        console.warn(`[titles] ${selected[index].source} : ${reason}`);
       }
     });
 

@@ -37,6 +37,7 @@ describe('AddCopyPage', () => {
     await user.type(screen.getByLabelText('Titre'), '  Dune ');
     await user.type(screen.getByLabelText('Série'), 'Dune');
     await user.type(screen.getByLabelText('Numéro de tome'), '1');
+    await user.click(screen.getByRole('radio', { name: 'Film' }));
     await user.selectOptions(screen.getByLabelText('Format'), 'dvd');
     await user.type(screen.getByLabelText('Code-barres (ISBN / EAN)'), '5051889000001');
     await user.selectOptions(screen.getByLabelText('État'), 'new');
@@ -52,6 +53,22 @@ describe('AddCopyPage', () => {
     });
   });
 
+  it('commence par le type, livre par défaut, le format n’étant à choisir que pour un film', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const radios = screen.getAllByRole('radio');
+    expect(radios.map((radio) => radio.getAttribute('value'))).toEqual(['book', 'movie', 'game']);
+    expect(screen.getByRole('radio', { name: 'Livre / BD' })).toBeChecked();
+    expect(screen.queryByLabelText('Format')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('radio', { name: 'Film' }));
+    expect(screen.getByLabelText('Format')).toHaveValue('dvd');
+    expect(screen.getAllByRole('option').map((option) => option.getAttribute('value'))).toEqual(
+      expect.arrayContaining(['dvd', 'bluray', 'uhd4k']),
+    );
+  });
+
   it('propose la console d’un jeu vidéo et l’envoie, studio à la place des auteurs', async () => {
     let received: unknown;
     server.use(
@@ -64,7 +81,7 @@ describe('AddCopyPage', () => {
     renderPage();
 
     expect(screen.queryByLabelText('Console')).not.toBeInTheDocument();
-    await user.selectOptions(screen.getByLabelText('Format'), 'game');
+    await user.click(screen.getByRole('radio', { name: 'Jeu vidéo' }));
     await user.type(screen.getByLabelText('Titre'), 'Halo 3');
     await user.type(screen.getByLabelText('Studio (développeur)'), 'Bungie');
     await user.type(screen.getByLabelText('Console'), 'Xbox 360');
@@ -88,8 +105,9 @@ describe('AddCopyPage', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.selectOptions(screen.getByLabelText('Format'), 'game');
+    await user.click(screen.getByRole('radio', { name: 'Jeu vidéo' }));
     await user.type(screen.getByLabelText('Console'), 'PS5');
+    await user.click(screen.getByRole('radio', { name: 'Film' }));
     await user.selectOptions(screen.getByLabelText('Format'), 'bluray');
     await user.type(screen.getByLabelText('Titre'), 'Alien');
     await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
@@ -179,7 +197,7 @@ describe('AddCopyPage — recherche par code-barres', () => {
     await searchFor('0045496590741');
 
     await screen.findByRole('status');
-    expect(screen.getByLabelText('Format')).toHaveValue('game');
+    expect(screen.getByRole('radio', { name: 'Jeu vidéo' })).toBeChecked();
     expect(screen.getByLabelText('Console')).toHaveValue('Nintendo Switch');
   });
 
@@ -205,7 +223,7 @@ describe('AddCopyPage — recherche par code-barres', () => {
     expect(screen.getByLabelText('Numéro de tome')).toHaveValue(20);
     expect(screen.getByLabelText('Auteurs / réalisateurs')).toHaveValue('Hergé');
     expect(screen.getByLabelText('Éditeur')).toHaveValue('Casterman');
-    expect(screen.getByLabelText('Format')).toHaveValue('book');
+    expect(screen.getByRole('radio', { name: 'Livre / BD' })).toBeChecked();
     expect(screen.getByLabelText('Code-barres (ISBN / EAN)')).toHaveValue('9782203001190');
   });
 
@@ -226,6 +244,7 @@ describe('AddCopyPage — recherche par code-barres', () => {
     const user = userEvent.setup();
     renderPage();
     await user.type(screen.getByLabelText('Série'), 'Saga');
+    await user.click(screen.getByRole('radio', { name: 'Film' }));
     await user.selectOptions(screen.getByLabelText('Format'), 'bluray');
     await user.type(screen.getByLabelText('Code-barres (ISBN / EAN)'), '5051889000006');
     await user.click(screen.getByRole('button', { name: 'Rechercher la fiche' }));
@@ -342,9 +361,11 @@ describe('AddCopyPage — recherche par titre', () => {
 
   it('préremplit le formulaire avec le résultat choisi', async () => {
     let query: string | null = null;
+    let kind: string | null = null;
     server.use(
       http.get('/api/titles/search', ({ request }) => {
         query = new URL(request.url).searchParams.get('q');
+        kind = new URL(request.url).searchParams.get('kind');
         return HttpResponse.json(RESULTS);
       }),
     );
@@ -355,6 +376,7 @@ describe('AddCopyPage — recherche par titre', () => {
     await user.click(await screen.findByRole('button', { name: 'Choisir : Tintin au Tibet' }));
 
     expect(query).toBe('tintin tibet');
+    expect(kind).toBe('book');
     expect(screen.getByLabelText('Titre')).toHaveValue('Tintin au Tibet');
     expect(screen.getByLabelText('Série')).toHaveValue('Tintin');
     expect(screen.getByLabelText('Numéro de tome')).toHaveValue(20);
@@ -371,6 +393,7 @@ describe('AddCopyPage — recherche par titre', () => {
     const user = userEvent.setup();
     renderPage();
 
+    await user.click(screen.getByRole('radio', { name: 'Film' }));
     await user.selectOptions(screen.getByLabelText('Format'), 'bluray');
     await user.type(screen.getByLabelText('Code-barres (ISBN / EAN)'), '5051889000001');
     await user.type(screen.getByLabelText('Titre, série ou auteur'), 'tintin');
@@ -399,6 +422,29 @@ describe('AddCopyPage — recherche par titre', () => {
 
     expect(screen.getByLabelText('Titre')).toHaveValue('Tintin');
     expect(screen.getByLabelText('Code-barres (ISBN / EAN)')).toHaveValue('');
+  });
+
+  it('cherche parmi les jeux quand le type choisi est le jeu vidéo', async () => {
+    const kinds: (string | null)[] = [];
+    server.use(
+      http.get('/api/titles/search', ({ request }) => {
+        kinds.push(new URL(request.url).searchParams.get('kind'));
+        return HttpResponse.json(RESULTS);
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('radio', { name: 'Jeu vidéo' }));
+    await user.type(screen.getByLabelText('Titre, série ou auteur'), 'zelda{Enter}');
+    await screen.findByRole('list', { name: 'Résultats de la recherche' });
+
+    // Changer de type efface les résultats de l'autre type.
+    await user.click(screen.getByRole('radio', { name: 'Film' }));
+    expect(
+      screen.queryByRole('list', { name: 'Résultats de la recherche' }),
+    ).not.toBeInTheDocument();
+    expect(kinds).toEqual(['game']);
   });
 
   it('n’envoie pas le formulaire en validant la recherche avec Entrée', async () => {

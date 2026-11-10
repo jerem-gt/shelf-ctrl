@@ -34,6 +34,7 @@ function firstIsbn(isbns: readonly string[] | undefined): string | null {
 export function createOpenLibraryTitleSearch(fetchFn: FetchFn = fetch): TitleSearchProvider {
   return {
     source: 'openlibrary',
+    kind: 'book',
     async search(query) {
       const params = new URLSearchParams({ q: query, limit: String(LIMIT), fields: FIELDS });
       const parsed = responseSchema.safeParse(

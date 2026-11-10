@@ -5,6 +5,22 @@ import type { UserItem as AuthUserItem } from '@jerem-gt/ctrl-shared/server/auth
 export const MEDIA_FORMATS = ['book', 'dvd', 'bluray', 'uhd4k', 'game'] as const;
 export type MediaFormat = (typeof MEDIA_FORMATS)[number];
 
+/** Type de média choisi en premier à l'ajout : il borne les formats et les sources de recherche. */
+export const MEDIA_KINDS = ['book', 'movie', 'game'] as const;
+export type MediaKind = (typeof MEDIA_KINDS)[number];
+
+/** Formats de chaque type, le premier étant celui par défaut. */
+export const FORMATS_BY_KIND: Record<MediaKind, readonly [MediaFormat, ...MediaFormat[]]> = {
+  book: ['book'],
+  movie: ['dvd', 'bluray', 'uhd4k'],
+  game: ['game'],
+};
+
+/** Type d'un format (`bluray` → `movie`). */
+export function kindOfFormat(format: MediaFormat): MediaKind {
+  return MEDIA_KINDS.find((kind) => FORMATS_BY_KIND[kind].includes(format)) ?? 'book';
+}
+
 /**
  * Consoles proposées pour un jeu vidéo (`format` = `game`), des plus récentes aux plus anciennes
  * par constructeur. La console d'une édition reste un texte libre : cette liste n'est qu'une aide.
