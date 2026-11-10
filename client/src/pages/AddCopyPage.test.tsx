@@ -52,6 +52,52 @@ describe('AddCopyPage', () => {
     });
   });
 
+  it('propose la console d’un jeu vidéo et l’envoie, studio à la place des auteurs', async () => {
+    let received: unknown;
+    server.use(
+      http.post('/api/copies', async ({ request }) => {
+        received = await request.json();
+        return HttpResponse.json(COPY_TINTIN, { status: 201 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(screen.queryByLabelText('Console')).not.toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText('Format'), 'game');
+    await user.type(screen.getByLabelText('Titre'), 'Halo 3');
+    await user.type(screen.getByLabelText('Studio (développeur)'), 'Bungie');
+    await user.type(screen.getByLabelText('Console'), 'Xbox 360');
+    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+
+    await screen.findByText('Accueil');
+    expect(received).toMatchObject({
+      work: { title: 'Halo 3', creators: 'Bungie' },
+      edition: { format: 'game', console: 'Xbox 360' },
+    });
+  });
+
+  it('oublie la console quand le format n’est plus un jeu', async () => {
+    let received: { edition: Record<string, unknown> } | undefined;
+    server.use(
+      http.post('/api/copies', async ({ request }) => {
+        received = (await request.json()) as typeof received;
+        return HttpResponse.json(COPY_TINTIN, { status: 201 });
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.selectOptions(screen.getByLabelText('Format'), 'game');
+    await user.type(screen.getByLabelText('Console'), 'PS5');
+    await user.selectOptions(screen.getByLabelText('Format'), 'bluray');
+    await user.type(screen.getByLabelText('Titre'), 'Alien');
+    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+
+    await screen.findByText('Accueil');
+    expect(received?.edition).toEqual({ format: 'bluray' });
+  });
+
   it('n’envoie pas les champs laissés vides', async () => {
     let received: unknown;
     server.use(
@@ -107,6 +153,36 @@ describe('AddCopyPage — recherche par code-barres', () => {
     return user;
   }
 
+  it('reprend format et console d’un jeu trouvé par son code-barres', async () => {
+    stubLookup(200, {
+      barcode: '0045496590741',
+      kind: 'ean',
+      source: 'upcitemdb',
+      known: false,
+      suggestion: {
+        work: {
+          title: 'Super Mario Odyssey',
+          series: null,
+          volumeNumber: null,
+          creators: null,
+          year: null,
+        },
+        edition: {
+          format: 'game',
+          publisher: 'Nintendo',
+          releaseYear: null,
+          language: null,
+          console: 'Nintendo Switch',
+        },
+      },
+    });
+    await searchFor('0045496590741');
+
+    await screen.findByRole('status');
+    expect(screen.getByLabelText('Format')).toHaveValue('game');
+    expect(screen.getByLabelText('Console')).toHaveValue('Nintendo Switch');
+  });
+
   it('désactive la recherche tant qu’aucun code n’est saisi', async () => {
     const user = userEvent.setup();
     renderPage();
@@ -138,7 +214,13 @@ describe('AddCopyPage — recherche par code-barres', () => {
       ...BARCODE_TINTIN,
       suggestion: {
         work: { title: 'Alien', series: null, volumeNumber: null, creators: null, year: null },
-        edition: { format: null, publisher: null, releaseYear: null, language: null },
+        edition: {
+          format: null,
+          publisher: null,
+          releaseYear: null,
+          language: null,
+          console: null,
+        },
       },
     });
     const user = userEvent.setup();
@@ -246,7 +328,13 @@ describe('AddCopyPage — recherche par titre', () => {
         source: 'tmdb',
         suggestion: {
           work: { title: 'Tintin', series: null, volumeNumber: null, creators: null, year: 2011 },
-          edition: { format: null, publisher: null, releaseYear: null, language: null },
+          edition: {
+            format: null,
+            publisher: null,
+            releaseYear: null,
+            language: null,
+            console: null,
+          },
         },
       },
     ],

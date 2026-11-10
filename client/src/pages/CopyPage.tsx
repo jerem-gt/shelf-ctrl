@@ -43,9 +43,15 @@ function CopyDetails({ copy }: Readonly<{ copy: CopyItem }>) {
   return (
     <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
       <DetailItem label={t('detail.format')} value={t(`formats.${edition.format}`)} />
+      {edition.format === 'game' && (
+        <DetailItem label={t('detail.console')} value={edition.console} />
+      )}
       <DetailItem label={t('detail.barcode')} value={edition.barcode} />
       <DetailItem label={t('detail.publisher')} value={edition.publisher} />
-      <DetailItem label={t('detail.creators')} value={work.creators} />
+      <DetailItem
+        label={edition.format === 'game' ? t('detail.developers') : t('detail.creators')}
+        value={work.creators}
+      />
       <DetailItem label={t('detail.condition')} value={t(`conditions.${copy.condition}`)} />
       <DetailItem label={t('detail.conditionNote')} value={copy.conditionNote} />
       <DetailItem label={t('detail.location')} value={copy.location} />

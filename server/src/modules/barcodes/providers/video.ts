@@ -24,7 +24,7 @@ const BARE_FORMAT = new RegExp(String.raw`\s*[-–:,/+]?\s*\b(?:${FORMAT_WORDS})
 const SEPARATORS = new Set([' ', '-', '–', ':', ',', '/', '+']);
 
 /** Retire les séparateurs en début et en fin de chaîne (une regex ancrée serait super-linéaire). */
-function trimSeparators(value: string): string {
+export function trimSeparators(value: string): string {
   let start = 0;
   let end = value.length;
   while (start < end && SEPARATORS.has(value.charAt(start))) {

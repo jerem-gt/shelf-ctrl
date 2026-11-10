@@ -8,7 +8,7 @@ import type { BarcodeProvider } from './providers/types.js';
 
 const suggestion = (title: string): BarcodeSuggestion => ({
   work: { title, series: null, volumeNumber: null, creators: null, year: null },
-  edition: { format: 'book', publisher: null, releaseYear: null, language: null },
+  edition: { format: 'book', publisher: null, releaseYear: null, language: null, console: null },
 });
 
 function fakeProvider(

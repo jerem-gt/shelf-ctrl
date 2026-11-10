@@ -37,19 +37,21 @@ const TEMPLATES: Record<ShelfLang, { fileName: string; lines: readonly string[] 
   fr: {
     fileName: 'shelfctrl-modele.csv',
     lines: [
-      'Titre;Série;Tome;Auteurs;Format;Code-barres;Éditeur;Année;Langue;État;Note;Emplacement',
-      'Tintin au Tibet;Tintin;20;Hergé;Livre;9782203001190;Casterman;1960;fr;Très bon état;;Salon',
-      'Alien;;;Ridley Scott;Blu-ray;;;1979;fr;Bon état;Boîtier fissuré;Chambre',
-      ';;;;;9782070612758;;;;;;',
+      'Titre;Série;Tome;Auteurs;Format;Console;Code-barres;Éditeur;Année;Langue;État;Note;Emplacement',
+      'Tintin au Tibet;Tintin;20;Hergé;Livre;;9782203001190;Casterman;1960;fr;Très bon état;;Salon',
+      'Alien;;;Ridley Scott;Blu-ray;;;;1979;fr;Bon état;Boîtier fissuré;Chambre',
+      'Super Mario Odyssey;Super Mario;;Nintendo EPD;Jeu vidéo;Nintendo Switch;;Nintendo;2017;fr;Très bon état;Sans notice;Salon',
+      ';;;;;;9782070612758;;;;;;',
     ],
   },
   en: {
     fileName: 'shelfctrl-template.csv',
     lines: [
-      'Title;Series;Volume;Authors;Format;Barcode;Publisher;Year;Language;Condition;Note;Location',
-      'Tintin in Tibet;Tintin;20;Hergé;Book;;Egmont;1962;en;Very good;;Living room',
-      'Alien;;;Ridley Scott;Blu-ray;;;1979;en;Good;Cracked case;Bedroom',
-      ';;;;;9780156012195;;;;;;',
+      'Title;Series;Volume;Authors;Format;Console;Barcode;Publisher;Year;Language;Condition;Note;Location',
+      'Tintin in Tibet;Tintin;20;Hergé;Book;;;Egmont;1962;en;Very good;;Living room',
+      'Alien;;;Ridley Scott;Blu-ray;;;;1979;en;Good;Cracked case;Bedroom',
+      'Super Mario Odyssey;Super Mario;;Nintendo EPD;Video game;Nintendo Switch;;Nintendo;2017;en;Very good;No manual;Living room',
+      ';;;;;;9780156012195;;;;;;',
     ],
   },
 };
@@ -85,6 +87,7 @@ function fillFromSuggestion(draft: RowDraft, found: BarcodeLookupResponse): RowD
     creators: draft.creators ?? work.creators,
     workYear: draft.workYear ?? work.year,
     format: draft.format ?? edition.format,
+    console: draft.console ?? edition.console,
     publisher: draft.publisher ?? edition.publisher,
     releaseYear: draft.releaseYear ?? edition.releaseYear,
     language: draft.language ?? edition.language,
@@ -102,6 +105,7 @@ function toCreateInput(draft: RowDraft) {
     },
     edition: {
       format: draft.format,
+      console: draft.console,
       barcode: draft.barcode,
       publisher: draft.publisher,
       releaseYear: draft.releaseYear,
@@ -119,6 +123,7 @@ const FIELD_BY_PATH: Record<string, ImportField> = {
   volumeNumber: 'volume',
   creators: 'creators',
   format: 'format',
+  console: 'console',
   barcode: 'barcode',
   publisher: 'publisher',
   releaseYear: 'year',
@@ -128,12 +133,21 @@ const FIELD_BY_PATH: Record<string, ImportField> = {
   location: 'location',
 };
 
+interface TitleKeyParts {
+  title: string;
+  series: string | null;
+  volume: number | null;
+  format: string;
+  console: string | null;
+}
+
 /**
- * Clé d'une édition sans code-barres : titre, série, tome et support, casse ignorée. La
+ * Clé d'une édition sans code-barres : titre, série, tome, support et console, casse ignorée. La
  * comparaison se fait en JavaScript des deux côtés, car `lower()` de SQLite ne replie que l'ASCII.
  */
-function titleKey(title: string, series: string | null, volume: number | null, format: string) {
-  return `titre:${title.toLowerCase()}|${series?.toLowerCase() ?? ''}|${volume ?? ''}|${format}`;
+function titleKey({ title, series, volume, format, console: gameConsole }: TitleKeyParts) {
+  const parts = [title, series ?? '', volume ?? '', format, gameConsole ?? ''];
+  return `titre:${parts.map((part) => String(part).toLowerCase()).join('|')}`;
 }
 
 /** Résultat de `work`, ou `fallback` s'il échoue : une source en panne ne doit rien interrompre. */
@@ -153,23 +167,14 @@ export function createImportService(db: Database, deps: ImportDeps) {
 
   const barcodeKnown = db.prepare('SELECT 1 FROM editions WHERE user_id = ? AND barcode = ?');
   const editionTitles = db.prepare(
-    `SELECT w.title, w.series, w.volume_number AS volume, e.format
+    `SELECT w.title, w.series, w.volume_number AS volume, e.format, e.console
      FROM editions e JOIN works w ON w.id = e.work_id
      WHERE e.user_id = ?`,
   );
 
   /** Clés « titre » des éditions de la collection du compte, lues une fois par aperçu. */
   const loadKnownTitles = (userId: number): Set<string> =>
-    new Set(
-      (
-        editionTitles.all(userId) as {
-          title: string;
-          series: string | null;
-          volume: number | null;
-          format: string;
-        }[]
-      ).map((row) => titleKey(row.title, row.series, row.volume, row.format)),
-    );
+    new Set((editionTitles.all(userId) as TitleKeyParts[]).map(titleKey));
 
   /** Clé d'identité d'une édition : le code-barres, à défaut titre, série, tome et support. */
   const identityOf = (draft: RowDraft): string | null => {
@@ -179,7 +184,13 @@ export function createImportService(db: Database, deps: ImportDeps) {
     if (draft.title === null || draft.format === null) {
       return null;
     }
-    return titleKey(draft.title, draft.series, draft.volumeNumber, draft.format);
+    return titleKey({
+      title: draft.title,
+      series: draft.series,
+      volume: draft.volumeNumber,
+      format: draft.format,
+      console: draft.format === 'game' ? draft.console : null,
+    });
   };
 
   const existsInCollection = (

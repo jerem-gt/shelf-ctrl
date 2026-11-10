@@ -1,12 +1,14 @@
-import type {
-  BarcodeKind,
-  CopyCondition,
-  ImportField,
-  ImportIssue,
-  ImportIssueCode,
-  MediaFormat,
+import {
+  type BarcodeKind,
+  CONSOLE_MAX_LENGTH,
+  type CopyCondition,
+  type ImportField,
+  type ImportIssue,
+  type ImportIssueCode,
+  type MediaFormat,
 } from '@shelfctrl/types';
 
+import { normalizeConsole } from '../../lib/consoles.js';
 import { BadRequestError } from '../../lib/errors.js';
 import { parseBarcode } from '../barcodes/barcode.js';
 import { mapHeaders, parseCondition, parseFormat } from './columns.js';
@@ -22,6 +24,7 @@ const MAX_LENGTH: Partial<Record<ImportField, number>> = {
   note: 500,
   location: 100,
   language: 20,
+  console: CONSOLE_MAX_LENGTH,
 };
 
 const VOLUME = /^(?:t|tome|vol\.?|volume)?\s*(\d{1,4})$/i;
@@ -38,6 +41,8 @@ export interface RowDraft {
   /** Année de l'œuvre : jamais dans le fichier, mais reprise de la fiche trouvée en ligne. */
   workYear: number | null;
   format: MediaFormat | null;
+  /** Console d'un jeu vidéo, sous son nom connu quand on la reconnaît. */
+  console: string | null;
   barcode: string | null;
   barcodeKind: BarcodeKind | null;
   publisher: string | null;
@@ -116,9 +121,15 @@ function parseRow(line: number, cells: Cells): ParsedRow {
     issues.push({ code: 'missing_title', field: 'title' });
   }
 
-  // Un livre sans précision reste un livre ; un code vidéo (EAN) ne dit pas DVD, Blu-ray ou 4K.
-  const impliedFormat: MediaFormat | null =
-    barcode === null || barcode.kind === 'isbn' ? 'book' : null;
+  const gameConsole = text('console');
+  // Une console désigne un jeu vidéo ; sinon un livre sans précision reste un livre, et un code
+  // EAN ne dit pas s'il s'agit d'un DVD, d'un Blu-ray, d'un 4K ou d'un jeu.
+  let impliedFormat: MediaFormat | null = null;
+  if (gameConsole !== null) {
+    impliedFormat = 'game';
+  } else if (barcode === null || barcode.kind === 'isbn') {
+    impliedFormat = 'book';
+  }
 
   return {
     line,
@@ -130,6 +141,7 @@ function parseRow(line: number, cells: Cells): ParsedRow {
       creators: text('creators'),
       workYear: null,
       format: format ?? (cell('format') === null ? impliedFormat : null),
+      console: gameConsole === null ? null : normalizeConsole(gameConsole),
       barcode: barcode?.code ?? null,
       barcodeKind: barcode?.kind ?? null,
       publisher: text('publisher'),

@@ -9,6 +9,7 @@ interface KnownEditionRow {
   publisher: string | null;
   release_year: number | null;
   language: string | null;
+  console: string | null;
   title: string;
   series: string | null;
   volume_number: number | null;
@@ -20,7 +21,7 @@ export function createBarcodesService(db: Database, providers: readonly BarcodeP
   const findKnown = (userId: number, barcode: ParsedBarcode): BarcodeLookupResponse | null => {
     const row = db
       .prepare(
-        `SELECT e.format, e.publisher, e.release_year, e.language,
+        `SELECT e.format, e.publisher, e.release_year, e.language, e.console,
                 w.title, w.series, w.volume_number, w.creators, w.year
          FROM editions e JOIN works w ON w.id = e.work_id
          WHERE e.user_id = ? AND e.barcode = ?`,
@@ -47,6 +48,7 @@ export function createBarcodesService(db: Database, providers: readonly BarcodeP
           publisher: row.publisher,
           releaseYear: row.release_year,
           language: row.language,
+          console: row.console,
         },
       },
     };

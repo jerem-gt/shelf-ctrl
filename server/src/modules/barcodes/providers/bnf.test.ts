@@ -102,7 +102,13 @@ describe('BnF', () => {
         creators: 'Hergé',
         year: null,
       },
-      edition: { format: 'book', publisher: 'Casterman', releaseYear: 1991, language: 'fr' },
+      edition: {
+        format: 'book',
+        publisher: 'Casterman',
+        releaseYear: 1991,
+        language: 'fr',
+        console: null,
+      },
     });
   });
 
@@ -214,7 +220,13 @@ describe('BnF', () => {
         creators: 'Jean-Claude Mézières, Pierre Christin',
         year: null,
       },
-      edition: { format: 'book', publisher: 'Dargaud', releaseYear: 2007, language: 'fr' },
+      edition: {
+        format: 'book',
+        publisher: 'Dargaud',
+        releaseYear: 2007,
+        language: 'fr',
+        console: null,
+      },
     });
   });
 

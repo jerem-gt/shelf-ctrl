@@ -4,6 +4,7 @@ import { http, HttpResponse } from 'msw';
 import { Route, Routes } from 'react-router';
 import { describe, expect, it } from 'vitest';
 
+import { COPY_ODYSSEY } from '@/tests/fixtures';
 import { apiError } from '@/tests/msw/apiError';
 import { server } from '@/tests/msw/server';
 import { renderWithProviders } from '@/tests/renderWithProviders';
@@ -39,6 +40,17 @@ describe('CopyPage — consultation', () => {
       'href',
       '/',
     );
+  });
+
+  it('affiche la console et le studio d’un jeu vidéo', async () => {
+    server.use(http.get('/api/copies/:id', () => HttpResponse.json(COPY_ODYSSEY)));
+    renderPage(3);
+
+    expect(await screen.findByText('Jeu vidéo')).toBeInTheDocument();
+    expect(screen.getByText('Console')).toBeInTheDocument();
+    expect(screen.getByText('Nintendo Switch')).toBeInTheDocument();
+    expect(screen.getByText('Studio')).toBeInTheDocument();
+    expect(screen.getByText('Nintendo EPD')).toBeInTheDocument();
   });
 
   it('affiche les sections prêts et vente en consultation, pas pendant une modification', async () => {

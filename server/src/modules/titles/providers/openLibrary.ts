@@ -59,6 +59,7 @@ export function createOpenLibraryTitleSearch(fetchFn: FetchFn = fetch): TitleSea
             publisher: doc.publisher?.[0] ?? null,
             releaseYear: null,
             language: null,
+            console: null,
           },
         },
       }));

@@ -39,7 +39,13 @@ export function createTmdbTitleSearch(
             creators: null,
             year: extractYear(movie.release_date),
           },
-          edition: { format: null, publisher: null, releaseYear: null, language: null },
+          edition: {
+            format: null,
+            publisher: null,
+            releaseYear: null,
+            language: null,
+            console: null,
+          },
         },
       }));
     },

@@ -30,8 +30,12 @@ const HEADER_ALIASES: Record<ImportField, readonly string[]> = {
     'author',
     'authors',
     'director',
+    'studio',
+    'developpeur',
+    'developer',
   ],
   format: ['format', 'support', 'type'],
+  console: ['console', 'plateforme', 'platform', 'systeme', 'system'],
   barcode: [
     'code barres',
     'code barre',
@@ -95,6 +99,7 @@ const FORMAT_VALUES: Record<MediaFormat, readonly string[]> = {
   dvd: ['dvd'],
   bluray: ['bluray', 'blu ray', 'bluray disc'],
   uhd4k: ['uhd4k', 'uhd', '4k', '4k uhd', 'uhd 4k', 'ultra hd'],
+  game: ['game', 'jeu', 'jeux', 'jeu video', 'jeux video', 'video game', 'videogame', 'jv'],
 };
 
 const CONDITION_VALUES: Record<CopyCondition, readonly string[]> = {

@@ -1,4 +1,10 @@
-import { COPY_STATUSES, type CopyStatus, MEDIA_FORMATS, type MediaFormat } from '@shelfctrl/types';
+import {
+  COPY_STATUSES,
+  type CopyStatus,
+  GAME_CONSOLES,
+  MEDIA_FORMATS,
+  type MediaFormat,
+} from '@shelfctrl/types';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -24,15 +30,21 @@ export function CollectionPage() {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [format, setFormat] = useState<MediaFormat | ''>('');
+  // Filtre des jeux vidéo seulement : une console précise (les autres se cherchent par texte).
+  const [gameConsole, setGameConsole] = useState('');
   const [status, setStatus] = useState<CopyStatus | ''>('');
+  const consoleFilter = format === 'game' ? gameConsole : '';
 
   const q = useDebouncedValue(search.trim(), 300);
   const filters: CopyFilters = {
     q: q || undefined,
     format: format || undefined,
+    console: consoleFilter || undefined,
     status: status || undefined,
   };
-  const hasFilters = Boolean(q || format || status);
+  const hasFilters = Boolean(q || format || consoleFilter || status);
+  const filterColumns =
+    format === 'game' ? 'sm:grid-cols-[1fr_auto_auto_auto]' : 'sm:grid-cols-[1fr_auto_auto]';
   const { data, isPending, error, refetch } = useCopies(filters);
 
   let content;
@@ -85,7 +97,7 @@ export function CollectionPage() {
         </Link>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto]">
+      <div className={`grid gap-3 ${filterColumns}`}>
         <label className="flex flex-col gap-1 text-sm">
           <span className="sr-only">{t('collection.searchLabel')}</span>
           <input
@@ -118,6 +130,27 @@ export function CollectionPage() {
             ))}
           </select>
         </label>
+
+        {format === 'game' && (
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="sr-only">{t('collection.consoleFilter')}</span>
+            <select
+              value={gameConsole}
+              onChange={(event) => setGameConsole(event.target.value)}
+              aria-label={t('collection.consoleFilter')}
+              className={FIELD_CLASS}
+            >
+              <option value="">
+                {t('collection.consoleFilter')} : {t('collection.all')}
+              </option>
+              {GAME_CONSOLES.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <label className="flex flex-col gap-1 text-sm">
           <span className="sr-only">{t('collection.statusFilter')}</span>

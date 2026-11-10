@@ -1,0 +1,21 @@
+import { findMatchingGame, type IgdbClient } from '../../barcodes/providers/igdb.js';
+import { type CoverProvider, type FetchFn, fetchImage } from './types.js';
+
+/**
+ * Jaquettes de jeux vidéo par titre (IGDB ne cherche pas par code-barres). On ne retient qu'un
+ * jeu dont le titre correspond, et dont l'année concorde quand on la connaît.
+ */
+export function createIgdbCoverProvider(
+  client: IgdbClient,
+  fetchFn: FetchFn = fetch,
+): CoverProvider {
+  return {
+    source: 'igdb',
+    supports: (query) => query.format === 'game',
+    async find(query) {
+      const games = (await client.searchGames(query.title, 10)).filter((game) => game.coverUrl);
+      const match = findMatchingGame(games, query.title, query.year);
+      return match?.coverUrl ? fetchImage(fetchFn, match.coverUrl) : null;
+    },
+  };
+}

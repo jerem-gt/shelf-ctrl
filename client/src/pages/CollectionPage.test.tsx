@@ -63,6 +63,22 @@ describe('CollectionPage', () => {
     expect(await screen.findByText('Aucun résultat pour ces critères.')).toBeInTheDocument();
   });
 
+  it('propose un filtre de console pour les seuls jeux vidéo', async () => {
+    const searches = captureSearches();
+    const user = userEvent.setup();
+    renderWithProviders(<CollectionPage />);
+
+    expect(screen.queryByRole('combobox', { name: 'Console' })).not.toBeInTheDocument();
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Format' }), 'game');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Console' }), 'Nintendo Switch');
+    await waitFor(() => expect(searches).toContain('?format=game&console=Nintendo+Switch'));
+
+    // Revenir à un autre format retire le filtre de console.
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Format' }), 'dvd');
+    await waitFor(() => expect(searches).toContain('?format=dvd'));
+    expect(screen.queryByRole('combobox', { name: 'Console' })).not.toBeInTheDocument();
+  });
+
   it('interroge l’API avec les filtres de format et de statut', async () => {
     const searches = captureSearches();
     const user = userEvent.setup();

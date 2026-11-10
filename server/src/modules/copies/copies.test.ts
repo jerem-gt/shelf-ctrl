@@ -87,6 +87,37 @@ describe('POST /api/copies', () => {
     expect(res.body.error.code).toBe('validation.invalid');
   });
 
+  it('enregistre la console d’un jeu vidéo, et seulement d’un jeu', async () => {
+    const { app } = setup();
+    const game = await request(app)
+      .post('/api/copies')
+      .send({
+        work: { title: 'Super Mario Odyssey', creators: 'Nintendo EPD' },
+        edition: { format: 'game', console: 'Nintendo Switch', publisher: 'Nintendo' },
+      });
+    const movie = await request(app)
+      .post('/api/copies')
+      .send({ work: { title: 'Alien' }, edition: { format: 'bluray', console: 'PS5' } });
+
+    expect(game.status).toBe(201);
+    expect(game.body.edition).toMatchObject({ format: 'game', console: 'Nintendo Switch' });
+    expect(movie.body.edition.console).toBeNull();
+  });
+
+  it('distingue un même jeu sur deux consoles', async () => {
+    const { app, db } = setup();
+    const zelda = (gameConsole: string) => ({
+      work: { title: 'Zelda' },
+      edition: { format: 'game', console: gameConsole },
+    });
+    const wiiU = await request(app).post('/api/copies').send(zelda('Wii U'));
+    const switchCopy = await request(app).post('/api/copies').send(zelda('Nintendo Switch'));
+
+    expect(switchCopy.body.edition.id).not.toBe(wiiU.body.edition.id);
+    expect(switchCopy.body.work.id).toBe(wiiU.body.work.id);
+    expect(db.prepare('SELECT COUNT(*) AS n FROM editions').get()).toEqual({ n: 2 });
+  });
+
   it('rejette un JSON mal formé', async () => {
     const { app } = setup();
     const res = await request(app)
@@ -147,6 +178,28 @@ describe('GET /api/copies', () => {
     const loaned = await request(app).get('/api/copies?status=loaned');
     expect(loaned.body.total).toBe(1);
     expect(loaned.body.items[0].status).toBe('loaned');
+  });
+
+  it('filtre les jeux par console, casse ignorée, et cherche dans la console', async () => {
+    const { app } = setup();
+    const add = (title: string, gameConsole: string) =>
+      request(app)
+        .post('/api/copies')
+        .send({ work: { title }, edition: { format: 'game', console: gameConsole } });
+    await add('Super Mario Odyssey', 'Nintendo Switch');
+    await add('Gran Turismo 7', 'PlayStation 5');
+
+    const byConsole = await request(app)
+      .get('/api/copies')
+      .query({ format: 'game', console: 'nintendo switch' });
+    const bySearch = await request(app).get('/api/copies').query({ q: 'playstation' });
+
+    expect(byConsole.body.items.map((c: { work: { title: string } }) => c.work.title)).toEqual([
+      'Super Mario Odyssey',
+    ]);
+    expect(bySearch.body.items.map((c: { work: { title: string } }) => c.work.title)).toEqual([
+      'Gran Turismo 7',
+    ]);
   });
 
   it('traite % comme un caractère littéral', async () => {

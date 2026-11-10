@@ -27,6 +27,7 @@ export const COPY_TINTIN: CopyItem = {
     publisher: 'Casterman',
     releaseYear: null,
     language: null,
+    console: null,
     coverPath: null,
   },
   work: {
@@ -54,9 +55,38 @@ export const COPY_ALIEN: CopyItem = {
     publisher: null,
     releaseYear: null,
     language: null,
+    console: null,
     coverPath: null,
   },
   work: { id: 2, title: 'Alien', series: null, volumeNumber: null, creators: null, year: null },
+};
+
+export const COPY_ODYSSEY: CopyItem = {
+  id: 3,
+  status: 'owned',
+  condition: 'very_good',
+  conditionNote: 'Sans notice',
+  location: 'Salon',
+  photoPath: null,
+  createdAt: '2026-10-14 12:00:00',
+  edition: {
+    id: 3,
+    format: 'game',
+    barcode: '0045496590741',
+    publisher: 'Nintendo',
+    releaseYear: 2017,
+    language: null,
+    console: 'Nintendo Switch',
+    coverPath: null,
+  },
+  work: {
+    id: 3,
+    title: 'Super Mario Odyssey',
+    series: 'Super Mario',
+    volumeNumber: null,
+    creators: 'Nintendo EPD',
+    year: 2017,
+  },
 };
 
 export const COPIES = [COPY_TINTIN, COPY_ALIEN];
@@ -74,7 +104,13 @@ export const BARCODE_TINTIN: BarcodeLookupResponse = {
       creators: 'Hergé',
       year: null,
     },
-    edition: { format: 'book', publisher: 'Casterman', releaseYear: 1960, language: null },
+    edition: {
+      format: 'book',
+      publisher: 'Casterman',
+      releaseYear: 1960,
+      language: null,
+      console: null,
+    },
   },
 };
 

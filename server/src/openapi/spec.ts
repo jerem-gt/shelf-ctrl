@@ -49,7 +49,7 @@ export function buildOpenApiSpec() {
     info: {
       title: 'ShelfCtrl API',
       version: '1.0.0',
-      description: 'API REST interne de ShelfCtrl (collection de BD, DVD et Blu-ray).',
+      description: 'API REST interne de ShelfCtrl (collection de BD, DVD, Blu-ray et jeux vidéo).',
     },
     components: {
       schemas: { Error: errorSchema(Object.keys(ERROR_MESSAGES)) },
@@ -66,7 +66,7 @@ export function buildOpenApiSpec() {
       '/api/copies': {
         get: {
           tags: ['Exemplaires'],
-          summary: 'Liste des exemplaires (recherche, format, statut, pagination)',
+          summary: 'Liste des exemplaires (recherche, format, console, statut, pagination)',
           security: sessionAuth,
           parameters: queryParams(listCopiesSchema),
           responses: { ...r200(), ...r400 },

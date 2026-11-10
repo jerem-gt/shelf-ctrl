@@ -122,6 +122,21 @@ describe('parseTable', () => {
     expect(rows[2].issues).toEqual([]);
   });
 
+  it('suppose un jeu vidéo quand une console est donnée, et la normalise', () => {
+    const { rows } = parseTable(
+      table(
+        ['Titre', 'Plateforme', 'Code-barres', 'Support'],
+        ['Halo 3', 'xbox 360', '0882224434478', ''],
+        ['Tetris', 'Atari Jaguar', '', 'Jeu vidéo'],
+      ),
+    );
+
+    expect(rows.map((row) => [row.draft.format, row.draft.console])).toEqual([
+      ['game', 'Xbox 360'],
+      ['game', 'Atari Jaguar'],
+    ]);
+  });
+
   it('ne suppose pas de format quand la valeur donnée est invalide', () => {
     const { rows } = parseTable(table(['Titre', 'Format'], ['X', 'cassette']));
 

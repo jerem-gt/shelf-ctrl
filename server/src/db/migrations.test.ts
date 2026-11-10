@@ -12,7 +12,7 @@ const tables = (db: Db) =>
   ).map((row) => row.name);
 const version = (db: Db) => db.pragma('user_version', { simple: true });
 /** Nombre de migrations livrées. */
-const LATEST_VERSION = 3;
+const LATEST_VERSION = 4;
 const addUser = (db: Db, username: string) =>
   Number(
     db.prepare("INSERT INTO users (username, password_hash) VALUES (?, 'hash')").run(username)
@@ -203,6 +203,30 @@ describe('runMigrations', () => {
         .get(adminId),
     ).toEqual({ totp_secret: null, totp_enabled: 0, totp_last_step: null });
     expect(tables(db)).toContain('trusted_devices');
+  });
+
+  it('accepte les jeux vidéo et leur console sans toucher aux éditions existantes', () => {
+    const { db, adminId } = legacyDb();
+
+    runMigrations(db);
+
+    expect(db.prepare('SELECT id, format, console, cover_path FROM editions').all()).toEqual([
+      { id: 1, format: 'book', console: null, cover_path: '1-0123456789.webp' },
+    ]);
+    const workId = db
+      .prepare("INSERT INTO works (user_id, title) VALUES (?, 'Zelda')")
+      .run(adminId).lastInsertRowid;
+    db.prepare(
+      "INSERT INTO editions (user_id, work_id, format, console) VALUES (?, ?, 'game', 'Nintendo Switch')",
+    ).run(adminId, workId);
+    expect(() =>
+      db
+        .prepare("INSERT INTO editions (user_id, work_id, format) VALUES (?, ?, 'vhs')")
+        .run(adminId, workId),
+    ).toThrow();
+    // Les exemplaires suivent toujours leur édition : la cascade est en place.
+    db.prepare('DELETE FROM editions WHERE id = 1').run();
+    expect(db.prepare('SELECT COUNT(*) AS n FROM copies').get()).toEqual({ n: 0 });
   });
 
   it('refuse deux e-mails identiques', () => {

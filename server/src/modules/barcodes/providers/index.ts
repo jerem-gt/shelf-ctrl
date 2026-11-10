@@ -1,18 +1,20 @@
 import { createBnfProvider } from './bnf.js';
 import { createGoogleBooksProvider } from './googleBooks.js';
+import { createIgdbEnricher, igdbClientFromEnv, type IgdbEnv } from './igdb.js';
 import { createOpenLibraryProvider } from './openLibrary.js';
 import { createTmdbEnricher } from './tmdb.js';
-import type { BarcodeProvider, FetchFn } from './types.js';
+import type { BarcodeProvider, Enricher, FetchFn } from './types.js';
 import { createUpcItemDbProvider } from './upcItemDb.js';
 
-export interface ProviderEnv {
+export interface ProviderEnv extends IgdbEnv {
   GOOGLE_BOOKS_API_KEY?: string;
   TMDB_API_KEY?: string;
 }
 
 /**
  * Chaîne de sources, essayées dans l'ordre pour le type de code concerné.
- * Google Books et TMDB sont optionnels : ils s'activent si leur clé est renseignée.
+ * Google Books, TMDB et IGDB sont optionnels : ils s'activent si leur clé est renseignée.
+ * TMDB fiabilise les fiches de films d'UPCitemdb, IGDB celles de jeux vidéo.
  */
 export function createDefaultProviders(
   env: ProviderEnv = process.env,
@@ -27,13 +29,21 @@ export function createDefaultProviders(
   providers.push(createOpenLibraryProvider(fetchFn));
 
   const upcItemDb = createUpcItemDbProvider(fetchFn);
-  if (env.TMDB_API_KEY) {
-    const enrich = createTmdbEnricher(env.TMDB_API_KEY, fetchFn);
+  const enrichMovie: Enricher | null = env.TMDB_API_KEY
+    ? createTmdbEnricher(env.TMDB_API_KEY, fetchFn)
+    : null;
+  const igdb = igdbClientFromEnv(env, fetchFn);
+  const enrichGame: Enricher | null = igdb ? createIgdbEnricher(igdb) : null;
+  if (enrichMovie || enrichGame) {
     providers.push({
       ...upcItemDb,
       async lookup(code) {
         const suggestion = await upcItemDb.lookup(code);
-        return suggestion ? enrich(suggestion) : null;
+        if (!suggestion) {
+          return null;
+        }
+        const enrich = suggestion.edition.format === 'game' ? enrichGame : enrichMovie;
+        return enrich ? enrich(suggestion) : suggestion;
       },
     });
   } else {

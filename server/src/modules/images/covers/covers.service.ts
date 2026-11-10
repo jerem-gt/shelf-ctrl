@@ -1,16 +1,21 @@
 import type { MediaFormat } from '@shelfctrl/types';
 import type { Database } from 'better-sqlite3';
 
+import { igdbClientFromEnv, type IgdbEnv } from '../../barcodes/providers/igdb.js';
 import type { ImageStore } from '../imageStore.js';
+import { createIgdbCoverProvider } from './igdb.js';
 import { createOpenLibraryCoverProvider } from './openLibrary.js';
 import { createTmdbCoverProvider } from './tmdb.js';
 import type { CoverProvider, FetchFn } from './types.js';
 
-export interface CoverEnv {
+export interface CoverEnv extends IgdbEnv {
   TMDB_API_KEY?: string;
 }
 
-/** Open Library pour les livres ; TMDB pour les films si sa clé est renseignée. */
+/**
+ * Open Library pour les livres ; TMDB pour les films et IGDB pour les jeux vidéo si leurs clés
+ * sont renseignées.
+ */
 export function createDefaultCoverProviders(
   env: CoverEnv = process.env,
   fetchFn: FetchFn = fetch,
@@ -18,6 +23,10 @@ export function createDefaultCoverProviders(
   const providers = [createOpenLibraryCoverProvider(fetchFn)];
   if (env.TMDB_API_KEY) {
     providers.push(createTmdbCoverProvider(env.TMDB_API_KEY, fetchFn));
+  }
+  const igdb = igdbClientFromEnv(env, fetchFn);
+  if (igdb) {
+    providers.push(createIgdbCoverProvider(igdb, fetchFn));
   }
   return providers;
 }
