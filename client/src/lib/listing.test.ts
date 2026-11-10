@@ -2,7 +2,7 @@ import type { CopyItem } from '@shelfctrl/types';
 import { describe, expect, it } from 'vitest';
 
 import i18n from '@/i18n';
-import { COPY_ALIEN, COPY_TINTIN } from '@/tests/fixtures';
+import { COPY_ALIEN, COPY_ODYSSEY, COPY_TINTIN } from '@/tests/fixtures';
 
 import { buildListingDraft } from './listing';
 import { titleLimit } from './platforms';
@@ -27,6 +27,23 @@ describe('buildListingDraft — titre', () => {
 
   it('indique le support pour un film, sans tome ni série', () => {
     expect(build(COPY_ALIEN).title).toBe('Alien - Blu-ray - Bon état');
+  });
+
+  it('indique la console d’un jeu vidéo, à défaut « Jeu vidéo »', () => {
+    expect(build(COPY_ODYSSEY, 'eBay').title).toBe(
+      'Super Mario Odyssey - Nintendo Switch - Très bon état - Nintendo EPD',
+    );
+    const noConsole = { ...COPY_ODYSSEY, edition: { ...COPY_ODYSSEY.edition, console: null } };
+    expect(build(noConsole, 'eBay').title).toContain('Super Mario Odyssey - Jeu vidéo');
+  });
+
+  it('décrit un jeu avec son studio et sa console', () => {
+    const { description } = build(COPY_ODYSSEY);
+
+    expect(description).toContain('Studio : Nintendo EPD');
+    expect(description).toContain('Support : Jeu vidéo');
+    expect(description).toContain('Console : Nintendo Switch');
+    expect(description).not.toContain('Auteurs');
   });
 
   it('abandonne d’abord les auteurs, puis l’état, selon la limite de la plateforme', () => {

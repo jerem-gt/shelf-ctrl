@@ -27,7 +27,7 @@ describe('GET /api/docs/openapi.json', () => {
     const names = res.body.paths['/api/copies'].get.parameters.map(
       (param: { name: string }) => param.name,
     );
-    expect(names).toEqual(['q', 'format', 'status', 'limit', 'offset']);
+    expect(names).toEqual(['q', 'format', 'console', 'status', 'limit', 'offset']);
   });
 
   it("décrit le corps d'erreur, avec les codes du registre", async () => {

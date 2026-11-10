@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { cleanGameTitle } from './game.js';
 import { createGoogleBooksProvider } from './googleBooks.js';
 import { createDefaultProviders } from './index.js';
 import { createOpenLibraryProvider } from './openLibrary.js';
@@ -61,7 +62,13 @@ describe('Open Library', () => {
         creators: 'Hergé',
         year: null,
       },
-      edition: { format: 'book', publisher: 'Casterman', releaseYear: 1960, language: null },
+      edition: {
+        format: 'book',
+        publisher: 'Casterman',
+        releaseYear: 1960,
+        language: null,
+        console: null,
+      },
     });
   });
 
@@ -122,7 +129,13 @@ describe('Google Books', () => {
         creators: 'Edgar P. Jacobs, Autre',
         year: null,
       },
-      edition: { format: 'book', publisher: 'Dargaud', releaseYear: 2012, language: 'fr' },
+      edition: {
+        format: 'book',
+        publisher: 'Dargaud',
+        releaseYear: 2012,
+        language: 'fr',
+        console: null,
+      },
     });
   });
 
@@ -152,7 +165,65 @@ describe('titres vidéo', () => {
   });
 });
 
+describe('titres de jeux vidéo', () => {
+  it.each([
+    ['Super Mario Odyssey - Nintendo Switch', 'Super Mario Odyssey'],
+    ['Gran Turismo 7 (PS5)', 'Gran Turismo 7'],
+    ['FIFA 23 PlayStation 4 Video Game', 'FIFA 23'],
+    ['Halo 3 [Xbox 360] Jeu vidéo', 'Halo 3'],
+    ['The Legend of Zelda: Breath of the Wild', 'The Legend of Zelda: Breath of the Wild'],
+    ['PS4', 'PS4'],
+  ])('nettoie « %s »', (title, cleaned) => {
+    expect(cleanGameTitle(title)).toBe(cleaned);
+  });
+});
+
 describe('UPCitemdb', () => {
+  it('reconnaît un jeu vidéo à sa console, la marque devenant l’éditeur', async () => {
+    const { fetchFn } = fakeFetch({
+      code: 'OK',
+      items: [{ title: 'Super Mario Odyssey - Nintendo Switch', brand: 'Nintendo' }],
+    });
+    const suggestion = await createUpcItemDbProvider(fetchFn).lookup('0045496590741');
+
+    expect(suggestion).toEqual({
+      work: {
+        title: 'Super Mario Odyssey',
+        series: null,
+        volumeNumber: null,
+        creators: null,
+        year: null,
+      },
+      edition: {
+        format: 'game',
+        publisher: 'Nintendo',
+        releaseYear: null,
+        language: null,
+        console: 'Nintendo Switch',
+      },
+    });
+  });
+
+  it('reconnaît un jeu vidéo à sa catégorie, console inconnue', async () => {
+    const { fetchFn } = fakeFetch({
+      code: 'OK',
+      items: [{ title: 'Tetris Effect', category: 'Media > Video Games > Software' }],
+    });
+    const suggestion = await createUpcItemDbProvider(fetchFn).lookup('0045496590741');
+
+    expect(suggestion?.edition).toMatchObject({ format: 'game', publisher: null, console: null });
+  });
+
+  it('laisse un film en film, même rangé près des jeux', async () => {
+    const { fetchFn } = fakeFetch({
+      code: 'OK',
+      items: [{ title: 'The Switch [DVD]', brand: 'Studio', category: 'Video Games' }],
+    });
+    const suggestion = await createUpcItemDbProvider(fetchFn).lookup('3333297329439');
+
+    expect(suggestion?.edition).toMatchObject({ format: 'dvd', publisher: null, console: null });
+  });
+
   it('déduit le titre et le format de l’intitulé produit', async () => {
     const { fetchFn, urls } = fakeFetch({ code: 'OK', items: [{ title: 'Alien [Blu-ray]' }] });
     const suggestion = await createUpcItemDbProvider(fetchFn).lookup('3333297329439');
@@ -186,7 +257,13 @@ describe('TMDB', () => {
       creators: null,
       year: null,
     },
-    edition: { format: 'bluray' as const, publisher: null, releaseYear: null, language: null },
+    edition: {
+      format: 'bluray' as const,
+      publisher: null,
+      releaseYear: null,
+      language: null,
+      console: null,
+    },
   };
 
   it('remplace le titre et l’année quand le film correspond', async () => {
@@ -219,6 +296,54 @@ describe('TMDB', () => {
 });
 
 describe('createDefaultProviders', () => {
+  /** UPCitemdb répond `upc`, TMDB et IGDB répondent chacun de quoi enrichir la fiche. */
+  function routedFetch(upcTitle: string) {
+    const calls: string[] = [];
+    const fetchFn: FetchFn = (input) => {
+      const url = urlOf(input);
+      calls.push(url);
+      let body: unknown = { code: 'OK', items: [{ title: upcTitle }] };
+      if (url.includes('themoviedb')) {
+        body = { results: [{ title: 'Alien', release_date: '1979-05-25' }] };
+      } else if (url.includes('twitch')) {
+        body = { access_token: 'jeton', expires_in: 3600 };
+      } else if (url.includes('igdb')) {
+        body = [{ name: 'Halo 3', first_release_date: 1190073600 }];
+      }
+      return Promise.resolve(new Response(JSON.stringify(body)));
+    };
+    return { fetchFn, calls };
+  }
+  const ALL_KEYS = { TMDB_API_KEY: 'k', IGDB_CLIENT_ID: 'id', IGDB_CLIENT_SECRET: 's' };
+  const upcOf = (providers: ReturnType<typeof createDefaultProviders>) =>
+    providers.find((p) => p.source === 'upcitemdb');
+
+  it('enrichit un jeu avec IGDB et un film avec TMDB, chacun seulement le sien', async () => {
+    const game = routedFetch('Halo 3 Xbox 360');
+    const gameSuggestion = await upcOf(createDefaultProviders(ALL_KEYS, game.fetchFn))?.lookup(
+      '0882224434478',
+    );
+    expect(gameSuggestion?.work).toMatchObject({ title: 'Halo 3', year: 2007 });
+    expect(game.calls.some((url) => url.includes('themoviedb'))).toBe(false);
+
+    const movie = routedFetch('alien blu-ray');
+    const movieSuggestion = await upcOf(createDefaultProviders(ALL_KEYS, movie.fetchFn))?.lookup(
+      '3333297329439',
+    );
+    expect(movieSuggestion?.work).toMatchObject({ title: 'Alien', year: 1979 });
+    expect(movie.calls.some((url) => url.includes('igdb'))).toBe(false);
+  });
+
+  it('laisse une fiche de jeu telle quelle sans identifiants IGDB', async () => {
+    const game = routedFetch('Halo 3 Xbox 360');
+    const suggestion = await upcOf(
+      createDefaultProviders({ TMDB_API_KEY: 'k' }, game.fetchFn),
+    )?.lookup('0882224434478');
+
+    expect(suggestion?.work).toMatchObject({ title: 'Halo 3', year: null });
+    expect(game.calls).toHaveLength(1);
+  });
+
   it('n’active que les sources sans clé par défaut', () => {
     expect(createDefaultProviders({}).map((p) => p.source)).toEqual([
       'bnf',

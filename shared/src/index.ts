@@ -2,8 +2,48 @@
 import type { UserItem as AuthUserItem } from '@jerem-gt/ctrl-shared/server/auth/types';
 
 /** Support physique d'une édition. */
-export const MEDIA_FORMATS = ['book', 'dvd', 'bluray', 'uhd4k'] as const;
+export const MEDIA_FORMATS = ['book', 'dvd', 'bluray', 'uhd4k', 'game'] as const;
 export type MediaFormat = (typeof MEDIA_FORMATS)[number];
+
+/**
+ * Consoles proposées pour un jeu vidéo (`format` = `game`), des plus récentes aux plus anciennes
+ * par constructeur. La console d'une édition reste un texte libre : cette liste n'est qu'une aide.
+ */
+export const GAME_CONSOLES = [
+  'PlayStation 5',
+  'PlayStation 4',
+  'PlayStation 3',
+  'PlayStation 2',
+  'PlayStation',
+  'PS Vita',
+  'PSP',
+  'Nintendo Switch 2',
+  'Nintendo Switch',
+  'Wii U',
+  'Wii',
+  'GameCube',
+  'Nintendo 64',
+  'Super Nintendo',
+  'NES',
+  'Nintendo 3DS',
+  'Nintendo DS',
+  'Game Boy Advance',
+  'Game Boy Color',
+  'Game Boy',
+  'Xbox Series X|S',
+  'Xbox One',
+  'Xbox 360',
+  'Xbox',
+  'PC',
+  'Dreamcast',
+  'Saturn',
+  'Mega Drive',
+  'Master System',
+] as const;
+export type GameConsole = (typeof GAME_CONSOLES)[number];
+
+/** Longueur maximale du nom d'une console. */
+export const CONSOLE_MAX_LENGTH = 50;
 
 /** État d'un exemplaire, du meilleur au pire (aligné sur les échelles Vinted / eBay). */
 export const COPY_CONDITIONS = ['new', 'very_good', 'good', 'acceptable', 'poor'] as const;
@@ -29,6 +69,8 @@ export interface EditionSummary {
   publisher: string | null;
   releaseYear: number | null;
   language: string | null;
+  /** Console d'un jeu vidéo (texte libre, cf. `GAME_CONSOLES`) ; `null` pour les autres formats. */
+  console: string | null;
   /** Nom du fichier de la pochette (servi par `/covers/<nom>`). */
   coverPath: string | null;
 }
@@ -93,10 +135,11 @@ export interface SaleListItem extends SaleItem {
   format: MediaFormat;
 }
 
-/** `isbn` : livre (préfixe 978/979) ; `ean` : tout autre code (vidéo). */
+/** `isbn` : livre (préfixe 978/979) ; `ean` : tout autre code (vidéo, jeu vidéo). */
 export type BarcodeKind = 'isbn' | 'ean';
 
-export type BarcodeSource = 'local' | 'bnf' | 'openlibrary' | 'googlebooks' | 'upcitemdb' | 'tmdb';
+export type BarcodeSource =
+  'local' | 'bnf' | 'openlibrary' | 'googlebooks' | 'upcitemdb' | 'tmdb' | 'igdb';
 
 /** Fiche proposée pour un code-barres : à relire par l'utilisateur avant enregistrement. */
 export interface BarcodeSuggestion {
@@ -106,6 +149,7 @@ export interface BarcodeSuggestion {
     publisher: string | null;
     releaseYear: number | null;
     language: string | null;
+    console: string | null;
   };
 }
 
@@ -147,6 +191,7 @@ export const IMPORT_FIELDS = [
   'volume',
   'creators',
   'format',
+  'console',
   'barcode',
   'publisher',
   'year',

@@ -1,4 +1,9 @@
-import { COPY_CONDITIONS, COPY_STATUSES, MEDIA_FORMATS } from '@shelfctrl/types';
+import {
+  CONSOLE_MAX_LENGTH,
+  COPY_CONDITIONS,
+  COPY_STATUSES,
+  MEDIA_FORMATS,
+} from '@shelfctrl/types';
 import { z } from 'zod';
 
 const text = (max: number) => z.string().trim().min(1).max(max);
@@ -25,6 +30,8 @@ const editionInput = z.object({
   publisher: optionalText(200),
   releaseYear: optionalYear,
   language: optionalText(20),
+  /** Console d'un jeu vidéo ; ignorée pour les autres formats. */
+  console: optionalText(CONSOLE_MAX_LENGTH),
 });
 
 /**
@@ -51,6 +58,8 @@ export const updateCopySchema = z
 export const listCopiesSchema = z.object({
   q: z.string().trim().max(100).optional(),
   format: z.enum(MEDIA_FORMATS).optional(),
+  /** Console exacte (casse ignorée), pour filtrer les jeux vidéo. */
+  console: z.string().trim().min(1).max(CONSOLE_MAX_LENGTH).optional(),
   status: z.enum(COPY_STATUSES).optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),
   offset: z.coerce.number().int().min(0).default(0),

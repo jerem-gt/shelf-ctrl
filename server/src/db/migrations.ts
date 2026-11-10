@@ -46,6 +46,31 @@ const MIGRATIONS: readonly Migration[] = [
   );
   CREATE INDEX idx_trusted_devices_user ON trusted_devices (user_id);
   `,
+  // 4 — jeux vidéo : format `game` et console de l'édition. SQLite ne sait pas modifier un CHECK :
+  // la table est reconstruite (clés étrangères coupées par le runner, les exemplaires restent).
+  `
+  CREATE TABLE editions_new
+  (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id      INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+      work_id      INTEGER NOT NULL REFERENCES works (id) ON DELETE CASCADE,
+      format       TEXT    NOT NULL CHECK (format IN ('book', 'dvd', 'bluray', 'uhd4k', 'game')),
+      barcode      TEXT,
+      publisher    TEXT,
+      release_year INTEGER,
+      language     TEXT,
+      cover_path   TEXT,
+      -- Console d'un jeu vidéo (texte libre) ; NULL pour les autres formats.
+      console      TEXT
+  );
+  INSERT INTO editions_new (id, user_id, work_id, format, barcode, publisher, release_year, language, cover_path)
+  SELECT id, user_id, work_id, format, barcode, publisher, release_year, language, cover_path FROM editions;
+  DROP TABLE editions;
+  ALTER TABLE editions_new RENAME TO editions;
+  CREATE INDEX idx_editions_work ON editions (work_id);
+  CREATE UNIQUE INDEX idx_editions_barcode ON editions (user_id, barcode);
+  CREATE INDEX idx_editions_cover ON editions (cover_path);
+  `,
 ];
 
 /** Tables de données rattachées à un compte par la migration 2. */

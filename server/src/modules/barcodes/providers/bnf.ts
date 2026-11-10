@@ -83,6 +83,7 @@ export function toSuggestion(fields: UnimarcFields): BarcodeSuggestion | null {
       publisher: subfield(publication, 'c') ?? null,
       releaseYear: extractYear(subfield(publication, 'd')),
       language: language ? (LANGUAGES[language] ?? language) : null,
+      console: null,
     },
   };
 }

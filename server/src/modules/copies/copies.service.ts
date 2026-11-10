@@ -24,6 +24,7 @@ interface CopyRow {
   publisher: string | null;
   release_year: number | null;
   language: string | null;
+  console: string | null;
   cover_path: string | null;
   work_id: number;
   title: string;
@@ -35,7 +36,7 @@ interface CopyRow {
 
 const SELECT_COPIES = `
   SELECT c.id, cs.status, c.condition, c.condition_note, c.location, c.photo_path, c.created_at,
-         e.id AS edition_id, e.format, e.barcode, e.publisher, e.release_year, e.language, e.cover_path,
+         e.id AS edition_id, e.format, e.barcode, e.publisher, e.release_year, e.language, e.console, e.cover_path,
          w.id AS work_id, w.title, w.series, w.volume_number, w.creators, w.year
   FROM copies c
   JOIN copy_status cs ON cs.copy_id = c.id
@@ -58,6 +59,7 @@ function toCopyItem(row: CopyRow): CopyItem {
       publisher: row.publisher,
       releaseYear: row.release_year,
       language: row.language,
+      console: row.console,
       coverPath: row.cover_path,
     },
     work: {
@@ -120,8 +122,8 @@ export function createCopiesService(db: Database) {
     }
     const result = db
       .prepare(
-        `INSERT INTO editions (user_id, work_id, format, barcode, publisher, release_year, language)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO editions (user_id, work_id, format, barcode, publisher, release_year, language, console)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         userId,
@@ -131,6 +133,8 @@ export function createCopiesService(db: Database) {
         input.edition.publisher ?? null,
         input.edition.releaseYear ?? null,
         input.edition.language ?? null,
+        // Seul un jeu vidéo a une console.
+        input.edition.format === 'game' ? (input.edition.console ?? null) : null,
       );
     return Number(result.lastInsertRowid);
   };
@@ -162,13 +166,17 @@ export function createCopiesService(db: Database) {
       if (query.q) {
         const like = `%${escapeLike(query.q)}%`;
         clauses.push(
-          String.raw`(w.title LIKE ? ESCAPE '\' OR w.series LIKE ? ESCAPE '\' OR w.creators LIKE ? ESCAPE '\' OR e.barcode LIKE ? ESCAPE '\')`,
+          String.raw`(w.title LIKE ? ESCAPE '\' OR w.series LIKE ? ESCAPE '\' OR w.creators LIKE ? ESCAPE '\' OR e.barcode LIKE ? ESCAPE '\' OR e.console LIKE ? ESCAPE '\')`,
         );
-        params.push(like, like, like, like);
+        params.push(like, like, like, like, like);
       }
       if (query.format) {
         clauses.push('e.format = ?');
         params.push(query.format);
+      }
+      if (query.console) {
+        clauses.push('e.console = ? COLLATE NOCASE');
+        params.push(query.console);
       }
       if (query.status) {
         clauses.push('cs.status = ?');

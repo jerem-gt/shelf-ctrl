@@ -23,7 +23,7 @@ const POSTER_BASE = 'https://image.tmdb.org/t/p/w500';
 export function createTmdbCoverProvider(apiKey: string, fetchFn: FetchFn = fetch): CoverProvider {
   return {
     source: 'tmdb',
-    supports: (query) => query.format !== 'book',
+    supports: (query) => query.format !== 'book' && query.format !== 'game',
     async find(query) {
       const params = new URLSearchParams({
         api_key: apiKey,

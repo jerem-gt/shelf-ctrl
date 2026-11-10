@@ -53,6 +53,7 @@ export function createOpenLibraryProvider(fetchFn: FetchFn = fetch): BarcodeProv
           publisher: entry.publishers?.[0]?.name ?? null,
           releaseYear: extractYear(entry.publish_date),
           language: null,
+          console: null,
         },
       };
     },

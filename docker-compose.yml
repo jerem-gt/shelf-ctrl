@@ -22,6 +22,9 @@ services:
       - LOG_LEVEL=INFO
       - GOOGLE_BOOKS_API_KEY=${GOOGLE_BOOKS_API_KEY:-}
       - TMDB_API_KEY=${TMDB_API_KEY:-}
+      # Jeux vidéo (recherche par titre, fiches, jaquettes) : application Twitch, facultative
+      - IGDB_CLIENT_ID=${IGDB_CLIENT_ID:-}
+      - IGDB_CLIENT_SECRET=${IGDB_CLIENT_SECRET:-}
       # E-mails « mot de passe oublié » : variables de la stack, facultatives (sans SMTP, le lien est dans les logs)
       - APP_URL=${APP_URL:-}
       - SMTP_HOST=${SMTP_HOST:-}
@@ -52,6 +55,9 @@ services:
       - LOG_LEVEL=INFO
       - GOOGLE_BOOKS_API_KEY=${GOOGLE_BOOKS_API_KEY:-}
       - TMDB_API_KEY=${TMDB_API_KEY:-}
+      # Jeux vidéo (recherche par titre, fiches, jaquettes) : application Twitch, facultative
+      - IGDB_CLIENT_ID=${IGDB_CLIENT_ID:-}
+      - IGDB_CLIENT_SECRET=${IGDB_CLIENT_SECRET:-}
       # Même SMTP que la prod ; l'URL publique change et le nom des e-mails devient « ShelfCtrl Dev »
       - APP_INSTANCE=Dev
       - APP_URL=${APP_URL_DEV:-}

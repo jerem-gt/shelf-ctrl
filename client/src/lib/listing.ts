@@ -37,7 +37,10 @@ function buildTitle(copy: CopyItem, platform: string | null, t: TFunction): stri
     lead.push(t('collection.volume', { number: work.volumeNumber }));
   }
   lead.push(work.title);
-  if (edition.format !== 'book') {
+  if (edition.format === 'game') {
+    // Pour un jeu, la console dit tout (« Zelda - Nintendo Switch ») ; à défaut, « Jeu vidéo ».
+    lead.push(edition.console ?? t('formats.game'));
+  } else if (edition.format !== 'book') {
     lead.push(t(`formats.${edition.format}`));
   }
 
@@ -84,11 +87,17 @@ function buildDescription(copy: CopyItem, t: TFunction): string {
     ? t(`listing.languages.${edition.language}`, { defaultValue: edition.language.toUpperCase() })
     : null;
 
+  const isGame = edition.format === 'game';
+  let creators: string | null = null;
+  if (work.creators) {
+    creators = t(isGame ? 'listing.developers' : 'listing.creators', { creators: work.creators });
+  }
   const details = [
     describeSeries(copy, t),
-    work.creators ? t('listing.creators', { creators: work.creators }) : null,
+    creators,
     describePublisher(copy, t),
     t('listing.format', { format: t(`formats.${edition.format}`) }),
+    isGame && edition.console ? t('listing.console', { console: edition.console }) : null,
     language ? t('listing.language', { language }) : null,
     edition.barcode ? t('listing.barcode', { barcode: edition.barcode }) : null,
   ].filter((line): line is string => line !== null);

@@ -137,6 +137,8 @@ async function request<T>(method: string, url: string, body?: unknown): Promise<
 export interface CopyFilters {
   q?: string;
   format?: MediaFormat;
+  /** Console d'un jeu vidéo (avec `format: 'game'`). */
+  console?: string;
   status?: CopyStatus;
 }
 
@@ -149,6 +151,8 @@ export interface CreateCopyPayload {
   };
   edition: {
     format: MediaFormat;
+    /** Console d'un jeu vidéo ; ignorée pour les autres formats. */
+    console?: string;
     barcode?: string;
     publisher?: string;
   };
@@ -171,6 +175,9 @@ function toQueryString(filters: CopyFilters): string {
   }
   if (filters.format) {
     params.set('format', filters.format);
+  }
+  if (filters.console) {
+    params.set('console', filters.console);
   }
   if (filters.status) {
     params.set('status', filters.status);

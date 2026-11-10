@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { COPY_ALIEN, COPY_TINTIN } from '@/tests/fixtures';
+import { COPY_ALIEN, COPY_ODYSSEY, COPY_TINTIN } from '@/tests/fixtures';
 import { renderWithProviders } from '@/tests/renderWithProviders';
 
 import { CopyCard } from './CopyCard';
@@ -25,6 +25,13 @@ describe('CopyCard', () => {
     expect(screen.getByText('Prêté')).toBeInTheDocument();
     expect(screen.getByText('Blu-ray')).toBeInTheDocument();
     expect(screen.queryByText(/Tome/)).not.toBeInTheDocument();
+  });
+
+  it('affiche la console d’un jeu vidéo à la place du format', () => {
+    renderWithProviders(<CopyCard copy={COPY_ODYSSEY} />);
+
+    expect(screen.getByText('Nintendo Switch')).toBeInTheDocument();
+    expect(screen.queryByText('Jeu vidéo')).not.toBeInTheDocument();
   });
 
   it('n’affiche pas le tome quand la série n’en a pas', () => {

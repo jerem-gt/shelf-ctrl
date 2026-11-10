@@ -53,6 +53,7 @@ export function createGoogleBooksProvider(
           publisher: info.publisher ?? null,
           releaseYear: extractYear(info.publishedDate),
           language: info.language ?? null,
+          console: null,
         },
       };
     },

@@ -34,6 +34,7 @@ const suggestion = (title: string, overrides: Partial<BarcodeSuggestion['edition
       publisher: 'Éditeur en ligne',
       releaseYear: null,
       language: null,
+      console: null,
       ...overrides,
     },
   }) satisfies BarcodeSuggestion;
@@ -107,6 +108,7 @@ const listCopies = async (app: TestApp) =>
     };
     edition: {
       format: string;
+      console: string | null;
       barcode: string | null;
       publisher: string | null;
       coverPath: string | null;
@@ -222,6 +224,17 @@ describe('POST /api/import/preview', () => {
     expect((res.body as ImportPreview).rows.map((row) => row.duplicate)).toEqual([true, false]);
   });
 
+  it('ne confond pas un même jeu sur deux consoles', async () => {
+    const app = setup();
+    await request(app)
+      .post('/api/copies')
+      .send({ work: { title: 'Zelda' }, edition: { format: 'game', console: 'Wii U' } });
+
+    const res = await preview(app, csv('Titre;Console', 'zelda;Wii U', 'Zelda;Switch'));
+
+    expect((res.body as ImportPreview).rows.map((row) => row.duplicate)).toEqual([true, false]);
+  });
+
   it.each([
     ['un fichier vide', '', 'import.empty_file'],
     ['un fichier sans colonne utile', 'Auteur;Éditeur\nHergé;Casterman\n', 'import.no_columns'],
@@ -307,6 +320,22 @@ describe('POST /api/import', () => {
     expect(items.find((item) => item.work.title === 'Alien')).toMatchObject({
       edition: { format: 'bluray' },
       condition: 'good',
+    });
+  });
+
+  it('importe un jeu vidéo et sa console', async () => {
+    const app = setup();
+
+    const job = await runImport(
+      app,
+      csv('Titre;Format;Console;Éditeur', 'Super Mario Odyssey;Jeu vidéo;Switch;Nintendo'),
+    );
+
+    expect(job).toMatchObject({ created: 1, failures: [] });
+    expect((await listCopies(app))[0]?.edition).toMatchObject({
+      format: 'game',
+      console: 'Nintendo Switch',
+      publisher: 'Nintendo',
     });
   });
 

@@ -51,7 +51,7 @@ const result = (barcode: string | null, title: string) => ({
   source: 'bnf' as const,
   suggestion: {
     work: { title, series: null, volumeNumber: null, creators: null, year: null },
-    edition: { format: null, publisher: null, releaseYear: null, language: null },
+    edition: { format: null, publisher: null, releaseYear: null, language: null, console: null },
   },
 });
 
@@ -221,7 +221,13 @@ describe('providers de recherche par titre', () => {
             creators: null,
             year: 2001,
           },
-          edition: { format: null, publisher: null, releaseYear: null, language: null },
+          edition: {
+            format: null,
+            publisher: null,
+            releaseYear: null,
+            language: null,
+            console: null,
+          },
         },
       },
     ]);

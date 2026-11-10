@@ -10,6 +10,9 @@ export interface BarcodeProvider {
   lookup(code: string): Promise<BarcodeSuggestion | null>;
 }
 
+/** Complète une fiche trouvée par une autre source ; ne lève jamais (fiche inchangée en cas d'échec). */
+export type Enricher = (suggestion: BarcodeSuggestion) => Promise<BarcodeSuggestion>;
+
 const REQUEST_TIMEOUT_MS = 5000;
 
 async function fetchOk(fetchFn: FetchFn, url: string, accept: string): Promise<Response> {
