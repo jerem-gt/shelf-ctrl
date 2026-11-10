@@ -91,6 +91,7 @@ describe('isolation des comptes', () => {
     const responses = await inSequence([
       () => bob.get(`/api/copies/${loaned.id}`),
       () => bob.patch(`/api/copies/${loaned.id}`).send({ location: 'Chez Bob' }),
+      () => bob.patch(`/api/copies/${loaned.id}`).send({ console: 'PS5' }),
       () => bob.get(`/api/copies/${loaned.id}/loans`),
       () => bob.post(`/api/copies/${listed.id}/loans`).send({ borrowerName: 'Bob' }),
       () => bob.get(`/api/copies/${listed.id}/sale`),

@@ -166,6 +166,8 @@ export interface UpdateCopyPayload {
   condition?: CopyCondition;
   conditionNote?: string | null;
   location?: string | null;
+  /** Console d'un jeu vidéo, portée par l'édition (tous ses exemplaires) ; `null` l'efface. */
+  console?: string | null;
 }
 
 function toQueryString(filters: CopyFilters): string {

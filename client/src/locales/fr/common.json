@@ -104,6 +104,7 @@
     "notFound": "Exemplaire introuvable.",
     "format": "Format",
     "console": "Console",
+    "consoleHint": "Partagée par tous les exemplaires de cette édition.",
     "barcode": "Code-barres",
     "publisher": "Éditeur",
     "creators": "Auteurs / réalisateurs",

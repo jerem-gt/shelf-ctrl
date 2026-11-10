@@ -2,6 +2,7 @@ import { COPY_CONDITIONS, type CopyCondition, type CopyItem } from '@shelfctrl/t
 import { type SyntheticEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ConsoleField } from '@/components/ConsoleField';
 import { useUpdateCopy } from '@/hooks/useCopies';
 
 const FIELD_CLASS =
@@ -12,13 +13,18 @@ interface EditCopyFormProps {
   onDone: () => void;
 }
 
-/** Modifie les champs propres à l'exemplaire (l'œuvre et l'édition sont partagées). */
+/**
+ * Modifie les champs propres à l'exemplaire (l'œuvre et l'édition sont partagées), et la console
+ * d'un jeu vidéo, qui vaut pour tous les exemplaires de son édition.
+ */
 export function EditCopyForm({ copy, onDone }: Readonly<EditCopyFormProps>) {
   const { t } = useTranslation();
   const update = useUpdateCopy(copy.id);
   const [condition, setCondition] = useState<CopyCondition>(copy.condition);
   const [note, setNote] = useState(copy.conditionNote ?? '');
   const [location, setLocation] = useState(copy.location ?? '');
+  const isGame = copy.edition.format === 'game';
+  const [gameConsole, setGameConsole] = useState(copy.edition.console ?? '');
 
   const handleSubmit = (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -27,6 +33,7 @@ export function EditCopyForm({ copy, onDone }: Readonly<EditCopyFormProps>) {
         condition,
         conditionNote: note.trim() || null,
         location: location.trim() || null,
+        ...(isGame && { console: gameConsole.trim() || null }),
       },
       { onSuccess: onDone },
     );
@@ -66,6 +73,16 @@ export function EditCopyForm({ copy, onDone }: Readonly<EditCopyFormProps>) {
           className={FIELD_CLASS}
         />
       </label>
+
+      {isGame && (
+        <ConsoleField
+          label={t('detail.console')}
+          hint={t('detail.consoleHint')}
+          value={gameConsole}
+          onChange={setGameConsole}
+          inputClassName={FIELD_CLASS}
+        />
+      )}
 
       {update.error && (
         <p role="alert" className="text-sm text-red-700">

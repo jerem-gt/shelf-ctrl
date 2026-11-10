@@ -203,26 +203,47 @@ export function createCopiesService(db: Database) {
       return { items: rows.map(toCopyItem), total: count.total };
     },
 
-    update(userId: number, id: number, input: UpdateCopyInput): CopyItem | null {
-      const fields: string[] = [];
-      const params: (string | number | null)[] = [];
-      if (input.condition !== undefined) {
-        fields.push('condition = ?');
-        params.push(input.condition);
-      }
-      if (input.conditionNote !== undefined) {
-        fields.push('condition_note = ?');
-        params.push(input.conditionNote);
-      }
-      if (input.location !== undefined) {
-        fields.push('location = ?');
-        params.push(input.location);
-      }
-      const result = db
-        .prepare(`UPDATE copies SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`)
-        .run(...params, id, userId);
-      return result.changes > 0 ? findById(userId, id) : null;
-    },
+    /**
+     * Modifie l'exemplaire ; `console` modifie son édition, donc tous ses exemplaires, et n'a
+     * d'effet que sur un jeu vidéo (ignorée pour les autres formats, comme à la création).
+     */
+    update: db.transaction(
+      (userId: number, id: number, input: UpdateCopyInput): CopyItem | null => {
+        const copy = findById(userId, id);
+        if (!copy) {
+          return null;
+        }
+        if (input.console !== undefined && copy.edition.format === 'game') {
+          db.prepare('UPDATE editions SET console = ? WHERE id = ? AND user_id = ?').run(
+            input.console,
+            copy.edition.id,
+            userId,
+          );
+        }
+        const fields: string[] = [];
+        const params: (string | number | null)[] = [];
+        if (input.condition !== undefined) {
+          fields.push('condition = ?');
+          params.push(input.condition);
+        }
+        if (input.conditionNote !== undefined) {
+          fields.push('condition_note = ?');
+          params.push(input.conditionNote);
+        }
+        if (input.location !== undefined) {
+          fields.push('location = ?');
+          params.push(input.location);
+        }
+        if (fields.length > 0) {
+          db.prepare(`UPDATE copies SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`).run(
+            ...params,
+            id,
+            userId,
+          );
+        }
+        return findById(userId, id);
+      },
+    ),
 
     /**
      * Supprime l'exemplaire (et ses prêts et ventes, en cascade), puis l'édition et l'œuvre

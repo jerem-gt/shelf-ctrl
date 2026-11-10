@@ -104,6 +104,7 @@
     "notFound": "Copy not found.",
     "format": "Format",
     "console": "Console",
+    "consoleHint": "Shared by every copy of this edition.",
     "barcode": "Barcode",
     "publisher": "Publisher",
     "creators": "Authors / directors",

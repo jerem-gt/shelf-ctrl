@@ -1,9 +1,7 @@
 import {
   type BarcodeSuggestion,
-  CONSOLE_MAX_LENGTH,
   COPY_CONDITIONS,
   type CopyCondition,
-  GAME_CONSOLES,
   MEDIA_FORMATS,
   type MediaFormat,
   type TitleSearchResult,
@@ -15,6 +13,7 @@ import { Link, useNavigate } from 'react-router';
 
 import { ApiError, type CreateCopyPayload } from '@/api/client';
 import { BarcodeScanner } from '@/components/BarcodeScanner';
+import { ConsoleField } from '@/components/ConsoleField';
 import { useBarcodeLookup } from '@/hooks/useBarcodeLookup';
 import { useCreateCopy } from '@/hooks/useCopies';
 import { useTitleSearch } from '@/hooks/useTitleSearch';
@@ -372,26 +371,13 @@ export function AddCopyPage() {
             </select>
           </Field>
           {form.format === 'game' && (
-            <div className="flex flex-col gap-1">
-              <Field label={t('add.console')}>
-                <input
-                  list="game-consoles"
-                  maxLength={CONSOLE_MAX_LENGTH}
-                  value={form.console}
-                  onChange={(event) => update('console', event.target.value)}
-                  aria-describedby="console-hint"
-                  className={FIELD_CLASS}
-                />
-              </Field>
-              <datalist id="game-consoles">
-                {GAME_CONSOLES.map((name) => (
-                  <option key={name} value={name} />
-                ))}
-              </datalist>
-              <p id="console-hint" className="text-xs text-slate-500">
-                {t('add.consoleHint')}
-              </p>
-            </div>
+            <ConsoleField
+              label={t('add.console')}
+              hint={t('add.consoleHint')}
+              value={form.console}
+              onChange={(value) => update('console', value)}
+              inputClassName={FIELD_CLASS}
+            />
           )}
           <Field label={t('add.publisher')}>
             <input

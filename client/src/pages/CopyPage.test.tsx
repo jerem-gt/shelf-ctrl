@@ -130,6 +130,41 @@ describe('CopyPage — modification', () => {
     expect(received).toEqual({ condition: 'poor', conditionNote: 'Dos abîmé', location: null });
   });
 
+  it('modifie ou efface la console d’un jeu', async () => {
+    const received: unknown[] = [];
+    server.use(
+      http.get('/api/copies/:id', () => HttpResponse.json(COPY_ODYSSEY)),
+      http.patch('/api/copies/:id', async ({ request }) => {
+        received.push(await request.json());
+        return HttpResponse.json(COPY_ODYSSEY);
+      }),
+    );
+    const user = await openEditor();
+
+    const field = screen.getByLabelText('Console');
+    expect(field).toHaveValue('Nintendo Switch');
+    expect(screen.getByText('Partagée par tous les exemplaires de cette édition.')).toBeVisible();
+    await user.clear(field);
+    await user.type(field, ' Nintendo Switch 2 ');
+    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    await screen.findByRole('button', { name: 'Modifier' });
+
+    await user.click(screen.getByRole('button', { name: 'Modifier' }));
+    await user.clear(screen.getByLabelText('Console'));
+    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    await screen.findByRole('button', { name: 'Modifier' });
+
+    expect(received).toEqual([
+      expect.objectContaining({ console: 'Nintendo Switch 2' }),
+      expect.objectContaining({ console: null }),
+    ]);
+  });
+
+  it('ne propose pas de console pour un livre', async () => {
+    await openEditor();
+    expect(screen.queryByLabelText('Console')).not.toBeInTheDocument();
+  });
+
   it('annule sans rien envoyer', async () => {
     let called = false;
     server.use(

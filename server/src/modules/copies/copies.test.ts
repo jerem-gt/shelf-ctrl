@@ -320,6 +320,46 @@ describe('GET/PATCH/DELETE /api/copies/:id', () => {
     },
   );
 
+  it('modifie la console d’un jeu pour tous les exemplaires de son édition', async () => {
+    const { app } = setup();
+    const game = {
+      work: { title: 'Halo 3' },
+      edition: { format: 'game', barcode: '0882224434478', console: 'Xbox One' },
+    };
+    const first = await request(app).post('/api/copies').send(game);
+    const second = await request(app).post('/api/copies').send(game);
+
+    const res = await request(app)
+      .patch(`/api/copies/${first.body.id}`)
+      .send({ console: 'Xbox 360' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.edition.console).toBe('Xbox 360');
+    const other = await request(app).get(`/api/copies/${second.body.id}`);
+    expect(other.body.edition.console).toBe('Xbox 360');
+
+    const cleared = await request(app)
+      .patch(`/api/copies/${first.body.id}`)
+      .send({ console: null, location: 'Salon' });
+    expect(cleared.body).toMatchObject({ location: 'Salon', edition: { console: null } });
+  });
+
+  it('ignore la console d’un exemplaire qui n’est pas un jeu', async () => {
+    const { app } = setup();
+    const created = await request(app).post('/api/copies').send(tintin);
+
+    const res = await request(app).patch(`/api/copies/${created.body.id}`).send({ console: 'PS5' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.edition.console).toBeNull();
+  });
+
+  it('répond 404 à une console modifiée sur un exemplaire inconnu', async () => {
+    const { app } = setup();
+    const res = await request(app).patch('/api/copies/999').send({ console: 'PS5' });
+    expect(res.status).toBe(404);
+  });
+
   it('rejette une modification vide', async () => {
     const { app } = setup();
     const created = await request(app).post('/api/copies').send(tintin);
