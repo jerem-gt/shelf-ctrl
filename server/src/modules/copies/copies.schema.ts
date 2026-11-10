@@ -51,6 +51,8 @@ export const updateCopySchema = z
     condition: z.enum(COPY_CONDITIONS),
     conditionNote: optionalText(500),
     location: optionalText(100),
+    /** Console d'un jeu vidéo, portée par l'édition (`null` l'efface) ; ignorée hors jeu. */
+    console: optionalText(CONSOLE_MAX_LENGTH),
   })
   .partial()
   .refine((value) => Object.keys(value).length > 0, { message: 'Aucun champ à modifier' });
