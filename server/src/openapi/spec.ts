@@ -302,7 +302,8 @@ export function buildOpenApiSpec() {
       '/api/titles/search': {
         get: {
           tags: ['Recherche'],
-          summary: 'Rechercher par titre (livres et films, liste vide sans résultat)',
+          summary:
+            'Rechercher par titre (livres, films ou jeux vidéo selon `kind`, liste vide sans résultat)',
           security: sessionAuth,
           parameters: queryParams(titleQuerySchema),
           responses: { ...r200(), ...r400 },

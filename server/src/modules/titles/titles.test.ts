@@ -33,10 +33,16 @@ const fakeFetch = (body: unknown, status = 200) =>
       new Response(typeof body === 'string' ? body : JSON.stringify(body), { status }),
     );
 
+/** Type de média de chaque source, comme les vraies. */
+const KIND_OF: Partial<Record<TitleSearchProvider['source'], TitleSearchProvider['kind']>> = {
+  tmdb: 'movie',
+  igdb: 'game',
+};
+
 const stubProvider = (
   source: TitleSearchProvider['source'],
   search: TitleSearchProvider['search'],
-): TitleSearchProvider => ({ source, search });
+): TitleSearchProvider => ({ source, kind: KIND_OF[source] ?? 'book', search });
 
 function setup(providers: TitleSearchProvider[]) {
   const { db } = createTestDbWithUser();
@@ -103,6 +109,42 @@ describe('GET /api/titles/search', () => {
     const res = await request(app).get('/api/titles/search').query({ q: 'alien' });
 
     expect(res.body.results).toHaveLength(2);
+  });
+
+  it('n’interroge que les sources du type demandé', async () => {
+    const called: string[] = [];
+    const tracked = (source: TitleSearchProvider['source'], title: string) =>
+      stubProvider(source, () => {
+        called.push(source);
+        return Promise.resolve([result(null, title)]);
+      });
+    const app = setup([
+      tracked('bnf', 'Livre'),
+      tracked('openlibrary', 'Livre OL'),
+      tracked('tmdb', 'Film'),
+      tracked('igdb', 'Jeu'),
+    ]);
+
+    const games = await request(app).get('/api/titles/search').query({ q: 'zelda', kind: 'game' });
+    expect(called).toEqual(['igdb']);
+    expect(
+      games.body.results.map(
+        (r: { suggestion: { work: { title: string } } }) => r.suggestion.work.title,
+      ),
+    ).toEqual(['Jeu']);
+
+    called.length = 0;
+    await request(app).get('/api/titles/search').query({ q: 'tintin', kind: 'book' });
+    expect(called).toEqual(['bnf', 'openlibrary']);
+
+    called.length = 0;
+    await request(app).get('/api/titles/search').query({ q: 'tout' });
+    expect(called).toHaveLength(4);
+  });
+
+  it('refuse un type inconnu', async () => {
+    const res = await request(setup([])).get('/api/titles/search').query({ q: 'abc', kind: 'vhs' });
+    expect(res.status).toBe(400);
   });
 
   it('ignore une source en erreur', async () => {
@@ -242,6 +284,17 @@ describe('providers de recherche par titre', () => {
       'bnf',
       'openlibrary',
       'tmdb',
+    ]);
+    const all = createDefaultTitleSearchProviders({
+      TMDB_API_KEY: 'k',
+      IGDB_CLIENT_ID: 'id',
+      IGDB_CLIENT_SECRET: 's',
+    });
+    expect(all.map((p) => [p.source, p.kind])).toEqual([
+      ['bnf', 'book'],
+      ['openlibrary', 'book'],
+      ['tmdb', 'movie'],
+      ['igdb', 'game'],
     ]);
   });
 });

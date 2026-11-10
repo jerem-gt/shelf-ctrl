@@ -2,8 +2,10 @@ import {
   type BarcodeSuggestion,
   COPY_CONDITIONS,
   type CopyCondition,
-  MEDIA_FORMATS,
+  FORMATS_BY_KIND,
+  kindOfFormat,
   type MediaFormat,
+  type MediaKind,
   type TitleSearchResult,
 } from '@shelfctrl/types';
 import { Camera, Search } from 'lucide-react';
@@ -14,6 +16,7 @@ import { Link, useNavigate } from 'react-router';
 import { ApiError, type CreateCopyPayload } from '@/api/client';
 import { BarcodeScanner } from '@/components/BarcodeScanner';
 import { ConsoleField } from '@/components/ConsoleField';
+import { KindPicker } from '@/components/KindPicker';
 import { useBarcodeLookup } from '@/hooks/useBarcodeLookup';
 import { useCreateCopy } from '@/hooks/useCopies';
 import { useTitleSearch } from '@/hooks/useTitleSearch';
@@ -140,6 +143,19 @@ export function AddCopyPage() {
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((current) => ({ ...current, [key]: value }));
 
+  // Le type découle du format : une fiche trouvée par code-barres (un jeu, un film…) le change aussi.
+  const kind = kindOfFormat(form.format);
+
+  /** Change de type : format par défaut du type, et les résultats d'un autre type disparaissent. */
+  const chooseKind = (next: MediaKind) => {
+    if (next === kind) {
+      return;
+    }
+    update('format', FORMATS_BY_KIND[next][0]);
+    titleSearch.reset();
+    setSearchMessage(null);
+  };
+
   const lookupErrorMessage = (error: Error): string => {
     if (error instanceof ApiError && error.status === 404) {
       return t('add.lookup.notFound');
@@ -173,14 +189,17 @@ export function AddCopyPage() {
       setSearchMessage(t('add.titleSearch.tooShort'));
       return;
     }
-    titleSearch.mutate(query, {
-      onSuccess: (response) => {
-        if (response.results.length === 0) {
-          setSearchMessage(t('add.titleSearch.none'));
-        }
+    titleSearch.mutate(
+      { query, kind },
+      {
+        onSuccess: (response) => {
+          if (response.results.length === 0) {
+            setSearchMessage(t('add.titleSearch.none'));
+          }
+        },
+        onError: (error) => setSearchMessage(error.message),
       },
-      onError: (error) => setSearchMessage(error.message),
-    });
+    );
   };
 
   const chooseResult = (result: TitleSearchResult) => {
@@ -211,6 +230,8 @@ export function AddCopyPage() {
       <h2 className="text-xl font-semibold">{t('add.title')}</h2>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <KindPicker value={kind} onChange={chooseKind} />
+
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-1 font-semibold">{t('add.titleSearch.section')}</legend>
           <div className="flex items-end gap-2">
@@ -357,19 +378,21 @@ export function AddCopyPage() {
 
         <fieldset className="flex flex-col gap-3">
           <legend className="mb-1 font-semibold">{t('add.edition')}</legend>
-          <Field label={t('add.format')}>
-            <select
-              value={form.format}
-              onChange={(event) => update('format', event.target.value as MediaFormat)}
-              className={FIELD_CLASS}
-            >
-              {MEDIA_FORMATS.map((value) => (
-                <option key={value} value={value}>
-                  {t(`formats.${value}`)}
-                </option>
-              ))}
-            </select>
-          </Field>
+          {kind === 'movie' && (
+            <Field label={t('add.format')}>
+              <select
+                value={form.format}
+                onChange={(event) => update('format', event.target.value as MediaFormat)}
+                className={FIELD_CLASS}
+              >
+                {FORMATS_BY_KIND.movie.map((value) => (
+                  <option key={value} value={value}>
+                    {t(`formats.${value}`)}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
           {form.format === 'game' && (
             <ConsoleField
               label={t('add.console')}

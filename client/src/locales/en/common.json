@@ -7,6 +7,11 @@
     "uhd4k": "4K UHD",
     "game": "Video game"
   },
+  "kinds": {
+    "book": "Book / Comic",
+    "movie": "Movie",
+    "game": "Video game"
+  },
   "conditions": {
     "new": "New",
     "very_good": "Very good",
@@ -39,6 +44,7 @@
   },
   "add": {
     "title": "Add a copy",
+    "kind": "What are you adding?",
     "work": "Title",
     "titleLabel": "Title",
     "series": "Series",

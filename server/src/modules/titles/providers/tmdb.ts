@@ -19,6 +19,7 @@ export function createTmdbTitleSearch(
 ): TitleSearchProvider {
   return {
     source: 'tmdb',
+    kind: 'movie',
     async search(query) {
       const params = new URLSearchParams({ api_key: apiKey, language: 'fr-FR', query });
       const parsed = responseSchema.safeParse(

@@ -11,6 +11,7 @@ const LIMIT = 8;
 export function createIgdbTitleSearch(client: IgdbClient): TitleSearchProvider {
   return {
     source: 'igdb',
+    kind: 'game',
     async search(query) {
       const games = await client.searchGames(query, LIMIT);
       return games.map((game) => ({
