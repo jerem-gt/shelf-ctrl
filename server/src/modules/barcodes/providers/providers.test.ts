@@ -272,10 +272,25 @@ describe('TMDB', () => {
     });
     const enriched = await createTmdbEnricher('clé', fetchFn)(suggestion);
 
-    expect(urls[0]).toContain('query=blade%20runner%202049');
+    expect(urls[0]).toContain('/search/multi?');
+    expect(urls[0]).toContain('query=blade+runner+2049');
     expect(urls[0]).toContain('language=fr-FR');
     expect(enriched.work).toMatchObject({ title: 'Blade Runner 2049', year: 2017 });
     expect(enriched.edition).toEqual(suggestion.edition);
+  });
+
+  it('reconnaît aussi une série (animes compris), en écartant les personnes', async () => {
+    const { fetchFn } = fakeFetch({
+      results: [
+        { media_type: 'person', name: 'Cowboy Bebop' },
+        { media_type: 'tv', name: 'Cowboy Bebop', first_air_date: '1998-04-03' },
+      ],
+    });
+    const series = { ...suggestion, work: { ...suggestion.work, title: 'cowboy bebop' } };
+
+    const enriched = await createTmdbEnricher('clé', fetchFn)(series);
+
+    expect(enriched.work).toMatchObject({ title: 'Cowboy Bebop', year: 1998 });
   });
 
   it('garde la fiche d’origine si le film est sans rapport, absent ou si l’appel échoue', async () => {
