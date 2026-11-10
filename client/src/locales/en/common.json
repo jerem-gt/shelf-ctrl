@@ -9,7 +9,7 @@
   },
   "kinds": {
     "book": "Book / Comic",
-    "movie": "Movie",
+    "movie": "Movie / TV / anime",
     "game": "Video game"
   },
   "conditions": {
@@ -75,7 +75,7 @@
       "none": "No results: enter the details manually.",
       "unconfigured": {
         "book": "No book search source is configured on the server: enter the details by hand.",
-        "movie": "Movie search is not configured: it needs a TMDB key (server variable TMDB_API_KEY). Meanwhile, scan the barcode or enter the details by hand.",
+        "movie": "Movie and TV search is not configured: it needs a TMDB key (server variable TMDB_API_KEY). Meanwhile, scan the barcode or enter the details by hand.",
         "game": "Video game search is not configured: it needs IGDB credentials (server variables IGDB_CLIENT_ID and IGDB_CLIENT_SECRET). Meanwhile, scan the barcode or enter the details by hand."
       },
       "tooShort": "Enter at least 2 characters.",

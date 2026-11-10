@@ -1,17 +1,12 @@
-import { z } from 'zod';
-
-import { extractYear, type FetchFn, fetchJson } from '../../barcodes/providers/types.js';
+import { searchTmdb } from '../../barcodes/providers/tmdb.js';
+import type { FetchFn } from '../../barcodes/providers/types.js';
 import type { TitleSearchProvider } from './types.js';
 
 const LIMIT = 8;
 
-const responseSchema = z.object({
-  results: z.array(z.object({ title: z.string().min(1), release_date: z.string().optional() })),
-});
-
 /**
- * TMDB (films, clé requise) : donne titre et année, ni code-barres ni support, que l'utilisateur
- * précise (DVD, Blu-ray…) dans le formulaire.
+ * TMDB (films et séries, animes compris ; clé requise) : donne titre et année, ni code-barres
+ * ni support, que l'utilisateur précise (DVD, Blu-ray…) dans le formulaire.
  */
 export function createTmdbTitleSearch(
   apiKey: string,
@@ -21,24 +16,17 @@ export function createTmdbTitleSearch(
     source: 'tmdb',
     kind: 'movie',
     async search(query) {
-      const params = new URLSearchParams({ api_key: apiKey, language: 'fr-FR', query });
-      const parsed = responseSchema.safeParse(
-        await fetchJson(fetchFn, `https://api.themoviedb.org/3/search/movie?${params}`),
-      );
-      if (!parsed.success) {
-        throw new Error('Réponse inattendue');
-      }
-
-      return parsed.data.results.slice(0, LIMIT).map((movie) => ({
+      const entries = await searchTmdb(apiKey, query, fetchFn);
+      return entries.slice(0, LIMIT).map((entry) => ({
         barcode: null,
         source: 'tmdb' as const,
         suggestion: {
           work: {
-            title: movie.title,
+            title: entry.title,
             series: null,
             volumeNumber: null,
             creators: null,
-            year: extractYear(movie.release_date),
+            year: entry.year,
           },
           edition: {
             format: null,

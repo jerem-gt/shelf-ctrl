@@ -286,6 +286,24 @@ describe('providers de recherche par titre', () => {
     ]);
   });
 
+  it('TMDB : cherche films et séries (animes compris), sans les personnes', async () => {
+    const fetchFn = fakeFetch({
+      results: [
+        { media_type: 'movie', title: 'Akira', release_date: '1988-07-16' },
+        { media_type: 'tv', name: 'Naruto', first_air_date: '2002-10-03' },
+        { media_type: 'person', name: 'Hayao Miyazaki' },
+      ],
+    });
+
+    const results = await createTmdbTitleSearch('key', fetchFn).search('anime');
+
+    expect(String(fetchFn.mock.calls[0]?.[0])).toContain('/search/multi?');
+    expect(results.map((r) => [r.suggestion.work.title, r.suggestion.work.year])).toEqual([
+      ['Akira', 1988],
+      ['Naruto', 2002],
+    ]);
+  });
+
   it('TMDB n’est actif qu’avec sa clé', () => {
     expect(createDefaultTitleSearchProviders({}).map((p) => p.source)).toEqual([
       'bnf',

@@ -38,7 +38,7 @@ describe('AddCopyPage', () => {
     await user.type(screen.getByLabelText('Titre'), '  Dune ');
     await user.type(screen.getByLabelText('Série'), 'Dune');
     await user.type(screen.getByLabelText('Numéro de tome'), '1');
-    await user.click(screen.getByRole('radio', { name: 'Film' }));
+    await user.click(screen.getByRole('radio', { name: 'Film / série / anime' }));
     await user.selectOptions(screen.getByLabelText('Format'), 'dvd');
     await user.type(screen.getByLabelText('Code-barres (ISBN / EAN)'), '5051889000001');
     await user.selectOptions(screen.getByLabelText('État'), 'new');
@@ -63,7 +63,7 @@ describe('AddCopyPage', () => {
     expect(screen.getByRole('radio', { name: 'Livre / BD' })).toBeChecked();
     expect(screen.queryByLabelText('Format')).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('radio', { name: 'Film' }));
+    await user.click(screen.getByRole('radio', { name: 'Film / série / anime' }));
     expect(screen.getByLabelText('Format')).toHaveValue('dvd');
     expect(screen.getAllByRole('option').map((option) => option.getAttribute('value'))).toEqual(
       expect.arrayContaining(['dvd', 'bluray', 'uhd4k']),
@@ -108,7 +108,7 @@ describe('AddCopyPage', () => {
 
     await user.click(screen.getByRole('radio', { name: 'Jeu vidéo' }));
     await user.type(screen.getByLabelText('Console'), 'PS5');
-    await user.click(screen.getByRole('radio', { name: 'Film' }));
+    await user.click(screen.getByRole('radio', { name: 'Film / série / anime' }));
     await user.selectOptions(screen.getByLabelText('Format'), 'bluray');
     await user.type(screen.getByLabelText('Titre'), 'Alien');
     await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
@@ -245,7 +245,7 @@ describe('AddCopyPage — recherche par code-barres', () => {
     const user = userEvent.setup();
     renderPage();
     await user.type(screen.getByLabelText('Série'), 'Saga');
-    await user.click(screen.getByRole('radio', { name: 'Film' }));
+    await user.click(screen.getByRole('radio', { name: 'Film / série / anime' }));
     await user.selectOptions(screen.getByLabelText('Format'), 'bluray');
     await user.type(screen.getByLabelText('Code-barres (ISBN / EAN)'), '5051889000006');
     await user.click(screen.getByRole('button', { name: 'Rechercher la fiche' }));
@@ -401,7 +401,7 @@ describe('AddCopyPage — recherche par titre', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('radio', { name: 'Film' }));
+    await user.click(screen.getByRole('radio', { name: 'Film / série / anime' }));
     await user.selectOptions(screen.getByLabelText('Format'), 'bluray');
     await user.type(screen.getByLabelText('Code-barres (ISBN / EAN)'), '5051889000001');
     await user.type(screen.getByLabelText('Titre, série ou auteur'), 'tintin');
@@ -448,7 +448,7 @@ describe('AddCopyPage — recherche par titre', () => {
     await screen.findByRole('list', { name: 'Résultats de la recherche' });
 
     // Changer de type efface les résultats de l'autre type.
-    await user.click(screen.getByRole('radio', { name: 'Film' }));
+    await user.click(screen.getByRole('radio', { name: 'Film / série / anime' }));
     expect(
       screen.queryByRole('list', { name: 'Résultats de la recherche' }),
     ).not.toBeInTheDocument();
@@ -488,7 +488,11 @@ describe('AddCopyPage — recherche par titre', () => {
   });
 
   it.each([
-    ['Film', 'La recherche de films n’est pas configurée', 'TMDB_API_KEY'],
+    [
+      'Film / série / anime',
+      'La recherche de films et de séries n’est pas configurée',
+      'TMDB_API_KEY',
+    ],
     ['Jeu vidéo', 'La recherche de jeux vidéo n’est pas configurée', 'IGDB_CLIENT_ID'],
   ])('explique qu’aucune source n’est configurée (%s)', async (kind, message, variable) => {
     server.use(

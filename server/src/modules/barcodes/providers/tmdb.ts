@@ -3,9 +3,57 @@ import { z } from 'zod';
 
 import { extractYear, type FetchFn, fetchJson } from './types.js';
 
-const responseSchema = z.object({
-  results: z.array(z.object({ title: z.string(), release_date: z.string().optional() })),
+/** Un film ou une série : TMDB nomme `title`/`release_date` l'un, `name`/`first_air_date` l'autre. */
+const multiSchema = z.object({
+  results: z.array(
+    z.object({
+      media_type: z.string().optional(),
+      title: z.string().optional(),
+      name: z.string().optional(),
+      release_date: z.string().optional(),
+      first_air_date: z.string().optional(),
+      poster_path: z.string().nullish(),
+    }),
+  ),
 });
+
+/** Film ou série (animes compris) trouvé sur TMDB. */
+export interface TmdbEntry {
+  title: string;
+  year: number | null;
+  posterPath: string | null;
+}
+
+/**
+ * Recherche TMDB parmi les films et les séries (`/search/multi`, personnes écartées), en
+ * français. Une erreur (réseau, clé, quota) ou une réponse inattendue est levée.
+ */
+export async function searchTmdb(
+  apiKey: string,
+  query: string,
+  fetchFn: FetchFn = fetch,
+): Promise<TmdbEntry[]> {
+  const params = new URLSearchParams({ api_key: apiKey, language: 'fr-FR', query });
+  const parsed = multiSchema.safeParse(
+    await fetchJson(fetchFn, `https://api.themoviedb.org/3/search/multi?${params}`),
+  );
+  if (!parsed.success) {
+    throw new Error('Réponse inattendue');
+  }
+  return parsed.data.results.flatMap((entry) => {
+    const title = entry.title ?? entry.name;
+    if (entry.media_type === 'person' || !title) {
+      return [];
+    }
+    return [
+      {
+        title,
+        year: extractYear(entry.release_date ?? entry.first_air_date),
+        posterPath: entry.poster_path ?? null,
+      },
+    ];
+  });
+}
 
 function fold(value: string): string {
   return value
@@ -16,7 +64,7 @@ function fold(value: string): string {
     .trim();
 }
 
-/** Évite de remplacer le titre par celui d'un film sans rapport avec le produit trouvé. */
+/** Évite de remplacer le titre par celui d'une œuvre sans rapport avec le produit trouvé. */
 export function isSameTitle(a: string, b: string): boolean {
   const foldedA = fold(a);
   const foldedB = fold(b);
@@ -27,16 +75,13 @@ export function isSameTitle(a: string, b: string): boolean {
 }
 
 /**
- * TMDB ne sait pas chercher par code-barres : il sert à fiabiliser le titre (et l'année)
- * d'une fiche trouvée par une autre source. En cas d'échec, la fiche reste inchangée.
+ * TMDB ne sait pas chercher par code-barres : il sert à fiabiliser le titre (et l'année) d'un
+ * film ou d'une série trouvé par une autre source. En cas d'échec, la fiche reste inchangée.
  */
 export function createTmdbEnricher(apiKey: string, fetchFn: FetchFn = fetch) {
   return async (suggestion: BarcodeSuggestion): Promise<BarcodeSuggestion> => {
     try {
-      const query = encodeURIComponent(suggestion.work.title);
-      const url = `https://api.themoviedb.org/3/search/movie?api_key=${encodeURIComponent(apiKey)}&language=fr-FR&query=${query}`;
-      const parsed = responseSchema.safeParse(await fetchJson(fetchFn, url));
-      const match = parsed.success ? parsed.data.results[0] : undefined;
+      const [match] = await searchTmdb(apiKey, suggestion.work.title, fetchFn);
       if (!match || !isSameTitle(suggestion.work.title, match.title)) {
         return suggestion;
       }
@@ -45,7 +90,7 @@ export function createTmdbEnricher(apiKey: string, fetchFn: FetchFn = fetch) {
         work: {
           ...suggestion.work,
           title: match.title,
-          year: extractYear(match.release_date) ?? suggestion.work.year,
+          year: match.year ?? suggestion.work.year,
         },
       };
     } catch {
