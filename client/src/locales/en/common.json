@@ -1,6 +1,5 @@
 {
   "appName": "ShelfCtrl",
-  "tagline": "Your comics, DVD and Blu-ray collection: loans, sales, condition.",
   "formats": {
     "book": "Book / Comic",
     "dvd": "DVD",

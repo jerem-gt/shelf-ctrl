@@ -61,7 +61,6 @@ export function AppRoutes() {
             )}
           </nav>
           <div className="order-2 ml-auto flex items-center gap-3 sm:order-3">
-            <p className="hidden text-sm text-slate-500 lg:block">{t('tagline')}</p>
             <button
               type="button"
               onClick={() => logout.mutate()}

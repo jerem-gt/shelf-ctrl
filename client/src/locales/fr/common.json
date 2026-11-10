@@ -1,6 +1,5 @@
 {
   "appName": "ShelfCtrl",
-  "tagline": "Ta collection de BD, DVD et Blu-ray : prêts, ventes, état.",
   "formats": {
     "book": "Livre / BD",
     "dvd": "DVD",
