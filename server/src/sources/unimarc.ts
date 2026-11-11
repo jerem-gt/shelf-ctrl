@@ -47,11 +47,6 @@ export function parseUnimarcRecords(xml: string): UnimarcFields[] {
     .map((chunk) => parseRecord(chunk.split('</mxc:record>')[0]));
 }
 
-/** Première notice de la réponse, ou `null` si elle n'en contient aucune. */
-export function parseUnimarc(xml: string): UnimarcFields | null {
-  return parseUnimarcRecords(xml)[0] ?? null;
-}
-
 export function subfield(field: Subfield[] | undefined, code: string): string | undefined {
   return field?.find((candidate) => candidate.code === code)?.value;
 }

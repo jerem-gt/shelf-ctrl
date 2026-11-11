@@ -1,11 +1,9 @@
-import { type FetchFn, fetchText } from '../../../sources/http.js';
+import { searchBnf } from '../../../sources/bnf.js';
+import type { FetchFn } from '../../../sources/http.js';
 import { parseBarcode } from '../../barcodes/barcode.js';
-import { toSuggestion } from '../../barcodes/providers/bnf.js';
-import { parseUnimarcRecords, subfield } from '../../barcodes/providers/unimarc.js';
 import { titleResult } from './result.js';
 import type { TitleSearchProvider } from './types.js';
 
-const SRU_URL = 'https://catalogue.bnf.fr/api/SRU';
 const MAX_RECORDS = 10;
 
 /** Les guillemets délimitent la requête CQL : on les retire plutôt que de les échapper. */
@@ -23,23 +21,14 @@ export function createBnfTitleSearch(fetchFn: FetchFn = fetch): TitleSearchProvi
       if (terms === '') {
         return [];
       }
-      const params = new URLSearchParams({
-        version: '1.2',
-        operation: 'searchRetrieve',
-        maximumRecords: String(MAX_RECORDS),
-        recordSchema: 'unimarcxchange',
-        query: `bib.title all "${terms}" and bib.doctype any "a"`,
-      });
-      const records = parseUnimarcRecords(await fetchText(fetchFn, `${SRU_URL}?${params}`));
-
-      return records.flatMap((fields) => {
-        const suggestion = toSuggestion(fields);
-        if (!suggestion) {
-          return [];
-        }
-        const isbn = subfield(fields.get('010')?.[0], 'a');
+      const records = await searchBnf(
+        `bib.title all "${terms}" and bib.doctype any "a"`,
+        MAX_RECORDS,
+        fetchFn,
+      );
+      return records.map(({ suggestion, isbn }) => {
         const barcode = isbn ? parseBarcode(isbn) : null;
-        return [titleResult({ source: 'bnf', barcode: barcode?.code ?? null, ...suggestion })];
+        return titleResult({ source: 'bnf', barcode: barcode?.code ?? null, ...suggestion });
       });
     },
   };
