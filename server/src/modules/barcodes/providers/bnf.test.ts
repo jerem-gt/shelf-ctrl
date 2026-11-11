@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import type { FetchFn } from '../../../sources/http.js';
 import { createBnfProvider } from './bnf.js';
-import type { FetchFn } from './types.js';
 
 type Field = [tag: string, subfields: [code: string, value: string][]];
 

@@ -2,8 +2,9 @@ import type { BarcodeSuggestion } from '@shelfctrl/types';
 import { z } from 'zod';
 
 import { detectConsole } from '../../../lib/consoles.js';
+import { type FetchFn, fetchJson } from '../../../sources/http.js';
 import { cleanGameTitle } from './game.js';
-import { type BarcodeProvider, type FetchFn, fetchJson } from './types.js';
+import type { BarcodeProvider } from './types.js';
 import { cleanVideoTitle, detectVideoFormat } from './video.js';
 
 const responseSchema = z.object({

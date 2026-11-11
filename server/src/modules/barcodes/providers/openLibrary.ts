@@ -1,12 +1,8 @@
 import { z } from 'zod';
 
-import {
-  type BarcodeProvider,
-  extractVolume,
-  extractYear,
-  type FetchFn,
-  fetchJson,
-} from './types.js';
+import { type FetchFn, fetchJson } from '../../../sources/http.js';
+import { extractVolume, extractYear } from '../../../sources/text.js';
+import type { BarcodeProvider } from './types.js';
 
 const SERIES_PREFIX = 'series:';
 

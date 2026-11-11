@@ -1,7 +1,8 @@
+import { type FetchFn, fetchText } from '../../../sources/http.js';
 import { parseBarcode } from '../../barcodes/barcode.js';
 import { toSuggestion } from '../../barcodes/providers/bnf.js';
-import { type FetchFn, fetchText } from '../../barcodes/providers/types.js';
 import { parseUnimarcRecords, subfield } from '../../barcodes/providers/unimarc.js';
+import { titleResult } from './result.js';
 import type { TitleSearchProvider } from './types.js';
 
 const SRU_URL = 'https://catalogue.bnf.fr/api/SRU';
@@ -38,9 +39,7 @@ export function createBnfTitleSearch(fetchFn: FetchFn = fetch): TitleSearchProvi
         }
         const isbn = subfield(fields.get('010')?.[0], 'a');
         const barcode = isbn ? parseBarcode(isbn) : null;
-        return [
-          { barcode: barcode?.code ?? null, source: 'bnf' as const, suggestion, consoles: [] },
-        ];
+        return [titleResult({ source: 'bnf', barcode: barcode?.code ?? null, ...suggestion })];
       });
     },
   };

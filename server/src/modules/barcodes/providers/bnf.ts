@@ -1,7 +1,9 @@
 import type { BarcodeSuggestion } from '@shelfctrl/types';
 
+import { type FetchFn, fetchText } from '../../../sources/http.js';
+import { extractYear } from '../../../sources/text.js';
 import { isbn13ToIsbn10 } from '../barcode.js';
-import { type BarcodeProvider, extractYear, type FetchFn, fetchText } from './types.js';
+import type { BarcodeProvider } from './types.js';
 import { parseUnimarc, type Subfield, subfield, type UnimarcFields } from './unimarc.js';
 
 const SRU_URL = 'https://catalogue.bnf.fr/api/SRU';

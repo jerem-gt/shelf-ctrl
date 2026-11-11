@@ -1,11 +1,13 @@
 import { isGameFormat } from '@shelfctrl/types';
 
+import type { FetchFn } from '../../../sources/http.js';
+import { igdbClientFromEnv, type IgdbEnv } from '../../../sources/igdb.js';
 import { createBnfProvider } from './bnf.js';
 import { createGoogleBooksProvider } from './googleBooks.js';
-import { createIgdbEnricher, igdbClientFromEnv, type IgdbEnv } from './igdb.js';
+import { createIgdbEnricher } from './igdb.js';
 import { createOpenLibraryProvider } from './openLibrary.js';
 import { createTmdbEnricher } from './tmdb.js';
-import type { BarcodeProvider, Enricher, FetchFn } from './types.js';
+import type { BarcodeProvider, Enricher } from './types.js';
 import { createUpcItemDbProvider } from './upcItemDb.js';
 
 export interface ProviderEnv extends IgdbEnv {

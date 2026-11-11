@@ -1,7 +1,9 @@
 import { z } from 'zod';
 
+import { type FetchFn, fetchJson } from '../../../sources/http.js';
+import { extractVolume } from '../../../sources/text.js';
 import { parseBarcode } from '../../barcodes/barcode.js';
-import { extractVolume, type FetchFn, fetchJson } from '../../barcodes/providers/types.js';
+import { titleResult } from './result.js';
 import type { TitleSearchProvider } from './types.js';
 
 const LIMIT = 8;
@@ -44,27 +46,19 @@ export function createOpenLibraryTitleSearch(fetchFn: FetchFn = fetch): TitleSea
         throw new Error('Réponse inattendue');
       }
 
-      return parsed.data.docs.map((doc) => ({
-        barcode: firstIsbn(doc.isbn),
-        source: 'openlibrary' as const,
-        suggestion: {
+      return parsed.data.docs.map((doc) =>
+        titleResult({
+          source: 'openlibrary',
+          barcode: firstIsbn(doc.isbn),
           work: {
             title: doc.title,
-            series: null,
             volumeNumber: extractVolume(doc.title),
             creators: doc.author_name?.join(', ') || null,
             year: doc.first_publish_year ?? null,
           },
-          edition: {
-            format: 'book' as const,
-            publisher: doc.publisher?.[0] ?? null,
-            releaseYear: null,
-            language: null,
-            console: null,
-          },
-        },
-        consoles: [],
-      }));
+          edition: { format: 'book', publisher: doc.publisher?.[0] ?? null },
+        }),
+      );
     },
   };
 }

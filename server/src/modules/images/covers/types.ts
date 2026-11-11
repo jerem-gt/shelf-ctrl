@@ -1,6 +1,6 @@
 import type { MediaFormat } from '@shelfctrl/types';
 
-export type FetchFn = typeof fetch;
+import type { FetchFn } from '../../../sources/http.js';
 
 /** Ce que l'on sait d'une édition pour lui trouver une pochette. */
 export interface CoverQuery {

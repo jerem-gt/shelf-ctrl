@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
+import type { FetchFn } from '../../../sources/http.js';
+import { extractVolume, extractYear } from '../../../sources/text.js';
 import { cleanGameTitle } from './game.js';
 import { createGoogleBooksProvider } from './googleBooks.js';
 import { createDefaultProviders } from './index.js';
 import { createOpenLibraryProvider } from './openLibrary.js';
 import { createTmdbEnricher } from './tmdb.js';
-import { extractVolume, extractYear, type FetchFn } from './types.js';
 import { createUpcItemDbProvider } from './upcItemDb.js';
 import { cleanVideoTitle, detectVideoFormat } from './video.js';
 
