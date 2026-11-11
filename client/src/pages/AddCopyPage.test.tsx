@@ -1,5 +1,5 @@
 import type { TitleSearchResponse } from '@shelfctrl/types';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse, type JsonBodyType } from 'msw';
 import { Route, Routes } from 'react-router';
@@ -407,6 +407,20 @@ describe('AddCopyPage — recherche par titre', () => {
 
     await user.click(screen.getByRole('button', { name: 'Choisir : The Last of Us Part I' }));
     expect(screen.getByLabelText('Console')).toHaveValue('');
+  });
+
+  it('indique la source de chaque résultat', async () => {
+    server.use(http.get('/api/titles/search', () => HttpResponse.json(RESULTS)));
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText('Titre, série ou auteur'), 'tintin{Enter}');
+
+    const items = within(
+      await screen.findByRole('list', { name: 'Résultats de la recherche' }),
+    ).getAllByRole('listitem');
+    expect(items[0]).toHaveTextContent('via la BnF');
+    expect(items[1]).toHaveTextContent('via TMDB');
   });
 
   it('préremplit le formulaire avec le résultat choisi', async () => {

@@ -80,7 +80,8 @@
       },
       "tooShort": "Saisis au moins 2 caractères.",
       "applied": "Fiche reprise de {{source}} : vérifie les informations avant d'enregistrer.",
-      "volume": "tome {{number}}"
+      "volume": "tome {{number}}",
+      "via": "via {{source}}"
     },
     "lookup": {
       "button": "Rechercher la fiche",

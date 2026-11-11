@@ -288,6 +288,9 @@ export function AddCopyPage() {
                       <p className="font-medium">{title}</p>
                       {heading && <p className="text-slate-600">{heading}</p>}
                       {details && <p className="truncate text-xs text-slate-500">{details}</p>}
+                      <p className="text-xs text-slate-400">
+                        {t('add.titleSearch.via', { source: t(`sources.${result.source}`) })}
+                      </p>
                     </div>
                     <button
                       type="button"
