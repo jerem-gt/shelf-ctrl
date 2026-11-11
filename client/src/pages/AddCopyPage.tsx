@@ -105,9 +105,9 @@ function applySuggestion(
 }
 
 /**
- * « Tintin, tome 20 », « Hergé · Casterman 2006 », « Naughty Dog · Sony 2022 · PlayStation 5 /
- * PC » : de quoi distinguer deux résultats voisins. Toutes les consoles d'un jeu sont citées, même
- * quand aucune n'est préremplie faute d'être unique.
+ * « Tintin, tome 20 », « Hergé · Casterman 2006 » : de quoi distinguer deux résultats voisins.
+ * Les consoles d'un jeu (« PlayStation 5 / PC ») ont leur propre ligne, jamais tronquée : toutes
+ * sont citées, même quand aucune n'est préremplie faute d'être unique.
  */
 function describeResult(result: TitleSearchResult, volumeLabel: (number: number) => string) {
   const { work, edition } = result.suggestion;
@@ -115,9 +115,8 @@ function describeResult(result: TitleSearchResult, volumeLabel: (number: number)
     .filter(Boolean)
     .join(', ');
   const publisher = [edition.publisher, edition.releaseYear ?? work.year].filter(Boolean).join(' ');
-  const consoles = result.consoles.join(' / ');
-  const details = [work.creators, publisher, consoles].filter(Boolean).join(' · ');
-  return { title: work.title, heading, details };
+  const details = [work.creators, publisher].filter(Boolean).join(' · ');
+  return { title: work.title, heading, details, consoles: result.consoles.join(' / ') };
 }
 
 function Field({ label, children }: Readonly<{ label: string; children: React.ReactNode }>) {
@@ -276,7 +275,7 @@ export function AddCopyPage() {
               className="flex flex-col divide-y divide-slate-200 rounded-md border border-slate-200"
             >
               {titleSearch.data.results.map((result) => {
-                const { title, heading, details } = describeResult(result, (number) =>
+                const { title, heading, details, consoles } = describeResult(result, (number) =>
                   t('add.titleSearch.volume', { number }),
                 );
                 return (
@@ -288,6 +287,7 @@ export function AddCopyPage() {
                       <p className="font-medium">{title}</p>
                       {heading && <p className="text-slate-600">{heading}</p>}
                       {details && <p className="truncate text-xs text-slate-500">{details}</p>}
+                      {consoles && <p className="text-xs text-slate-600">{consoles}</p>}
                       <p className="text-xs text-slate-400">
                         {t('add.titleSearch.via', { source: t(`sources.${result.source}`) })}
                       </p>

@@ -4,7 +4,7 @@ import {
   type CopyItem,
   type CopyListResponse,
   type CopyStatus,
-  isGameFormat,
+  GAME_FORMAT,
   type MediaFormat,
 } from '@shelfctrl/types';
 import type { Database } from 'better-sqlite3';
@@ -83,10 +83,10 @@ export interface RemovedFiles {
 }
 
 /**
- * Console à enregistrer : seul un jeu vidéo en a une, sous son nom connu quand on la reconnaît
- * (« ps5 » → « PlayStation 5 ») pour que le filtre et l'import la retrouvent.
+ * Console à enregistrer en base : `null` hors jeu vidéo ou sans valeur, sinon son nom connu quand
+ * on la reconnaît (« ps5 » → « PlayStation 5 ») pour que le filtre et l'import la retrouvent.
  */
-function consoleFor(format: MediaFormat, value: string | null | undefined): string | null {
+function storedConsole(format: MediaFormat, value: string | null | undefined): string | null {
   const kept = consoleOf(format, value);
   return kept === null ? null : normalizeConsole(kept);
 }
@@ -145,7 +145,7 @@ export function createCopiesService(db: Database) {
         input.edition.publisher ?? null,
         input.edition.releaseYear ?? null,
         input.edition.language ?? null,
-        consoleFor(input.edition.format, input.edition.console),
+        storedConsole(input.edition.format, input.edition.console),
       );
     return Number(result.lastInsertRowid);
   };
@@ -175,11 +175,11 @@ export function createCopiesService(db: Database) {
       const rows = db
         .prepare(
           `SELECT MIN(console) AS console FROM editions
-           WHERE user_id = ? AND format = 'game' AND console IS NOT NULL
+           WHERE user_id = ? AND format = ? AND console IS NOT NULL
            GROUP BY console COLLATE NOCASE
            ORDER BY console COLLATE NOCASE`,
         )
-        .all(userId) as { console: string }[];
+        .all(userId, GAME_FORMAT) as { console: string }[];
       return rows.map((row) => row.console);
     },
 
@@ -237,9 +237,10 @@ export function createCopiesService(db: Database) {
         if (!copy) {
           return null;
         }
-        if (input.console !== undefined && isGameFormat(copy.edition.format)) {
+        // Hors jeu, `storedConsole` donne `null` : la console de l'édition, déjà nulle, le reste.
+        if (input.console !== undefined) {
           db.prepare('UPDATE editions SET console = ? WHERE id = ? AND user_id = ?').run(
-            consoleFor(copy.edition.format, input.console),
+            storedConsole(copy.edition.format, input.console),
             copy.edition.id,
             userId,
           );
