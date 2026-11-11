@@ -1,5 +1,6 @@
 import type { MediaKind, TitleSearchResponse, TitleSearchResult } from '@shelfctrl/types';
 
+import { barcodeIdentity, titleIdentity } from '../../lib/editionIdentity.js';
 import type { TitleSearchProvider } from './providers/types.js';
 
 const MAX_RESULTS = 20;
@@ -19,19 +20,19 @@ function interleave(lists: TitleSearchResult[][]): TitleSearchResult[] {
 }
 
 /** Même édition : même code-barres. Sans code, même titre et même année (casse ignorée). */
-function identityOf({ barcode, suggestion }: TitleSearchResult): string {
+function resultIdentity({ barcode, suggestion }: TitleSearchResult): string {
   if (barcode !== null) {
-    return `code:${barcode}`;
+    return barcodeIdentity(barcode);
   }
   const { title, year } = suggestion.work;
-  return `titre:${title.trim().toLowerCase()}|${year ?? ''}`;
+  return titleIdentity([title.trim(), year]);
 }
 
 /** Garde la première occurrence de chaque édition. */
 function dedupe(results: TitleSearchResult[]): TitleSearchResult[] {
   const seen = new Set<string>();
   return results.filter((result) => {
-    const identity = identityOf(result);
+    const identity = resultIdentity(result);
     if (seen.has(identity)) {
       return false;
     }
