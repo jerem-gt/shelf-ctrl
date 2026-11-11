@@ -32,17 +32,32 @@ const YEAR = /^\d{4}$/;
 const MIN_YEAR = 1000;
 const MAX_YEAR = 2100;
 
-type Nullable<T> = { [K in keyof T]: T[K] | null };
+type SuggestedWork = BarcodeSuggestion['work'];
+type SuggestedEdition = BarcodeSuggestion['edition'];
+
+/**
+ * Œuvre d'une ligne : celle d'une fiche trouvée en ligne, mais le titre peut manquer (il est alors
+ * cherché par le code-barres). `year` n'est jamais dans le fichier, seulement reprise de la fiche.
+ */
+export interface ImportWork extends Omit<SuggestedWork, 'title'> {
+  title: string | null;
+}
+
+/**
+ * Édition d'une ligne : celle d'une fiche trouvée en ligne, plus le code-barres lu dans le
+ * fichier. `console` : celle d'un jeu vidéo, sous son nom connu quand on la reconnaît.
+ */
+export interface ImportEdition extends SuggestedEdition {
+  barcode: string | null;
+}
 
 /**
  * Contenu d'une ligne, normalisé ; `null` quand la cellule est vide ou invalide. Œuvre et
  * édition ont la forme d'une fiche trouvée en ligne, qui peut les compléter champ à champ.
  */
 export interface RowDraft {
-  /** `year` (année de l'œuvre) n'est jamais dans le fichier, mais reprise de la fiche en ligne. */
-  work: Nullable<BarcodeSuggestion['work']>;
-  /** `console` : celle d'un jeu vidéo, sous son nom connu quand on la reconnaît. */
-  edition: BarcodeSuggestion['edition'] & { barcode: string | null };
+  work: ImportWork;
+  edition: ImportEdition;
   condition: CopyCondition | null;
   conditionNote: string | null;
   location: string | null;

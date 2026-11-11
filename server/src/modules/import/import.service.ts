@@ -12,6 +12,7 @@ import {
 } from '@shelfctrl/types';
 import type { Database } from 'better-sqlite3';
 
+import { barcodeIdentity, titleIdentity } from '../../lib/editionIdentity.js';
 import { BadRequestError, ConflictError } from '../../lib/errors.js';
 import { createCopySchema } from '../copies/copies.schema.js';
 import { createCopiesService } from '../copies/copies.service.js';
@@ -119,7 +120,7 @@ const FIELD_BY_PATH: Record<string, ImportField> = {
   location: 'location',
 };
 
-interface TitleKeyParts {
+interface EditionTitle {
   title: string;
   series: string | null;
   volume: number | null;
@@ -128,14 +129,17 @@ interface TitleKeyParts {
 }
 
 /**
- * Clé d'une édition sans code-barres : titre, série, tome, support et console, casse ignorée. La
- * comparaison se fait en JavaScript des deux côtés, car `lower()` de SQLite ne replie que l'ASCII.
- * Les parties sont encodées en JSON : un séparateur pourrait figurer dans un champ (« Xbox Series
- * X|S ») et confondre deux éditions.
+ * Identité d'une édition sans code-barres : titre, série, tome, support et console. Calculée en
+ * JavaScript des deux côtés (fichier et collection), cf. `titleIdentity`.
  */
-function titleKey({ title, series, volume, format, console: gameConsole }: TitleKeyParts) {
-  const parts = [title, series ?? '', volume ?? '', format, gameConsole ?? ''];
-  return `titre:${JSON.stringify(parts.map((part) => String(part).toLowerCase()))}`;
+function editionTitleIdentity({
+  title,
+  series,
+  volume,
+  format,
+  console: gameConsole,
+}: EditionTitle) {
+  return titleIdentity([title, series, volume, format, gameConsole]);
 }
 
 /** Résultat de `work`, ou `fallback` s'il échoue : une source en panne ne doit rien interrompre. */
@@ -162,17 +166,20 @@ export function createImportService(db: Database, deps: ImportDeps) {
 
   /** Clés « titre » des éditions de la collection du compte, lues une fois par aperçu. */
   const loadKnownTitles = (userId: number): Set<string> =>
-    new Set((editionTitles.all(userId) as TitleKeyParts[]).map(titleKey));
+    new Set((editionTitles.all(userId) as EditionTitle[]).map(editionTitleIdentity));
 
-  /** Clé d'identité d'une édition : le code-barres, à défaut titre, série, tome et support. */
-  const identityOf = ({ work, edition }: RowDraft): string | null => {
+  /**
+   * Identité de l'édition d'une ligne : le code-barres, à défaut titre, série, tome et support ;
+   * `null` quand la ligne ne permet pas de la dire (titre ou support manquant).
+   */
+  const draftIdentity = ({ work, edition }: RowDraft): string | null => {
     if (edition.barcode !== null) {
-      return `code:${edition.barcode}`;
+      return barcodeIdentity(edition.barcode);
     }
     if (work.title === null || edition.format === null) {
       return null;
     }
-    return titleKey({
+    return editionTitleIdentity({
       title: work.title,
       series: work.series,
       volume: work.volumeNumber,
@@ -186,7 +193,7 @@ export function createImportService(db: Database, deps: ImportDeps) {
     draft: RowDraft,
     knownTitles: ReadonlySet<string>,
   ): boolean => {
-    const identity = identityOf(draft);
+    const identity = draftIdentity(draft);
     if (identity === null) {
       return false;
     }
@@ -287,7 +294,7 @@ export function createImportService(db: Database, deps: ImportDeps) {
       const knownTitles = loadKnownTitles(userId);
       const seen = new Set<string>();
       const previews = rows.map((row): ImportRowPreview => {
-        const identity = identityOf(row.draft);
+        const identity = draftIdentity(row.draft);
         const duplicate =
           identity !== null &&
           (seen.has(identity) || existsInCollection(userId, row.draft, knownTitles));
