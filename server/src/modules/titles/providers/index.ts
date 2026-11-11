@@ -1,21 +1,18 @@
+import type { SourcesEnv } from '../../../sources/env.js';
 import type { FetchFn } from '../../../sources/http.js';
-import { igdbClientFromEnv, type IgdbEnv } from '../../../sources/igdb.js';
+import { igdbClientFromEnv } from '../../../sources/igdb.js';
 import { createBnfTitleSearch } from './bnf.js';
 import { createIgdbTitleSearch } from './igdb.js';
 import { createOpenLibraryTitleSearch } from './openLibrary.js';
 import { createTmdbTitleSearch } from './tmdb.js';
 import type { TitleSearchProvider } from './types.js';
 
-export interface TitleSearchEnv extends IgdbEnv {
-  TMDB_API_KEY?: string;
-}
-
 /**
  * BnF puis Open Library pour les livres ; TMDB pour les films et IGDB pour les jeux vidéo si
  * leurs clés sont renseignées.
  */
 export function createDefaultTitleSearchProviders(
-  env: TitleSearchEnv = process.env,
+  env: SourcesEnv = process.env,
   fetchFn: FetchFn = fetch,
 ): TitleSearchProvider[] {
   const providers = [createBnfTitleSearch(fetchFn), createOpenLibraryTitleSearch(fetchFn)];
