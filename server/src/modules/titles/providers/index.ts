@@ -1,5 +1,5 @@
-import { igdbClientFromEnv, type IgdbEnv } from '../../barcodes/providers/igdb.js';
-import type { FetchFn } from '../../barcodes/providers/types.js';
+import type { FetchFn } from '../../../sources/http.js';
+import { igdbClientFromEnv, type IgdbEnv } from '../../../sources/igdb.js';
 import { createBnfTitleSearch } from './bnf.js';
 import { createIgdbTitleSearch } from './igdb.js';
 import { createOpenLibraryTitleSearch } from './openLibrary.js';

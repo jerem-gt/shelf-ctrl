@@ -1,7 +1,8 @@
 import { isGameFormat } from '@shelfctrl/types';
 
-import { findMatchingGame, type IgdbClient } from '../../barcodes/providers/igdb.js';
-import { type CoverProvider, type FetchFn, fetchImage } from './types.js';
+import type { FetchFn } from '../../../sources/http.js';
+import { findMatchingGame, type IgdbClient } from '../../../sources/igdb.js';
+import { type CoverProvider, fetchImage } from './types.js';
 
 /**
  * Jaquettes de jeux vidéo par titre (IGDB ne cherche pas par code-barres). On ne retient qu'un

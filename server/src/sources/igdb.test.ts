@@ -1,16 +1,11 @@
 import type { BarcodeSuggestion } from '@shelfctrl/types';
 import { describe, expect, it } from 'vitest';
 
-import { createIgdbCoverProvider } from '../../images/covers/igdb.js';
-import { createIgdbTitleSearch } from '../../titles/providers/igdb.js';
-import {
-  createIgdbClient,
-  createIgdbEnricher,
-  type IgdbClient,
-  igdbClientFromEnv,
-  type IgdbGame,
-} from './igdb.js';
-import type { FetchFn } from './types.js';
+import { createIgdbEnricher } from '../modules/barcodes/providers/igdb.js';
+import { createIgdbCoverProvider } from '../modules/images/covers/igdb.js';
+import { createIgdbTitleSearch } from '../modules/titles/providers/igdb.js';
+import type { FetchFn } from './http.js';
+import { createIgdbClient, type IgdbClient, igdbClientFromEnv, type IgdbGame } from './igdb.js';
 
 const ODYSSEY = {
   name: 'Super Mario Odyssey',

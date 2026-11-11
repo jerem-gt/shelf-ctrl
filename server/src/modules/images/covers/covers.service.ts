@@ -1,12 +1,13 @@
 import type { MediaFormat } from '@shelfctrl/types';
 import type { Database } from 'better-sqlite3';
 
-import { igdbClientFromEnv, type IgdbEnv } from '../../barcodes/providers/igdb.js';
+import type { FetchFn } from '../../../sources/http.js';
+import { igdbClientFromEnv, type IgdbEnv } from '../../../sources/igdb.js';
 import type { ImageStore } from '../imageStore.js';
 import { createIgdbCoverProvider } from './igdb.js';
 import { createOpenLibraryCoverProvider } from './openLibrary.js';
 import { createTmdbCoverProvider } from './tmdb.js';
-import type { CoverProvider, FetchFn } from './types.js';
+import type { CoverProvider } from './types.js';
 
 export interface CoverEnv extends IgdbEnv {
   TMDB_API_KEY?: string;
