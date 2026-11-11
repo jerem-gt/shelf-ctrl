@@ -77,45 +77,30 @@ function parseBuffer(buffer: Buffer) {
   return parseTable(table);
 }
 
+/** Comble les champs vides (`null`) de `own` avec ceux de `found` ; les autres sont gardés. */
+function fillMissing<T extends object>(own: T, found: Partial<T>): T {
+  const filled = { ...own };
+  for (const key of Object.keys(found) as (keyof T)[]) {
+    const value = found[key];
+    if (filled[key] === null && value !== undefined) {
+      filled[key] = value;
+    }
+  }
+  return filled;
+}
+
 /** Les valeurs du fichier priment ; la fiche trouvée ne comble que les champs vides. */
 function fillFromSuggestion(draft: RowDraft, found: BarcodeLookupResponse): RowDraft {
   const { work, edition } = found.suggestion;
   return {
     ...draft,
-    title: draft.title ?? work.title,
-    series: draft.series ?? work.series,
-    volumeNumber: draft.volumeNumber ?? work.volumeNumber,
-    creators: draft.creators ?? work.creators,
-    workYear: draft.workYear ?? work.year,
-    format: draft.format ?? edition.format,
-    console: draft.console ?? edition.console,
-    publisher: draft.publisher ?? edition.publisher,
-    releaseYear: draft.releaseYear ?? edition.releaseYear,
-    language: draft.language ?? edition.language,
+    work: fillMissing(draft.work, work),
+    edition: fillMissing(draft.edition, edition),
   };
 }
 
-function toCreateInput(draft: RowDraft) {
-  return {
-    work: {
-      title: draft.title,
-      series: draft.series,
-      volumeNumber: draft.volumeNumber,
-      creators: draft.creators,
-      year: draft.workYear,
-    },
-    edition: {
-      format: draft.format,
-      console: draft.console,
-      barcode: draft.barcode,
-      publisher: draft.publisher,
-      releaseYear: draft.releaseYear,
-      language: draft.language,
-    },
-    condition: draft.condition ?? undefined,
-    conditionNote: draft.conditionNote,
-    location: draft.location,
-  };
+function toCreateInput({ work, edition, condition, conditionNote, location }: RowDraft) {
+  return { work, edition, condition: condition ?? undefined, conditionNote, location };
 }
 
 const FIELD_BY_PATH: Record<string, ImportField> = {
@@ -178,19 +163,19 @@ export function createImportService(db: Database, deps: ImportDeps) {
     new Set((editionTitles.all(userId) as TitleKeyParts[]).map(titleKey));
 
   /** Clé d'identité d'une édition : le code-barres, à défaut titre, série, tome et support. */
-  const identityOf = (draft: RowDraft): string | null => {
-    if (draft.barcode !== null) {
-      return `code:${draft.barcode}`;
+  const identityOf = ({ work, edition }: RowDraft): string | null => {
+    if (edition.barcode !== null) {
+      return `code:${edition.barcode}`;
     }
-    if (draft.title === null || draft.format === null) {
+    if (work.title === null || edition.format === null) {
       return null;
     }
     return titleKey({
-      title: draft.title,
-      series: draft.series,
-      volume: draft.volumeNumber,
-      format: draft.format,
-      console: consoleOf(draft.format, draft.console),
+      title: work.title,
+      series: work.series,
+      volume: work.volumeNumber,
+      format: edition.format,
+      console: consoleOf(edition.format, edition.console),
     });
   };
 
@@ -203,22 +188,23 @@ export function createImportService(db: Database, deps: ImportDeps) {
     if (identity === null) {
       return false;
     }
-    return draft.barcode === null
+    const { barcode } = draft.edition;
+    return barcode === null
       ? knownTitles.has(identity)
-      : barcodeKnown.get(userId, draft.barcode) !== undefined;
+      : barcodeKnown.get(userId, barcode) !== undefined;
   };
 
   const toFailure = (row: ParsedRow): ImportRowFailure => ({
     line: row.line,
-    title: row.draft.title,
+    title: row.draft.work.title,
     issues: row.issues,
   });
 
   const processRow = async (userId: number, row: ParsedRow, job: ImportJob): Promise<void> => {
     let draft = row.draft;
     let completedOnline = false;
-    if (needsCompletion(draft) && draft.barcode !== null) {
-      const code = draft.barcode;
+    const code = draft.edition.barcode;
+    if (needsCompletion(draft) && code !== null) {
       const found = await safely(() => deps.resolve(userId, code), null);
       if (found) {
         draft = fillFromSuggestion(draft, found);
@@ -227,12 +213,12 @@ export function createImportService(db: Database, deps: ImportDeps) {
     }
 
     const fail = (issue: ImportRowFailure['issues'][number]) =>
-      job.failures.push({ line: row.line, title: draft.title, issues: [issue] });
-    if (draft.title === null) {
+      job.failures.push({ line: row.line, title: draft.work.title, issues: [issue] });
+    if (draft.work.title === null) {
       fail({ code: 'not_found_online', field: 'title' });
       return;
     }
-    if (draft.format === null) {
+    if (draft.edition.format === null) {
       fail({ code: 'missing_format', field: 'format' });
       return;
     }
@@ -277,7 +263,7 @@ export function createImportService(db: Database, deps: ImportDeps) {
           console.error('[import] ligne', row.line, error);
           job.failures.push({
             line: row.line,
-            title: row.draft.title,
+            title: row.draft.work.title,
             issues: [{ code: 'invalid', field: null }],
           });
         }
@@ -308,8 +294,8 @@ export function createImportService(db: Database, deps: ImportDeps) {
         }
         return {
           line: row.line,
-          title: row.draft.title,
-          barcode: row.draft.barcode,
+          title: row.draft.work.title,
+          barcode: row.draft.edition.barcode,
           issues: row.issues,
           duplicate: duplicate && row.issues.length === 0,
           willComplete: row.issues.length === 0 && needsCompletion(row.draft),

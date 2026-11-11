@@ -1,5 +1,5 @@
 import {
-  type BarcodeKind,
+  type BarcodeSuggestion,
   CONSOLE_MAX_LENGTH,
   type CopyCondition,
   type ImportField,
@@ -32,22 +32,17 @@ const YEAR = /^\d{4}$/;
 const MIN_YEAR = 1000;
 const MAX_YEAR = 2100;
 
-/** Contenu d'une ligne, normalisé ; `null` quand la cellule est vide ou invalide. */
+type Nullable<T> = { [K in keyof T]: T[K] | null };
+
+/**
+ * Contenu d'une ligne, normalisé ; `null` quand la cellule est vide ou invalide. Œuvre et
+ * édition ont la forme d'une fiche trouvée en ligne, qui peut les compléter champ à champ.
+ */
 export interface RowDraft {
-  title: string | null;
-  series: string | null;
-  volumeNumber: number | null;
-  creators: string | null;
-  /** Année de l'œuvre : jamais dans le fichier, mais reprise de la fiche trouvée en ligne. */
-  workYear: number | null;
-  format: MediaFormat | null;
-  /** Console d'un jeu vidéo, sous son nom connu quand on la reconnaît. */
-  console: string | null;
-  barcode: string | null;
-  barcodeKind: BarcodeKind | null;
-  publisher: string | null;
-  releaseYear: number | null;
-  language: string | null;
+  /** `year` (année de l'œuvre) n'est jamais dans le fichier, mais reprise de la fiche en ligne. */
+  work: Nullable<BarcodeSuggestion['work']>;
+  /** `console` : celle d'un jeu vidéo, sous son nom connu quand on la reconnaît. */
+  edition: BarcodeSuggestion['edition'] & { barcode: string | null };
   condition: CopyCondition | null;
   conditionNote: string | null;
   location: string | null;
@@ -135,18 +130,21 @@ function parseRow(line: number, cells: Cells): ParsedRow {
     line,
     issues,
     draft: {
-      title,
-      series: text('series'),
-      volumeNumber: read('volume', parseVolume),
-      creators: text('creators'),
-      workYear: null,
-      format: format ?? (cell('format') === null ? impliedFormat : null),
-      console: gameConsole === null ? null : normalizeConsole(gameConsole),
-      barcode: barcode?.code ?? null,
-      barcodeKind: barcode?.kind ?? null,
-      publisher: text('publisher'),
-      releaseYear: read('year', parseYear),
-      language: text('language'),
+      work: {
+        title,
+        series: text('series'),
+        volumeNumber: read('volume', parseVolume),
+        creators: text('creators'),
+        year: null,
+      },
+      edition: {
+        format: format ?? (cell('format') === null ? impliedFormat : null),
+        console: gameConsole === null ? null : normalizeConsole(gameConsole),
+        barcode: barcode?.code ?? null,
+        publisher: text('publisher'),
+        releaseYear: read('year', parseYear),
+        language: text('language'),
+      },
       condition: read('condition', (value) =>
         parseWith(value, parseCondition, 'invalid_condition'),
       ),
@@ -160,13 +158,13 @@ function parseRow(line: number, cells: Cells): ParsedRow {
  * Des champs seront cherchés en ligne quand la ligne a un code-barres mais qu'il manque le
  * titre, les auteurs, l'éditeur, ou le support d'un code vidéo. Les valeurs du fichier priment.
  */
-export function needsCompletion(draft: RowDraft): boolean {
+export function needsCompletion({ work, edition }: RowDraft): boolean {
   return (
-    draft.barcode !== null &&
-    (draft.title === null ||
-      draft.creators === null ||
-      draft.publisher === null ||
-      draft.format === null)
+    edition.barcode !== null &&
+    (work.title === null ||
+      work.creators === null ||
+      edition.publisher === null ||
+      edition.format === null)
   );
 }
 

@@ -41,13 +41,9 @@ describe('parseTable', () => {
       line: 2,
       issues: [],
       draft: {
-        title: 'Alien',
-        volumeNumber: 3,
-        format: 'bluray',
+        work: { title: 'Alien', volumeNumber: 3 },
+        edition: { format: 'bluray', barcode: '9782203001190', releaseYear: 1979 },
         condition: 'very_good',
-        barcode: '9782203001190',
-        barcodeKind: 'isbn',
-        releaseYear: 1979,
       },
     });
   });
@@ -68,7 +64,7 @@ describe('parseTable', () => {
     const { rows } = parseTable(table(['ISBN'], ['9782203001190']));
 
     expect(rows[0].issues).toEqual([]);
-    expect(rows[0].draft.title).toBeNull();
+    expect(rows[0].draft.work.title).toBeNull();
   });
 
   it.each([
@@ -118,7 +114,7 @@ describe('parseTable', () => {
       ),
     );
 
-    expect(rows.map((row) => row.draft.format)).toEqual(['book', 'book', null]);
+    expect(rows.map((row) => row.draft.edition.format)).toEqual(['book', 'book', null]);
     expect(rows[2].issues).toEqual([]);
   });
 
@@ -131,7 +127,7 @@ describe('parseTable', () => {
       ),
     );
 
-    expect(rows.map((row) => [row.draft.format, row.draft.console])).toEqual([
+    expect(rows.map((row) => [row.draft.edition.format, row.draft.edition.console])).toEqual([
       ['game', 'Xbox 360'],
       ['game', 'Atari Jaguar'],
     ]);
@@ -140,7 +136,7 @@ describe('parseTable', () => {
   it('ne suppose pas de format quand la valeur donnée est invalide', () => {
     const { rows } = parseTable(table(['Titre', 'Format'], ['X', 'cassette']));
 
-    expect(rows[0].draft.format).toBeNull();
+    expect(rows[0].draft.edition.format).toBeNull();
   });
 });
 
