@@ -5,8 +5,8 @@ const LIMIT = 8;
 
 /**
  * IGDB (jeux vidéo, identifiants Twitch requis) : titre, année, studio, éditeur et série, sans
- * code-barres. La console n'est reprise que pour un jeu sorti sur une seule ; sinon
- * l'utilisateur la choisit dans le formulaire.
+ * code-barres. Toutes ses consoles sont listées (`consoles`), mais la console n'est préremplie
+ * que pour un jeu sorti sur une seule ; sinon l'utilisateur la choisit dans le formulaire.
  */
 export function createIgdbTitleSearch(client: IgdbClient): TitleSearchProvider {
   return {
@@ -33,6 +33,7 @@ export function createIgdbTitleSearch(client: IgdbClient): TitleSearchProvider {
             console: onlyConsole(game),
           },
         },
+        consoles: game.consoles,
       }));
     },
   };

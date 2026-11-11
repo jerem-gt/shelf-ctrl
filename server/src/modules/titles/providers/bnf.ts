@@ -38,7 +38,9 @@ export function createBnfTitleSearch(fetchFn: FetchFn = fetch): TitleSearchProvi
         }
         const isbn = subfield(fields.get('010')?.[0], 'a');
         const barcode = isbn ? parseBarcode(isbn) : null;
-        return [{ barcode: barcode?.code ?? null, source: 'bnf' as const, suggestion }];
+        return [
+          { barcode: barcode?.code ?? null, source: 'bnf' as const, suggestion, consoles: [] },
+        ];
       });
     },
   };

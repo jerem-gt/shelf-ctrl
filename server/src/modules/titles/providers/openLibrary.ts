@@ -63,6 +63,7 @@ export function createOpenLibraryTitleSearch(fetchFn: FetchFn = fetch): TitleSea
             console: null,
           },
         },
+        consoles: [],
       }));
     },
   };

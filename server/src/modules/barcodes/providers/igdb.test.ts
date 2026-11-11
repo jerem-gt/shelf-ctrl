@@ -217,7 +217,7 @@ describe('enrichissement IGDB', () => {
 });
 
 describe('recherche par titre IGDB', () => {
-  it('propose des jeux, console reprise seulement si elle est unique', async () => {
+  it('liste toutes les consoles, mais ne préremplit que la console unique', async () => {
     const results = await createIgdbTitleSearch(
       stubClient([game(), game({ title: 'Mario Kart 8', consoles: ['Wii U', 'Nintendo Switch'] })]),
     ).search('mario');
@@ -241,8 +241,10 @@ describe('recherche par titre IGDB', () => {
           console: 'Nintendo Switch',
         },
       },
+      consoles: ['Nintendo Switch'],
     });
     expect(results[1]?.suggestion.edition.console).toBeNull();
+    expect(results[1]?.consoles).toEqual(['Wii U', 'Nintendo Switch']);
   });
 });
 
