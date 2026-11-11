@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { type FetchFn, fetchJson } from './http.js';
-import { extractYear } from './text.js';
+import { extractYear } from './metadata.js';
 
 /** Un film ou une série : TMDB nomme `title`/`release_date` l'un, `name`/`first_air_date` l'autre. */
 const multiSchema = z.object({

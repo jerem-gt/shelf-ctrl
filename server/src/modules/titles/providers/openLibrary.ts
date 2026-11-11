@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { type FetchFn, fetchJson } from '../../../sources/http.js';
-import { extractVolume } from '../../../sources/text.js';
+import { extractVolume } from '../../../sources/metadata.js';
 import { parseBarcode } from '../../barcodes/barcode.js';
 import { titleResult } from './result.js';
 import type { TitleSearchProvider } from './types.js';

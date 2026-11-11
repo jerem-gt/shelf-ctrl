@@ -1,10 +1,9 @@
 import { z } from 'zod';
 
 import { normalizeConsole } from '../lib/consoles.js';
-import type { FetchFn } from './http.js';
-import { isSameTitle } from './text.js';
+import { ensureOk, type FetchFn, fetchWithTimeout } from './http.js';
+import { isSameTitle } from './metadata.js';
 
-const REQUEST_TIMEOUT_MS = 5000;
 /** Le jeton est renouvelé une minute avant son expiration annoncée. */
 const TOKEN_MARGIN_MS = 60_000;
 
@@ -108,13 +107,10 @@ export function createIgdbClient(
       client_secret: clientSecret,
       grant_type: 'client_credentials',
     });
-    const res = await fetchFn(`${TOKEN_URL}?${params}`, {
-      method: 'POST',
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    });
-    if (!res.ok) {
-      throw new Error(`jeton HTTP ${res.status}`);
-    }
+    const res = ensureOk(
+      await fetchWithTimeout(fetchFn, `${TOKEN_URL}?${params}`, { method: 'POST' }),
+      'jeton HTTP',
+    );
     const parsed = tokenSchema.safeParse(await res.json());
     if (!parsed.success) {
       throw new Error('Réponse inattendue');
@@ -130,7 +126,7 @@ export function createIgdbClient(
     token !== null && token.expiresAt > now() ? token.value : fetchToken();
 
   const post = (accessToken: string, body: string) =>
-    fetchFn(GAMES_URL, {
+    fetchWithTimeout(fetchFn, GAMES_URL, {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -138,7 +134,6 @@ export function createIgdbClient(
         Authorization: `Bearer ${accessToken}`,
       },
       body,
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
 
   return {
@@ -155,10 +150,7 @@ export function createIgdbClient(
         // Jeton révoqué avant son terme : un seul nouvel essai avec un jeton neuf.
         res = await post(await fetchToken(), body);
       }
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
-      const parsed = gamesSchema.safeParse(await res.json());
+      const parsed = gamesSchema.safeParse(await ensureOk(res).json());
       if (!parsed.success) {
         throw new Error('Réponse inattendue');
       }

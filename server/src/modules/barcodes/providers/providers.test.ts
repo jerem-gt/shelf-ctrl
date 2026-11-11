@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { FetchFn } from '../../../sources/http.js';
-import { extractVolume, extractYear } from '../../../sources/text.js';
+import { extractVolume, extractYear } from '../../../sources/metadata.js';
 import { cleanGameTitle } from './game.js';
 import { createGoogleBooksProvider } from './googleBooks.js';
 import { createDefaultProviders } from './index.js';
