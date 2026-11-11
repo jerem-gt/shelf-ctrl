@@ -235,6 +235,17 @@ describe('POST /api/import/preview', () => {
     expect((res.body as ImportPreview).rows.map((row) => row.duplicate)).toEqual([true, false]);
   });
 
+  it('ne confond pas deux éditions dont une barre verticale déplace la limite des champs', async () => {
+    const app = setup();
+    await request(app)
+      .post('/api/copies')
+      .send({ work: { title: 'A|B', series: 'C' }, edition: { format: 'book' } });
+
+    const res = await preview(app, csv('Titre;Série', 'A;B|C', 'A|B;C'));
+
+    expect((res.body as ImportPreview).rows.map((row) => row.duplicate)).toEqual([false, true]);
+  });
+
   it.each([
     ['un fichier vide', '', 'import.empty_file'],
     ['un fichier sans colonne utile', 'Auteur;Éditeur\nHergé;Casterman\n', 'import.no_columns'],

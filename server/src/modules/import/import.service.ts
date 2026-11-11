@@ -130,10 +130,12 @@ interface TitleKeyParts {
 /**
  * Clé d'une édition sans code-barres : titre, série, tome, support et console, casse ignorée. La
  * comparaison se fait en JavaScript des deux côtés, car `lower()` de SQLite ne replie que l'ASCII.
+ * Les parties sont encodées en JSON : un séparateur pourrait figurer dans un champ (« Xbox Series
+ * X|S ») et confondre deux éditions.
  */
 function titleKey({ title, series, volume, format, console: gameConsole }: TitleKeyParts) {
   const parts = [title, series ?? '', volume ?? '', format, gameConsole ?? ''];
-  return `titre:${parts.map((part) => String(part).toLowerCase()).join('|')}`;
+  return `titre:${JSON.stringify(parts.map((part) => String(part).toLowerCase()))}`;
 }
 
 /** Résultat de `work`, ou `fallback` s'il échoue : une source en panne ne doit rien interrompre. */
