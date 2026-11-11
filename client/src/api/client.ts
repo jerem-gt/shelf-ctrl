@@ -1,6 +1,7 @@
 import type {
   BarcodeLookupResponse,
   BorrowerItem,
+  ConsoleListResponse,
   CopyCondition,
   CopyItem,
   CopyListResponse,
@@ -332,6 +333,7 @@ export const api = {
     list: (filters: CopyFilters = {}) =>
       request<CopyListResponse>('GET', `/api/copies${toQueryString(filters)}`),
     get: (id: number) => request<CopyItem>('GET', `/api/copies/${id}`),
+    consoles: () => request<ConsoleListResponse>('GET', '/api/copies/consoles'),
     create: (payload: CreateCopyPayload) => request<CopyItem>('POST', '/api/copies', payload),
     update: (id: number, payload: UpdateCopyPayload) =>
       request<CopyItem>('PATCH', `/api/copies/${id}`, payload),

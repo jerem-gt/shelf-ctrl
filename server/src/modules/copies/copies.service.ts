@@ -7,6 +7,7 @@ import type {
 } from '@shelfctrl/types';
 import type { Database } from 'better-sqlite3';
 
+import { normalizeConsole } from '../../lib/consoles.js';
 import { normalizeBarcode } from '../barcodes/barcode.js';
 import type { CreateCopyInput, ListCopiesQuery, UpdateCopyInput } from './copies.schema.js';
 
@@ -79,6 +80,14 @@ export interface RemovedFiles {
   coverPath: string | null;
 }
 
+/**
+ * Console à enregistrer : seul un jeu vidéo en a une, sous son nom connu quand on la reconnaît
+ * (« ps5 » → « PlayStation 5 ») pour que le filtre et l'import la retrouvent.
+ */
+function consoleFor(format: MediaFormat, value: string | null | undefined): string | null {
+  return format === 'game' && value ? normalizeConsole(value) : null;
+}
+
 function escapeLike(value: string) {
   return value.replaceAll(/[\\%_]/g, String.raw`\$&`);
 }
@@ -133,8 +142,7 @@ export function createCopiesService(db: Database) {
         input.edition.publisher ?? null,
         input.edition.releaseYear ?? null,
         input.edition.language ?? null,
-        // Seul un jeu vidéo a une console.
-        input.edition.format === 'game' ? (input.edition.console ?? null) : null,
+        consoleFor(input.edition.format, input.edition.console),
       );
     return Number(result.lastInsertRowid);
   };
@@ -158,6 +166,19 @@ export function createCopiesService(db: Database) {
   return {
     create,
     findById,
+
+    /** Consoles des jeux de la collection du compte, sans doublon (casse ignorée), triées. */
+    consoles(userId: number): string[] {
+      const rows = db
+        .prepare(
+          `SELECT MIN(console) AS console FROM editions
+           WHERE user_id = ? AND format = 'game' AND console IS NOT NULL
+           GROUP BY console COLLATE NOCASE
+           ORDER BY console COLLATE NOCASE`,
+        )
+        .all(userId) as { console: string }[];
+      return rows.map((row) => row.console);
+    },
 
     list(userId: number, query: ListCopiesQuery): CopyListResponse {
       const clauses = ['c.user_id = ?'];
@@ -215,7 +236,7 @@ export function createCopiesService(db: Database) {
         }
         if (input.console !== undefined && copy.edition.format === 'game') {
           db.prepare('UPDATE editions SET console = ? WHERE id = ? AND user_id = ?').run(
-            input.console,
+            consoleFor(copy.edition.format, input.console),
             copy.edition.id,
             userId,
           );

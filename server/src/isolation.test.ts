@@ -84,6 +84,12 @@ describe('isolation des comptes', () => {
     expect((await bob.get('/api/sales')).body).toEqual([]);
     expect((await bob.get('/api/platforms')).body).toEqual({ items: [] });
     expect((await alice.get('/api/copies')).body.total).toBe(2);
+
+    await alice
+      .post('/api/copies')
+      .send({ work: { title: 'Halo 3' }, edition: { format: 'game', console: 'Xbox 360' } });
+    expect((await bob.get('/api/copies/consoles')).body).toEqual({ consoles: [] });
+    expect((await alice.get('/api/copies/consoles')).body).toEqual({ consoles: ['Xbox 360'] });
   });
 
   it('un exemplaire d’un autre compte est introuvable (404), en lecture comme en écriture', async () => {

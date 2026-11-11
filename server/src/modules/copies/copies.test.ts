@@ -11,6 +11,12 @@ function setup() {
 
 type TestApp = ReturnType<typeof setup>['app'];
 
+/** Ajoute un jeu vidéo sur une console. */
+const addGame = (app: TestApp, title: string, gameConsole: string) =>
+  request(app)
+    .post('/api/copies')
+    .send({ work: { title }, edition: { format: 'game', console: gameConsole } });
+
 const tintin = {
   work: { title: 'Tintin au Tibet', series: 'Tintin', volumeNumber: 20, creators: 'Hergé' },
   edition: { format: 'book', barcode: '9782203001190', publisher: 'Casterman' },
@@ -104,6 +110,29 @@ describe('POST /api/copies', () => {
     expect(movie.body.edition.console).toBeNull();
   });
 
+  it('enregistre une console saisie sous son nom connu, à la création comme à la modification', async () => {
+    const { app } = setup();
+    const created = await request(app)
+      .post('/api/copies')
+      .send({ work: { title: 'Gran Turismo 7' }, edition: { format: 'game', console: 'ps5' } });
+
+    expect(created.body.edition.console).toBe('PlayStation 5');
+    const listed = await request(app)
+      .get('/api/copies')
+      .query({ format: 'game', console: 'PlayStation 5' });
+    expect(listed.body.total).toBe(1);
+
+    const updated = await request(app)
+      .patch(`/api/copies/${created.body.id}`)
+      .send({ console: 'switch' });
+    expect(updated.body.edition.console).toBe('Nintendo Switch');
+
+    const custom = await request(app)
+      .patch(`/api/copies/${created.body.id}`)
+      .send({ console: 'Neo Geo' });
+    expect(custom.body.edition.console).toBe('Neo Geo');
+  });
+
   it('distingue un même jeu sur deux consoles', async () => {
     const { app, db } = setup();
     const zelda = (gameConsole: string) => ({
@@ -180,14 +209,27 @@ describe('GET /api/copies', () => {
     expect(loaned.body.items[0].status).toBe('loaned');
   });
 
+  it('liste les consoles présentes dans la collection, connues ou non, sans doublon', async () => {
+    const { app, db } = setup();
+    await addGame(app, 'Metal Slug', 'Neo Geo');
+    await addGame(app, 'Halo 3', 'Xbox 360');
+    await addGame(app, 'Gears of War', 'xbox 360');
+    await request(app).post('/api/copies').send(tintin);
+    // Saisie antérieure à la normalisation, casse différente : une seule entrée.
+    db.prepare(
+      "INSERT INTO editions (user_id, work_id, format, console) VALUES (1, (SELECT MIN(id) FROM works), 'game', 'neo geo')",
+    ).run();
+
+    const res = await request(app).get('/api/copies/consoles');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ consoles: ['Neo Geo', 'Xbox 360'] });
+  });
+
   it('filtre les jeux par console, casse ignorée, et cherche dans la console', async () => {
     const { app } = setup();
-    const add = (title: string, gameConsole: string) =>
-      request(app)
-        .post('/api/copies')
-        .send({ work: { title }, edition: { format: 'game', console: gameConsole } });
-    await add('Super Mario Odyssey', 'Nintendo Switch');
-    await add('Gran Turismo 7', 'PlayStation 5');
+    await addGame(app, 'Super Mario Odyssey', 'Nintendo Switch');
+    await addGame(app, 'Gran Turismo 7', 'PlayStation 5');
 
     const byConsole = await request(app)
       .get('/api/copies')

@@ -17,6 +17,18 @@ export function useCopies(filters: CopyFilters) {
   });
 }
 
+/**
+ * Consoles des jeux de la collection, pour le filtre. Sous la clé des exemplaires : un ajout ou
+ * une modification la rafraîchit avec les listes.
+ */
+export function useConsoles(enabled: boolean) {
+  return useQuery({
+    queryKey: [...COPIES_KEY, 'consoles'],
+    queryFn: () => api.copies.consoles(),
+    enabled,
+  });
+}
+
 export function useCreateCopy() {
   const queryClient = useQueryClient();
   return useMutation({

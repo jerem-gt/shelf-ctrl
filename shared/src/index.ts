@@ -105,6 +105,11 @@ export interface CopyItem {
   work: WorkSummary;
 }
 
+/** Consoles des jeux de la collection (filtre de la collection). */
+export interface ConsoleListResponse {
+  consoles: string[];
+}
+
 export interface CopyListResponse {
   items: CopyItem[];
   total: number;
