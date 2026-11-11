@@ -79,6 +79,14 @@ export function buildOpenApiSpec() {
           responses: { ...r201, ...r400 },
         },
       },
+      '/api/copies/consoles': {
+        get: {
+          tags: ['Exemplaires'],
+          summary: 'Consoles des jeux vidéo de la collection (filtre)',
+          security: sessionAuth,
+          responses: r200(),
+        },
+      },
       '/api/copies/{id}': {
         get: {
           tags: ['Exemplaires'],

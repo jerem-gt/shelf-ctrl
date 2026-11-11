@@ -52,6 +52,10 @@ export const handlers = [
   http.delete('/api/users/:id/2fa', () => new HttpResponse(null, { status: 204 })),
   http.get('/api/copies', () => HttpResponse.json({ items: COPIES, total: COPIES.length })),
   http.post('/api/copies', () => HttpResponse.json(COPY_TINTIN, { status: 201 })),
+  // Avant `/api/copies/:id`, qui l'intercepterait sinon.
+  http.get('/api/copies/consoles', () =>
+    HttpResponse.json({ consoles: ['Neo Geo', 'Nintendo Switch'] }),
+  ),
   http.get('/api/copies/:id', ({ params }) => {
     const copy = COPIES.find((candidate) => candidate.id === Number(params.id));
     if (copy) {

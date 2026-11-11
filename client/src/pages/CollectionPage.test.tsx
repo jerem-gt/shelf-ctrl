@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Route, Routes } from 'react-router';
@@ -63,15 +63,24 @@ describe('CollectionPage', () => {
     expect(await screen.findByText('Aucun résultat pour ces critères.')).toBeInTheDocument();
   });
 
-  it('propose un filtre de console pour les seuls jeux vidéo', async () => {
+  it('propose un filtre des consoles de la collection pour les seuls jeux vidéo', async () => {
     const searches = captureSearches();
     const user = userEvent.setup();
     renderWithProviders(<CollectionPage />);
 
     expect(screen.queryByRole('combobox', { name: 'Console' })).not.toBeInTheDocument();
     await user.selectOptions(screen.getByRole('combobox', { name: 'Format' }), 'game');
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Console' }), 'Nintendo Switch');
-    await waitFor(() => expect(searches).toContain('?format=game&console=Nintendo+Switch'));
+    const consoleFilter = screen.getByRole('combobox', { name: 'Console' });
+    // Les consoles présentes, une console hors de la liste connue comprise.
+    await waitFor(() =>
+      expect(
+        within(consoleFilter)
+          .getAllByRole('option')
+          .map((option) => option.getAttribute('value')),
+      ).toEqual(['', 'Neo Geo', 'Nintendo Switch']),
+    );
+    await user.selectOptions(consoleFilter, 'Neo Geo');
+    await waitFor(() => expect(searches).toContain('?format=game&console=Neo+Geo'));
 
     // Revenir à un autre format retire le filtre de console.
     await user.selectOptions(screen.getByRole('combobox', { name: 'Format' }), 'dvd');

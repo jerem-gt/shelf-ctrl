@@ -1,10 +1,4 @@
-import {
-  COPY_STATUSES,
-  type CopyStatus,
-  GAME_CONSOLES,
-  MEDIA_FORMATS,
-  type MediaFormat,
-} from '@shelfctrl/types';
+import { COPY_STATUSES, type CopyStatus, MEDIA_FORMATS, type MediaFormat } from '@shelfctrl/types';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -12,7 +6,7 @@ import { Link } from 'react-router';
 
 import type { CopyFilters } from '@/api/client';
 import { CopyCard } from '@/components/CopyCard';
-import { useCopies } from '@/hooks/useCopies';
+import { useConsoles, useCopies } from '@/hooks/useCopies';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 const FIELD_CLASS =
@@ -30,10 +24,11 @@ export function CollectionPage() {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [format, setFormat] = useState<MediaFormat | ''>('');
-  // Filtre des jeux vidéo seulement : une console précise (les autres se cherchent par texte).
+  // Filtre des jeux vidéo seulement, parmi les consoles réellement présentes dans la collection.
   const [gameConsole, setGameConsole] = useState('');
   const [status, setStatus] = useState<CopyStatus | ''>('');
   const consoleFilter = format === 'game' ? gameConsole : '';
+  const consoles = useConsoles(format === 'game').data?.consoles ?? [];
 
   const q = useDebouncedValue(search.trim(), 300);
   const filters: CopyFilters = {
@@ -143,7 +138,7 @@ export function CollectionPage() {
               <option value="">
                 {t('collection.consoleFilter')} : {t('collection.all')}
               </option>
-              {GAME_CONSOLES.map((name) => (
+              {consoles.map((name) => (
                 <option key={name} value={name}>
                   {name}
                 </option>

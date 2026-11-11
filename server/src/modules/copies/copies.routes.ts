@@ -1,4 +1,4 @@
-import type { CopyItem } from '@shelfctrl/types';
+import type { ConsoleListResponse, CopyItem } from '@shelfctrl/types';
 import type { Database } from 'better-sqlite3';
 import { Router } from 'express';
 
@@ -20,6 +20,12 @@ export function createCopiesRouter(db: Database, hooks: CopiesHooks = {}) {
 
   router.get('/', (req, res) => {
     res.json(service.list(currentUserId(res), listCopiesSchema.parse(req.query)));
+  });
+
+  // Avant `/:id` : « consoles » n'est pas un identifiant.
+  router.get('/consoles', (_req, res) => {
+    const body: ConsoleListResponse = { consoles: service.consoles(currentUserId(res)) };
+    res.json(body);
   });
 
   router.post('/', (req, res) => {
