@@ -8,9 +8,9 @@ import { buildListingDraft } from '@/lib/listing';
 import { publishUrl } from '@/lib/platforms';
 
 const BUTTON_CLASS =
-  'rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium disabled:opacity-60';
+  'rounded-md border border-line bg-surface px-4 py-2 text-sm font-medium disabled:opacity-60';
 const FIELD_CLASS =
-  'w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900';
+  'w-full rounded-md border border-line bg-surface-muted px-3 py-2 text-sm text-content';
 
 function CopyField({
   label,
@@ -62,7 +62,7 @@ function PublishLink({ platform }: Readonly<{ platform: string | null }>) {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 self-start text-sm font-medium text-slate-900 underline underline-offset-4"
+      className="inline-flex items-center gap-1 self-start text-sm font-medium text-content underline underline-offset-4"
     >
       <ExternalLink aria-hidden className="size-4" />
       {t('listingDraft.publishOn', { platform: platform.trim() })}
@@ -86,7 +86,7 @@ export function ListingFields({
       <PublishLink platform={platform} />
       <CopyField label={t('listingDraft.title')} value={draft.title} />
       <CopyField label={t('listingDraft.description')} value={draft.description} multiline />
-      <p className="text-xs text-slate-500">{t('listingDraft.hint')}</p>
+      <p className="text-xs text-content-subtle">{t('listingDraft.hint')}</p>
     </div>
   );
 }

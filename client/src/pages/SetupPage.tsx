@@ -43,7 +43,7 @@ export function SetupPage() {
             className={FIELD_CLASS}
           />
         </label>
-        <p id="setup-token-help" className="-mt-2 text-xs text-slate-500">
+        <p id="setup-token-help" className="-mt-2 text-xs text-content-subtle">
           {t('setup.tokenHelp')}
         </p>
         <label className={LABEL_CLASS}>

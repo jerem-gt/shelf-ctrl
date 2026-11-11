@@ -26,7 +26,7 @@ import { creatorsLabelKey } from '@/lib/formats';
 import { isScanSupported } from '@/lib/scanner';
 
 const FIELD_CLASS =
-  'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-slate-500 focus:outline-none';
+  'w-full rounded-md border border-line bg-surface px-3 py-2 text-sm focus:border-line-strong focus:outline-none';
 
 interface FormState {
   title: string;
@@ -121,7 +121,7 @@ function describeResult(result: TitleSearchResult, volumeLabel: (number: number)
 
 function Field({ label, children }: Readonly<{ label: string; children: React.ReactNode }>) {
   return (
-    <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+    <label className="flex flex-col gap-1 text-sm font-medium text-content-secondary">
       {label}
       {children}
     </label>
@@ -262,17 +262,17 @@ export function AddCopyPage() {
               type="button"
               onClick={runTitleSearch}
               disabled={titleSearch.isPending}
-              className="flex items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium disabled:opacity-60"
+              className="flex items-center gap-1 rounded-md border border-line bg-surface px-3 py-2 text-sm font-medium disabled:opacity-60"
             >
               <Search aria-hidden className="size-4" />
               {titleSearch.isPending ? t('add.titleSearch.searching') : t('add.titleSearch.button')}
             </button>
           </div>
-          {searchMessage && <output className="text-sm text-slate-600">{searchMessage}</output>}
+          {searchMessage && <output className="text-sm text-content-muted">{searchMessage}</output>}
           {titleSearch.data && titleSearch.data.results.length > 0 && (
             <ul
               aria-label={t('add.titleSearch.results')}
-              className="flex flex-col divide-y divide-slate-200 rounded-md border border-slate-200"
+              className="flex flex-col divide-y divide-line-subtle rounded-md border border-line-subtle"
             >
               {titleSearch.data.results.map((result) => {
                 const { title, heading, details, consoles } = describeResult(result, (number) =>
@@ -285,10 +285,10 @@ export function AddCopyPage() {
                   >
                     <div className="min-w-0 text-sm">
                       <p className="font-medium">{title}</p>
-                      {heading && <p className="text-slate-600">{heading}</p>}
-                      {details && <p className="truncate text-xs text-slate-500">{details}</p>}
-                      {consoles && <p className="text-xs text-slate-600">{consoles}</p>}
-                      <p className="text-xs text-slate-400">
+                      {heading && <p className="text-content-muted">{heading}</p>}
+                      {details && <p className="truncate text-xs text-content-subtle">{details}</p>}
+                      {consoles && <p className="text-xs text-content-muted">{consoles}</p>}
+                      <p className="text-xs text-content-faint">
                         {t('add.titleSearch.via', { source: t(`sources.${result.source}`) })}
                       </p>
                     </div>
@@ -296,7 +296,7 @@ export function AddCopyPage() {
                       type="button"
                       onClick={() => chooseResult(result)}
                       aria-label={`${t('add.titleSearch.choose')} : ${title}`}
-                      className="shrink-0 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium"
+                      className="shrink-0 rounded-md border border-line bg-surface px-3 py-1.5 text-sm font-medium"
                     >
                       {t('add.titleSearch.choose')}
                     </button>
@@ -324,7 +324,7 @@ export function AddCopyPage() {
               type="button"
               onClick={() => runLookup(form.barcode)}
               disabled={lookup.isPending || form.barcode.trim() === ''}
-              className="flex items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium disabled:opacity-60"
+              className="flex items-center gap-1 rounded-md border border-line bg-surface px-3 py-2 text-sm font-medium disabled:opacity-60"
             >
               <Search aria-hidden className="size-4" />
               {lookup.isPending ? t('add.lookup.searching') : t('add.lookup.button')}
@@ -333,15 +333,15 @@ export function AddCopyPage() {
               <button
                 type="button"
                 onClick={() => setScanning(true)}
-                className="flex items-center gap-1 rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white"
+                className="flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-fg"
               >
                 <Camera aria-hidden className="size-4" />
                 {t('scan.button')}
               </button>
             )}
           </div>
-          {!scanSupported && <p className="text-xs text-slate-500">{t('scan.unsupported')}</p>}
-          {lookupMessage && <output className="text-sm text-slate-600">{lookupMessage}</output>}
+          {!scanSupported && <p className="text-xs text-content-subtle">{t('scan.unsupported')}</p>}
+          {lookupMessage && <output className="text-sm text-content-muted">{lookupMessage}</output>}
         </fieldset>
 
         {scanning && <BarcodeScanner onDetect={handleScan} onClose={() => setScanning(false)} />}
@@ -456,7 +456,7 @@ export function AddCopyPage() {
         </fieldset>
 
         {createCopy.error && (
-          <p role="alert" className="text-sm text-red-700">
+          <p role="alert" className="text-sm text-danger">
             {createCopy.error.message}
           </p>
         )}
@@ -465,11 +465,11 @@ export function AddCopyPage() {
           <button
             type="submit"
             disabled={createCopy.isPending}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-fg disabled:opacity-60"
           >
             {createCopy.isPending ? t('add.submitting') : t('add.submit')}
           </button>
-          <Link to="/" className="rounded-md border border-slate-300 px-4 py-2 text-sm">
+          <Link to="/" className="rounded-md border border-line px-4 py-2 text-sm">
             {t('add.cancel')}
           </Link>
         </div>

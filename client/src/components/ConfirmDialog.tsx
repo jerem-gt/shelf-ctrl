@@ -37,10 +37,10 @@ export function ConfirmDialog({
     <div
       role="alertdialog"
       aria-label={label}
-      className="flex flex-col gap-3 rounded-lg border border-red-200 bg-red-50 p-4"
+      className="flex flex-col gap-3 rounded-lg border border-danger-line bg-danger-surface p-4"
     >
-      {title && <p className="font-semibold text-red-900">{title}</p>}
-      <p className="text-sm text-red-800">{message}</p>
+      {title && <p className="font-semibold text-danger">{title}</p>}
+      <p className="text-sm text-danger">{message}</p>
       <ErrorText error={error} />
       <div className="flex flex-wrap gap-3">
         <button

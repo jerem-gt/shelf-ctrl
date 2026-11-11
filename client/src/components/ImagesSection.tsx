@@ -32,7 +32,7 @@ export function ImagesSection({ copy }: Readonly<{ copy: CopyItem }>) {
   return (
     <section
       aria-label={t('images.section')}
-      className="flex flex-col gap-4 border-t border-slate-200 pt-4"
+      className="flex flex-col gap-4 border-t border-line-subtle pt-4"
     >
       <h3 className="font-semibold">{t('images.section')}</h3>
       <div className="grid gap-6 sm:grid-cols-2">
@@ -54,7 +54,7 @@ export function ImagesSection({ copy }: Readonly<{ copy: CopyItem }>) {
             type="button"
             disabled={fetchCover.isPending || uploadCover.isPending}
             onClick={() => fetchCover.mutate()}
-            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium disabled:opacity-60"
+            className="rounded-md border border-line bg-surface px-3 py-1.5 text-sm font-medium disabled:opacity-60"
           >
             {t(fetchCover.isPending ? 'images.searching' : 'images.findOnline')}
           </button>

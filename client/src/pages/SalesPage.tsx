@@ -25,18 +25,18 @@ function SaleRow({ sale }: Readonly<{ sale: SaleListItem }>) {
   ].filter(Boolean);
 
   return (
-    <li className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+    <li className="rounded-lg border border-line-subtle bg-surface p-4 shadow-sm">
       <Link to={`/copies/${sale.copyId}`} className="block truncate font-semibold">
         {sale.work.title}
       </Link>
       {sale.work.series && (
-        <p className="truncate text-sm text-slate-600">
+        <p className="truncate text-sm text-content-muted">
           {sale.work.series}
           {sale.work.volumeNumber !== null &&
             ` · ${t('collection.volume', { number: sale.work.volumeNumber })}`}
         </p>
       )}
-      <p className="text-sm text-slate-600">{details.join(' · ')}</p>
+      <p className="text-sm text-content-muted">{details.join(' · ')}</p>
     </li>
   );
 }
@@ -52,15 +52,15 @@ export function SalesPage() {
   let content;
   if (error) {
     content = (
-      <p role="alert" className="text-red-700">
+      <p role="alert" className="text-danger">
         {error.message}
       </p>
     );
   } else if (isPending) {
-    content = <p className="text-slate-500">{t('collection.loading')}</p>;
+    content = <p className="text-content-subtle">{t('collection.loading')}</p>;
   } else if (shown.length === 0) {
     content = (
-      <p className="text-slate-500">
+      <p className="text-content-subtle">
         {t(tab === 'sold' ? 'salesPage.emptySold' : 'salesPage.emptyListed')}
       </p>
     );
@@ -81,13 +81,13 @@ export function SalesPage() {
 
   const tabClass = (current: Tab) =>
     current === tab
-      ? 'border-b-2 border-slate-900 px-3 py-2 text-sm font-semibold'
-      : 'px-3 py-2 text-sm text-slate-500';
+      ? 'border-b-2 border-primary px-3 py-2 text-sm font-semibold'
+      : 'px-3 py-2 text-sm text-content-subtle';
 
   return (
     <section className="flex flex-col gap-4">
       <h2 className="text-xl font-semibold">{t('salesPage.title')}</h2>
-      <div role="tablist" className="flex gap-2 border-b border-slate-200">
+      <div role="tablist" className="flex gap-2 border-b border-line-subtle">
         <button
           type="button"
           role="tab"

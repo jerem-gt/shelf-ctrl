@@ -5,7 +5,7 @@ import { useBorrowers, useLendCopy } from '@/hooks/useLoans';
 import { localToday } from '@/lib/format';
 
 const FIELD_CLASS =
-  'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-slate-500 focus:outline-none';
+  'w-full rounded-md border border-line bg-surface px-3 py-2 text-sm focus:border-line-strong focus:outline-none';
 
 interface LendFormProps {
   copyId: number;
@@ -27,7 +27,7 @@ export function LendForm({ copyId, onDone }: Readonly<LendFormProps>) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-      <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+      <label className="flex flex-col gap-1 text-sm font-medium text-content-secondary">
         {t('loan.borrower')}
         <input
           required
@@ -43,7 +43,7 @@ export function LendForm({ copyId, onDone }: Readonly<LendFormProps>) {
           ))}
         </datalist>
       </label>
-      <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+      <label className="flex flex-col gap-1 text-sm font-medium text-content-secondary">
         {t('loan.date')}
         <input
           required
@@ -56,7 +56,7 @@ export function LendForm({ copyId, onDone }: Readonly<LendFormProps>) {
       </label>
 
       {lend.error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger">
           {lend.error.message}
         </p>
       )}
@@ -65,14 +65,14 @@ export function LendForm({ copyId, onDone }: Readonly<LendFormProps>) {
         <button
           type="submit"
           disabled={lend.isPending}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-fg disabled:opacity-60"
         >
           {lend.isPending ? t('loan.lending') : t('loan.lendSubmit')}
         </button>
         <button
           type="button"
           onClick={onDone}
-          className="rounded-md border border-slate-300 px-4 py-2 text-sm"
+          className="rounded-md border border-line px-4 py-2 text-sm"
         >
           {t('loan.cancel')}
         </button>

@@ -2,7 +2,7 @@ import { type ChangeEvent, type ReactNode, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const BUTTON_CLASS =
-  'cursor-pointer rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium focus-within:ring-2 focus-within:ring-slate-400 has-[:disabled]:opacity-60';
+  'cursor-pointer rounded-md border border-line bg-surface px-3 py-1.5 text-sm font-medium focus-within:ring-2 focus-within:ring-line-strong has-[:disabled]:opacity-60';
 
 interface ImageSlotProps {
   title: string;
@@ -57,18 +57,18 @@ export function ImageSlot({
   return (
     <div className="flex flex-col gap-2">
       <div>
-        <h4 className="text-sm font-medium text-slate-900">{title}</h4>
-        <p className="text-xs text-slate-500">{hint}</p>
+        <h4 className="text-sm font-medium text-content">{title}</h4>
+        <p className="text-xs text-content-subtle">{hint}</p>
       </div>
       {url ? (
         <img
           src={url}
           alt={alt}
           loading="lazy"
-          className="max-h-64 w-fit max-w-full rounded-md border border-slate-200 object-contain"
+          className="max-h-64 w-fit max-w-full rounded-md border border-line-subtle object-contain"
         />
       ) : (
-        <p className="text-sm text-slate-500">{t('images.none')}</p>
+        <p className="text-sm text-content-subtle">{t('images.none')}</p>
       )}
       <div className="flex flex-wrap items-center gap-2">
         <label htmlFor={inputId} className={BUTTON_CLASS}>
@@ -88,14 +88,14 @@ export function ImageSlot({
             type="button"
             disabled={busy}
             onClick={onRemove}
-            className={`${BUTTON_CLASS} text-red-700 disabled:opacity-60`}
+            className={`${BUTTON_CLASS} text-danger disabled:opacity-60`}
           >
             {t('images.remove')}
           </button>
         )}
       </div>
       {error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger">
           {error}
         </p>
       )}

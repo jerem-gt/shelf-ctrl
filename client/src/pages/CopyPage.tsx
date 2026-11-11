@@ -20,7 +20,7 @@ type Mode = 'view' | 'edit' | 'delete';
 function BackLink() {
   const { t } = useTranslation();
   return (
-    <Link to="/" className="inline-flex items-center gap-1 text-sm text-slate-600">
+    <Link to="/" className="inline-flex items-center gap-1 text-sm text-content-muted">
       <ArrowLeft aria-hidden className="size-4" />
       {t('detail.back')}
     </Link>
@@ -31,8 +31,8 @@ function DetailItem({ label, value }: Readonly<{ label: string; value: string | 
   const { t } = useTranslation();
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</dt>
-      <dd className="text-sm text-slate-900">{value ?? t('detail.noValue')}</dd>
+      <dt className="text-xs font-medium uppercase tracking-wide text-content-subtle">{label}</dt>
+      <dd className="text-sm text-content">{value ?? t('detail.noValue')}</dd>
     </div>
   );
 }
@@ -70,14 +70,14 @@ export function CopyPage() {
     return (
       <section className="flex flex-col gap-4">
         <BackLink />
-        <p role="alert" className="text-red-700">
+        <p role="alert" className="text-danger">
           {missing ? t('detail.notFound') : error.message}
         </p>
       </section>
     );
   }
   if (isPending) {
-    return <p className="text-slate-500">{t('collection.loading')}</p>;
+    return <p className="text-content-subtle">{t('collection.loading')}</p>;
   }
 
   const { work } = copy;
@@ -100,7 +100,7 @@ export function CopyPage() {
           <button
             type="button"
             onClick={() => setMode('edit')}
-            className="flex items-center gap-1 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white"
+            className="flex items-center gap-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-fg"
           >
             <Pencil aria-hidden className="size-4" />
             {t('detail.edit')}
@@ -108,7 +108,7 @@ export function CopyPage() {
           <button
             type="button"
             onClick={() => setMode('delete')}
-            className="flex items-center gap-1 rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700"
+            className="flex items-center gap-1 rounded-md border border-danger-line bg-surface px-4 py-2 text-sm font-medium text-danger"
           >
             <Trash2 aria-hidden className="size-4" />
             {t('detail.delete')}
@@ -128,7 +128,7 @@ export function CopyPage() {
         <div className="min-w-0">
           <h2 className="text-xl font-semibold">{work.title}</h2>
           {work.series && (
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-content-muted">
               {work.series}
               {work.volumeNumber !== null &&
                 ` · ${t('collection.volume', { number: work.volumeNumber })}`}

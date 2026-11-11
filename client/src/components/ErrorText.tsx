@@ -4,7 +4,7 @@ export function ErrorText({ error }: Readonly<{ error: Error | null | undefined 
     return null;
   }
   return (
-    <p role="alert" className="text-sm text-red-700">
+    <p role="alert" className="text-sm text-danger">
       {error.message}
     </p>
   );

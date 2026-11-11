@@ -22,7 +22,7 @@ export function ConsoleField({
   const hintId = `${id}-hint`;
   return (
     <div className="flex flex-col gap-1">
-      <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+      <label className="flex flex-col gap-1 text-sm font-medium text-content-secondary">
         {label}
         <input
           list={listId}
@@ -38,7 +38,7 @@ export function ConsoleField({
           <option key={name} value={name} />
         ))}
       </datalist>
-      <p id={hintId} className="text-xs text-slate-500">
+      <p id={hintId} className="text-xs text-content-subtle">
         {hint}
       </p>
     </div>

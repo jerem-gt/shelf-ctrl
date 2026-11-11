@@ -26,7 +26,7 @@ export function ForgotPasswordPage() {
   if (forgot.isSuccess) {
     return (
       <AuthCard subtitle={t('forgot.subtitle')}>
-        <output className="block text-sm text-slate-700">{t('forgot.sent')}</output>
+        <output className="block text-sm text-content-secondary">{t('forgot.sent')}</output>
         {back}
       </AuthCard>
     );

@@ -346,6 +346,12 @@
     "fr": "Français",
     "en": "English"
   },
+  "theme": {
+    "title": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
   "salesPage": {
     "title": "Sales",
     "listedTab": "For sale",

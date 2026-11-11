@@ -13,7 +13,7 @@ import { SaleForm, type SaleFormMode } from './SaleForm';
 type Mode = 'view' | SaleFormMode | 'cancel';
 
 const BUTTON_CLASS =
-  'rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium disabled:opacity-60';
+  'rounded-md border border-line bg-surface px-4 py-2 text-sm font-medium disabled:opacity-60';
 
 function useSummary() {
   const { t } = useTranslation();
@@ -68,7 +68,7 @@ export function SaleSection({ copy }: Readonly<{ copy: CopyItem }>) {
   } else if (sale?.soldAt) {
     body = (
       <>
-        <p className="text-sm text-slate-900">{summarize(sale)}</p>
+        <p className="text-sm text-content">{summarize(sale)}</p>
         <div>
           <button type="button" onClick={() => setMode('cancel')} className={BUTTON_CLASS}>
             {t('sale.cancelSaleButton')}
@@ -79,7 +79,7 @@ export function SaleSection({ copy }: Readonly<{ copy: CopyItem }>) {
   } else {
     body = (
       <>
-        {sale && <p className="text-sm text-slate-900">{summarize(sale)}</p>}
+        {sale && <p className="text-sm text-content">{summarize(sale)}</p>}
         <div className="flex flex-wrap gap-3">
           {!sale && (
             <button type="button" onClick={() => setMode('list')} className={BUTTON_CLASS}>
@@ -110,7 +110,7 @@ export function SaleSection({ copy }: Readonly<{ copy: CopyItem }>) {
             </>
           )}
         </div>
-        {loaned && <p className="text-sm text-slate-500">{t('sale.loanedNote')}</p>}
+        {loaned && <p className="text-sm text-content-subtle">{t('sale.loanedNote')}</p>}
       </>
     );
   }
@@ -118,7 +118,7 @@ export function SaleSection({ copy }: Readonly<{ copy: CopyItem }>) {
   return (
     <section
       aria-label={t('sale.section')}
-      className="flex flex-col gap-3 border-t border-slate-200 pt-4"
+      className="flex flex-col gap-3 border-t border-line-subtle pt-4"
     >
       <h3 className="font-semibold">{t('sale.section')}</h3>
       {body}
@@ -126,7 +126,7 @@ export function SaleSection({ copy }: Readonly<{ copy: CopyItem }>) {
         <ListingDraftPanel copy={copy} platform={sale.platform} />
       )}
       {remove.error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger">
           {remove.error.message}
         </p>
       )}

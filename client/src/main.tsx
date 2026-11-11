@@ -1,4 +1,6 @@
 import './index.css';
+// Applique le thème mémorisé et suit la préférence de l'appareil dès le démarrage.
+import './hooks/useTheme';
 
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
