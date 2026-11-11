@@ -1,8 +1,10 @@
 import {
   type BarcodeSuggestion,
+  consoleOf,
   COPY_CONDITIONS,
   type CopyCondition,
   FORMATS_BY_KIND,
+  isGameFormat,
   kindOfFormat,
   type MediaFormat,
   type MediaKind,
@@ -20,6 +22,7 @@ import { KindPicker } from '@/components/KindPicker';
 import { useBarcodeLookup } from '@/hooks/useBarcodeLookup';
 import { useCreateCopy } from '@/hooks/useCopies';
 import { useTitleSearch } from '@/hooks/useTitleSearch';
+import { creatorsLabelKey } from '@/lib/formats';
 import { isScanSupported } from '@/lib/scanner';
 
 const FIELD_CLASS =
@@ -71,7 +74,7 @@ function toPayload(form: FormState): CreateCopyPayload {
     edition: {
       format: form.format,
       // La console ne vaut que pour un jeu vidéo : saisie puis format changé, elle est oubliée.
-      console: form.format === 'game' ? optional(form.console) : undefined,
+      console: consoleOf(form.format, optional(form.console)) ?? undefined,
       barcode: optional(form.barcode),
       publisher: optional(form.publisher),
     },
@@ -368,7 +371,7 @@ export function AddCopyPage() {
               />
             </Field>
           </div>
-          <Field label={form.format === 'game' ? t('add.developers') : t('add.creators')}>
+          <Field label={t(creatorsLabelKey('add', form.format))}>
             <input
               maxLength={300}
               value={form.creators}
@@ -395,7 +398,7 @@ export function AddCopyPage() {
               </select>
             </Field>
           )}
-          {form.format === 'game' && (
+          {isGameFormat(form.format) && (
             <ConsoleField
               label={t('add.console')}
               hint={t('add.consoleHint')}

@@ -1,3 +1,5 @@
+import { kindOfFormat } from '@shelfctrl/types';
+
 import { isSameTitle, searchTmdb } from '../../barcodes/providers/tmdb.js';
 import { type CoverProvider, type FetchFn, fetchImage } from './types.js';
 
@@ -10,7 +12,7 @@ const POSTER_BASE = 'https://image.tmdb.org/t/p/w500';
 export function createTmdbCoverProvider(apiKey: string, fetchFn: FetchFn = fetch): CoverProvider {
   return {
     source: 'tmdb',
-    supports: (query) => query.format !== 'book' && query.format !== 'game',
+    supports: (query) => kindOfFormat(query.format) === 'movie',
     async find(query) {
       const entries = await searchTmdb(apiKey, query.title, fetchFn);
       const match = entries.find(

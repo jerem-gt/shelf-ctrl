@@ -1,4 +1,10 @@
-import { COPY_STATUSES, type CopyStatus, MEDIA_FORMATS, type MediaFormat } from '@shelfctrl/types';
+import {
+  COPY_STATUSES,
+  type CopyStatus,
+  isGameFormat,
+  MEDIA_FORMATS,
+  type MediaFormat,
+} from '@shelfctrl/types';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -27,8 +33,9 @@ export function CollectionPage() {
   // Filtre des jeux vidéo seulement, parmi les consoles réellement présentes dans la collection.
   const [gameConsole, setGameConsole] = useState('');
   const [status, setStatus] = useState<CopyStatus | ''>('');
-  const consoleFilter = format === 'game' ? gameConsole : '';
-  const consoles = useConsoles(format === 'game').data?.consoles ?? [];
+  const filtersGames = isGameFormat(format);
+  const consoleFilter = filtersGames ? gameConsole : '';
+  const consoles = useConsoles(filtersGames).data?.consoles ?? [];
 
   const q = useDebouncedValue(search.trim(), 300);
   const filters: CopyFilters = {
@@ -38,8 +45,9 @@ export function CollectionPage() {
     status: status || undefined,
   };
   const hasFilters = Boolean(q || format || consoleFilter || status);
-  const filterColumns =
-    format === 'game' ? 'sm:grid-cols-[1fr_auto_auto_auto]' : 'sm:grid-cols-[1fr_auto_auto]';
+  const filterColumns = filtersGames
+    ? 'sm:grid-cols-[1fr_auto_auto_auto]'
+    : 'sm:grid-cols-[1fr_auto_auto]';
   const { data, isPending, error, refetch } = useCopies(filters);
 
   let content;
@@ -126,7 +134,7 @@ export function CollectionPage() {
           </select>
         </label>
 
-        {format === 'game' && (
+        {filtersGames && (
           <label className="flex flex-col gap-1 text-sm">
             <span className="sr-only">{t('collection.consoleFilter')}</span>
             <select

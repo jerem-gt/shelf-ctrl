@@ -1,4 +1,4 @@
-import type { CopyItem } from '@shelfctrl/types';
+import { type CopyItem, isGameFormat } from '@shelfctrl/types';
 import { ArrowLeft, Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +13,7 @@ import { SaleSection } from '@/components/SaleSection';
 import { StatusBadge } from '@/components/StatusBadge';
 import { useCopy } from '@/hooks/useCopies';
 import { formatDate } from '@/lib/format';
+import { creatorsLabelKey } from '@/lib/formats';
 
 type Mode = 'view' | 'edit' | 'delete';
 
@@ -43,15 +44,12 @@ function CopyDetails({ copy }: Readonly<{ copy: CopyItem }>) {
   return (
     <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
       <DetailItem label={t('detail.format')} value={t(`formats.${edition.format}`)} />
-      {edition.format === 'game' && (
+      {isGameFormat(edition.format) && (
         <DetailItem label={t('detail.console')} value={edition.console} />
       )}
       <DetailItem label={t('detail.barcode')} value={edition.barcode} />
       <DetailItem label={t('detail.publisher')} value={edition.publisher} />
-      <DetailItem
-        label={edition.format === 'game' ? t('detail.developers') : t('detail.creators')}
-        value={work.creators}
-      />
+      <DetailItem label={t(creatorsLabelKey('detail', edition.format))} value={work.creators} />
       <DetailItem label={t('detail.condition')} value={t(`conditions.${copy.condition}`)} />
       <DetailItem label={t('detail.conditionNote')} value={copy.conditionNote} />
       <DetailItem label={t('detail.location')} value={copy.location} />

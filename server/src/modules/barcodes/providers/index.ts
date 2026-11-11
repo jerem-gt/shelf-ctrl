@@ -1,3 +1,5 @@
+import { isGameFormat } from '@shelfctrl/types';
+
 import { createBnfProvider } from './bnf.js';
 import { createGoogleBooksProvider } from './googleBooks.js';
 import { createIgdbEnricher, igdbClientFromEnv, type IgdbEnv } from './igdb.js';
@@ -42,7 +44,7 @@ export function createDefaultProviders(
         if (!suggestion) {
           return null;
         }
-        const enrich = suggestion.edition.format === 'game' ? enrichGame : enrichMovie;
+        const enrich = isGameFormat(suggestion.edition.format) ? enrichGame : enrichMovie;
         return enrich ? enrich(suggestion) : suggestion;
       },
     });

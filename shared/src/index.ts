@@ -22,6 +22,22 @@ export function kindOfFormat(format: MediaFormat): MediaKind {
 }
 
 /**
+ * Un jeu vidéo : le seul format qui a une console, et dont les auteurs sont un studio. Seul endroit
+ * où ce test s'écrit (format vide ou inconnu d'un filtre ou d'une fiche : faux).
+ */
+export function isGameFormat(format: MediaFormat | '' | null | undefined): boolean {
+  return format === 'game';
+}
+
+/** Console à garder pour ce format : la valeur pour un jeu vidéo, `null` pour tout autre format. */
+export function consoleOf(
+  format: MediaFormat | null | undefined,
+  value: string | null | undefined,
+): string | null {
+  return isGameFormat(format) && value ? value : null;
+}
+
+/**
  * Consoles proposées pour un jeu vidéo (`format` = `game`), des plus récentes aux plus anciennes
  * par constructeur. La console d'une édition reste un texte libre : cette liste n'est qu'une aide.
  */

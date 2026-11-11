@@ -1,4 +1,4 @@
-import { COPY_CONDITIONS, type CopyCondition, type CopyItem } from '@shelfctrl/types';
+import { COPY_CONDITIONS, type CopyCondition, type CopyItem, isGameFormat } from '@shelfctrl/types';
 import { type SyntheticEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -23,7 +23,7 @@ export function EditCopyForm({ copy, onDone }: Readonly<EditCopyFormProps>) {
   const [condition, setCondition] = useState<CopyCondition>(copy.condition);
   const [note, setNote] = useState(copy.conditionNote ?? '');
   const [location, setLocation] = useState(copy.location ?? '');
-  const isGame = copy.edition.format === 'game';
+  const isGame = isGameFormat(copy.edition.format);
   const [gameConsole, setGameConsole] = useState(copy.edition.console ?? '');
 
   const handleSubmit = (event: SyntheticEvent<HTMLFormElement>) => {

@@ -1,13 +1,14 @@
 import crypto from 'node:crypto';
 
-import type {
-  BarcodeLookupResponse,
-  ImportField,
-  ImportJob,
-  ImportPreview,
-  ImportRowFailure,
-  ImportRowPreview,
-  ShelfLang,
+import {
+  type BarcodeLookupResponse,
+  consoleOf,
+  type ImportField,
+  type ImportJob,
+  type ImportPreview,
+  type ImportRowFailure,
+  type ImportRowPreview,
+  type ShelfLang,
 } from '@shelfctrl/types';
 import type { Database } from 'better-sqlite3';
 
@@ -189,7 +190,7 @@ export function createImportService(db: Database, deps: ImportDeps) {
       series: draft.series,
       volume: draft.volumeNumber,
       format: draft.format,
-      console: draft.format === 'game' ? draft.console : null,
+      console: consoleOf(draft.format, draft.console),
     });
   };
 
