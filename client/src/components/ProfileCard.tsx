@@ -59,7 +59,7 @@ function ProfileForm({
           className={FIELD_CLASS}
         />
       </label>
-      <p id={hintId} className="-mt-2 text-xs text-slate-500">
+      <p id={hintId} className="-mt-2 text-xs text-content-subtle">
         {t('profile.emailHint')}
       </p>
       {changed && (
@@ -76,12 +76,12 @@ function ProfileForm({
         </label>
       )}
       {update.error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger">
           {update.error.message}
         </p>
       )}
       {update.isSuccess && !changed && (
-        <output className="block text-sm text-green-700">{t('profile.saved')}</output>
+        <output className="block text-sm text-success">{t('profile.saved')}</output>
       )}
       <button type="submit" disabled={!changed || update.isPending} className={BUTTON_CLASS}>
         {update.isPending ? t('profile.saving') : t('profile.save')}
@@ -156,12 +156,12 @@ function PasswordForm() {
         />
       </label>
       {error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger">
           {error}
         </p>
       )}
       {change.isSuccess && (
-        <output className="block text-sm text-green-700">{t('profile.passwordChanged')}</output>
+        <output className="block text-sm text-success">{t('profile.passwordChanged')}</output>
       )}
       <button type="submit" disabled={change.isPending} className={BUTTON_CLASS}>
         {change.isPending ? t('profile.changingPassword') : t('profile.changePassword')}
@@ -179,7 +179,7 @@ export function ProfileCard() {
     return null;
   }
   return (
-    <div className="flex flex-col gap-6 rounded-md border border-slate-200 bg-white p-4">
+    <div className="flex flex-col gap-6 rounded-md border border-line-subtle bg-surface p-4">
       {/* Clé : le formulaire repart des valeurs enregistrées après un changement de nom. */}
       <ProfileForm key={`${me.username}|${me.email ?? ''}`} me={me} update={update} />
       <PasswordForm />

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { ApiError } from '@/api/client';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ProfileCard } from '@/components/ProfileCard';
+import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { TwoFactorCard } from '@/components/TwoFactorCard';
 import {
   useAddPlatform,
@@ -17,9 +18,9 @@ import {
 import { findKnownPlatform, KNOWN_PLATFORMS } from '@/lib/platforms';
 
 const FIELD_CLASS =
-  'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-slate-500 focus:outline-none';
+  'w-full rounded-md border border-line bg-surface px-3 py-2 text-sm focus:border-line-strong focus:outline-none';
 const BUTTON_CLASS =
-  'rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium disabled:opacity-60';
+  'rounded-md border border-line bg-surface px-3 py-1.5 text-sm font-medium disabled:opacity-60';
 
 const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
@@ -60,14 +61,14 @@ function CustomPlatformRow({
           disabled={busy}
           onClick={onRemove}
           aria-label={t('settings.remove', { name: platform.name })}
-          className="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-red-700 disabled:opacity-60"
+          className="rounded-md p-2 text-content-subtle hover:bg-surface-emphasis hover:text-danger disabled:opacity-60"
         >
           <Trash2 aria-hidden className="size-4" />
         </button>
       </div>
       <form onSubmit={save} className="flex flex-col gap-2 sm:flex-row sm:items-end">
         <div className="flex flex-1 flex-col gap-1">
-          <label htmlFor={urlId} className="text-xs font-medium text-slate-600">
+          <label htmlFor={urlId} className="text-xs font-medium text-content-muted">
             {t('settings.publishUrl')}
           </label>
           <input
@@ -84,7 +85,7 @@ function CustomPlatformRow({
         </button>
       </form>
       {saveUrl.error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger">
           {errorMessage(saveUrl.error)}
         </p>
       )}
@@ -118,7 +119,7 @@ function AddPlatformForm() {
     <form onSubmit={submit} className="flex flex-col gap-3">
       <h4 className="font-medium">{t('settings.addTitle')}</h4>
       <div className="flex flex-col gap-1">
-        <label htmlFor={nameId} className="text-sm font-medium text-slate-700">
+        <label htmlFor={nameId} className="text-sm font-medium text-content-secondary">
           {t('settings.name')}
         </label>
         <input
@@ -131,7 +132,7 @@ function AddPlatformForm() {
         />
       </div>
       <div className="flex flex-col gap-1">
-        <label htmlFor={urlId} className="text-sm font-medium text-slate-700">
+        <label htmlFor={urlId} className="text-sm font-medium text-content-secondary">
           {t('settings.publishUrl')}
         </label>
         <input
@@ -143,12 +144,12 @@ function AddPlatformForm() {
           aria-describedby={`${urlId}-hint`}
           className={FIELD_CLASS}
         />
-        <p id={`${urlId}-hint`} className="text-xs text-slate-500">
+        <p id={`${urlId}-hint`} className="text-xs text-content-subtle">
           {t('settings.publishUrlHint')}
         </p>
       </div>
       {add.error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger">
           {errorMessage(add.error)}
         </p>
       )}
@@ -172,13 +173,13 @@ function PlatformsSettings() {
 
   if (error) {
     return (
-      <p role="alert" className="text-sm text-red-700">
+      <p role="alert" className="text-sm text-danger">
         {error.message}
       </p>
     );
   }
   if (isPending) {
-    return <p className="text-sm text-slate-500">{t('settings.loading')}</p>;
+    return <p className="text-sm text-content-subtle">{t('settings.loading')}</p>;
   }
 
   const items = data.items;
@@ -189,7 +190,7 @@ function PlatformsSettings() {
 
   return (
     <div className="flex flex-col gap-5">
-      <p className="text-sm text-slate-600">{t('settings.platformsIntro')}</p>
+      <p className="text-sm text-content-muted">{t('settings.platformsIntro')}</p>
 
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 font-medium">{t('settings.known')}</legend>
@@ -198,7 +199,7 @@ function PlatformsSettings() {
             const row = items.find((item) => sameName(item.name, known.name));
             return (
               <li key={known.name}>
-                <label className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm">
+                <label className="flex items-center gap-2 rounded-md border border-line-subtle bg-surface px-3 py-2 text-sm">
                   <input
                     type="checkbox"
                     checked={row !== undefined}
@@ -218,11 +219,11 @@ function PlatformsSettings() {
       <section className="flex flex-col gap-2">
         <h3 className="font-medium">{t('settings.custom')}</h3>
         {custom.length === 0 ? (
-          <p className="text-sm text-slate-500">{t('settings.noCustom')}</p>
+          <p className="text-sm text-content-subtle">{t('settings.noCustom')}</p>
         ) : (
           <ul
             aria-label={t('settings.custom')}
-            className="flex flex-col divide-y divide-slate-200 rounded-md border border-slate-200 bg-white"
+            className="flex flex-col divide-y divide-line-subtle rounded-md border border-line-subtle bg-surface"
           >
             {custom.map((platform) => (
               <CustomPlatformRow
@@ -238,7 +239,7 @@ function PlatformsSettings() {
       </section>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor={defaultId} className="text-sm font-medium text-slate-700">
+        <label htmlFor={defaultId} className="text-sm font-medium text-content-secondary">
           {t('settings.default')}
         </label>
         <select
@@ -257,11 +258,11 @@ function PlatformsSettings() {
             </option>
           ))}
         </select>
-        <p className="text-xs text-slate-500">{t('settings.defaultHint')}</p>
+        <p className="text-xs text-content-subtle">{t('settings.defaultHint')}</p>
       </div>
 
       {mutationError && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger">
           {errorMessage(mutationError)}
         </p>
       )}
@@ -280,6 +281,8 @@ export function SettingsPage() {
       <TwoFactorCard />
       <h3 className="text-lg font-semibold">{t('language.title')}</h3>
       <LanguageSwitcher />
+      <h3 className="text-lg font-semibold">{t('theme.title')}</h3>
+      <ThemeSwitcher />
       <h3 className="text-lg font-semibold">{t('settings.platformsTitle')}</h3>
       <PlatformsSettings />
     </section>

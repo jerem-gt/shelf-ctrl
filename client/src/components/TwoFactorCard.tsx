@@ -55,7 +55,7 @@ function DeviceRow({ device }: Readonly<{ device: TrustedDeviceItem }>) {
             <span className={SUCCESS_BADGE_CLASS}>{t('twoFactor.deviceCurrent')}</span>
           )}
         </p>
-        <p className="text-xs text-slate-500">{lastUsedText(device.lastUsedAt)}</p>
+        <p className="text-xs text-content-subtle">{lastUsedText(device.lastUsedAt)}</p>
         <ErrorText error={forget.error} />
       </div>
       <button
@@ -112,12 +112,12 @@ function TrustedDevices() {
     <section className="flex flex-col gap-2">
       <h4 className="font-medium">{t('twoFactor.devicesTitle')}</h4>
       {devices.length === 0 ? (
-        <p className="text-sm text-slate-500">{t('twoFactor.devicesEmpty')}</p>
+        <p className="text-sm text-content-subtle">{t('twoFactor.devicesEmpty')}</p>
       ) : (
         <>
           <ul
             aria-label={t('twoFactor.devicesTitle')}
-            className="flex flex-col divide-y divide-slate-200"
+            className="flex flex-col divide-y divide-line-subtle"
           >
             {devices.map((device) => (
               <DeviceRow key={device.id} device={device} />
@@ -148,15 +148,15 @@ function SetupForm({
   return (
     <form onSubmit={submit} className="flex flex-col gap-3">
       <h4 className="font-medium">{t('twoFactor.setupTitle')}</h4>
-      <p className="text-sm text-slate-600">{t('twoFactor.setupScan')}</p>
-      <div className="self-center rounded-md border border-slate-200 bg-white p-3">
+      <p className="text-sm text-content-muted">{t('twoFactor.setupScan')}</p>
+      <div className="self-center rounded-md border border-line-subtle bg-surface p-3">
         <QRCodeSVG value={setup.uri} size={176} title={t('twoFactor.qrLabel')} />
       </div>
-      <p className="text-xs text-slate-500">{t('twoFactor.setupSecret')}</p>
-      <p className="rounded-md bg-slate-100 px-3 py-2 font-mono text-xs break-all select-all">
+      <p className="text-xs text-content-subtle">{t('twoFactor.setupSecret')}</p>
+      <p className="rounded-md bg-surface-emphasis px-3 py-2 font-mono text-xs break-all select-all">
         {setup.secret}
       </p>
-      <p className="text-sm text-slate-600">{t('twoFactor.setupConfirm')}</p>
+      <p className="text-sm text-content-muted">{t('twoFactor.setupConfirm')}</p>
       <TotpCodeInput
         label={t('twoFactor.code')}
         value={code}
@@ -196,7 +196,7 @@ function DisableForm({
   return (
     <form onSubmit={submit} className="flex flex-col gap-3">
       <h4 className="font-medium">{t('twoFactor.disableTitle')}</h4>
-      <p className="text-sm text-slate-600">{t('twoFactor.disableIntro')}</p>
+      <p className="text-sm text-content-muted">{t('twoFactor.disableIntro')}</p>
       <label className={LABEL_CLASS}>
         {t('twoFactor.password')}
         <input
@@ -294,20 +294,20 @@ export function TwoFactorCard() {
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-md border border-slate-200 bg-white p-4">
+    <div className="flex flex-col gap-4 rounded-md border border-line-subtle bg-surface p-4">
       <div className="flex flex-col gap-1">
         <p className="flex items-center gap-2 text-sm font-medium">
           <span
             aria-hidden
-            className={`inline-block size-2 rounded-full ${enabled ? 'bg-green-600' : 'bg-slate-400'}`}
+            className={`inline-block size-2 rounded-full ${enabled ? 'bg-success' : 'bg-content-faint'}`}
           />
           {enabled ? t('twoFactor.enabled') : t('twoFactor.disabled')}
         </p>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-content-muted">
           {enabled ? t('twoFactor.enabledIntro') : t('twoFactor.disabledIntro')}
         </p>
       </div>
-      {done && <output className="block text-sm text-green-700">{done}</output>}
+      {done && <output className="block text-sm text-success">{done}</output>}
       {body}
     </div>
   );

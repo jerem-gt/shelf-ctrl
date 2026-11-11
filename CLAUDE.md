@@ -49,6 +49,7 @@ Titre → édition → exemplaire :
 
 - État asynchrone : TanStack Query uniquement. Icônes : `lucide-react`.
 - **Mobile-first** : toute interface doit être affichable sur mobile (breakpoints `md:`, `lg:`), pas de largeurs fixes.
+- **Thème clair/sombre** (comme cash-ctrl) : couleurs par **tokens** (`bg-canvas`, `bg-surface`, `text-content-subtle`, `border-line`, `bg-primary`/`text-primary-fg`, `text-danger`…) définis dans `index.css` (`:root`, redéfinis sous `.dark`) ; jamais de `slate-*`/`bg-white` en dur (exceptions : l'écran du scanner, toujours sombre, et le bouton danger). Choix Clair/Sombre/Système dans Réglages (`ThemeSwitcher`, `hooks/useTheme.ts`, clé `shelfctrl.theme`) ; `public/theme-init.js` pose `.dark` avant le premier affichage (fichier et non script inline : la CSP de helmet bloque l'inline), ses fonds restent alignés sur `--c-canvas`.
 - Le scan de code-barres utilise la caméra (`BarcodeDetector`, supporté par Chrome Android) ; HTTPS requis.
 
 ### i18n

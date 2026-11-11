@@ -6,7 +6,7 @@ import { ConsoleField } from '@/components/ConsoleField';
 import { useUpdateCopy } from '@/hooks/useCopies';
 
 const FIELD_CLASS =
-  'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-slate-500 focus:outline-none';
+  'w-full rounded-md border border-line bg-surface px-3 py-2 text-sm focus:border-line-strong focus:outline-none';
 
 interface EditCopyFormProps {
   copy: CopyItem;
@@ -41,7 +41,7 @@ export function EditCopyForm({ copy, onDone }: Readonly<EditCopyFormProps>) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-      <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+      <label className="flex flex-col gap-1 text-sm font-medium text-content-secondary">
         {t('detail.condition')}
         <select
           value={condition}
@@ -55,7 +55,7 @@ export function EditCopyForm({ copy, onDone }: Readonly<EditCopyFormProps>) {
           ))}
         </select>
       </label>
-      <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+      <label className="flex flex-col gap-1 text-sm font-medium text-content-secondary">
         {t('detail.conditionNote')}
         <input
           maxLength={500}
@@ -64,7 +64,7 @@ export function EditCopyForm({ copy, onDone }: Readonly<EditCopyFormProps>) {
           className={FIELD_CLASS}
         />
       </label>
-      <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+      <label className="flex flex-col gap-1 text-sm font-medium text-content-secondary">
         {t('detail.location')}
         <input
           maxLength={100}
@@ -85,7 +85,7 @@ export function EditCopyForm({ copy, onDone }: Readonly<EditCopyFormProps>) {
       )}
 
       {update.error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger">
           {update.error.message}
         </p>
       )}
@@ -94,14 +94,14 @@ export function EditCopyForm({ copy, onDone }: Readonly<EditCopyFormProps>) {
         <button
           type="submit"
           disabled={update.isPending}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-fg disabled:opacity-60"
         >
           {update.isPending ? t('detail.saving') : t('detail.save')}
         </button>
         <button
           type="button"
           onClick={onDone}
-          className="rounded-md border border-slate-300 px-4 py-2 text-sm"
+          className="rounded-md border border-line px-4 py-2 text-sm"
         >
           {t('detail.cancel')}
         </button>

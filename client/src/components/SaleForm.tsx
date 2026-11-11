@@ -11,7 +11,7 @@ import { parsePrice, PRICE_PATTERN, priceToInput } from '@/lib/money';
 import { ListingFields } from './ListingDraftPanel';
 
 const FIELD_CLASS =
-  'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-slate-500 focus:outline-none';
+  'w-full rounded-md border border-line bg-surface px-3 py-2 text-sm focus:border-line-strong focus:outline-none';
 
 export type SaleFormMode = 'list' | 'sell' | 'edit';
 
@@ -72,7 +72,7 @@ export function SaleForm({ mode, copy, sale, onDone }: Readonly<SaleFormProps>) 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       <div className="flex flex-col gap-1">
-        <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+        <label className="flex flex-col gap-1 text-sm font-medium text-content-secondary">
           {t('sale.platform')}
           <select
             // La mise en vente se fait quelque part : la plateforme détermine l'annonce affichée plus bas.
@@ -92,7 +92,7 @@ export function SaleForm({ mode, copy, sale, onDone }: Readonly<SaleFormProps>) 
             ))}
           </select>
         </label>
-        <p id={hintId} className="text-xs text-slate-500">
+        <p id={hintId} className="text-xs text-content-subtle">
           {mode === 'sell' ? null : `${t('sale.platformHint')} `}
           {unconfigured && `${t('sale.platformUnconfigured')} `}
           <Link to="/settings" className="underline underline-offset-2">
@@ -100,7 +100,7 @@ export function SaleForm({ mode, copy, sale, onDone }: Readonly<SaleFormProps>) 
           </Link>
         </p>
       </div>
-      <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+      <label className="flex flex-col gap-1 text-sm font-medium text-content-secondary">
         {t('sale.price')}
         <input
           inputMode="decimal"
@@ -112,7 +112,7 @@ export function SaleForm({ mode, copy, sale, onDone }: Readonly<SaleFormProps>) 
         />
       </label>
       {texts.date && (
-        <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+        <label className="flex flex-col gap-1 text-sm font-medium text-content-secondary">
           {t(texts.date)}
           <input
             required
@@ -128,7 +128,7 @@ export function SaleForm({ mode, copy, sale, onDone }: Readonly<SaleFormProps>) 
       {mode !== 'sell' && (
         <section
           aria-label={t('listingDraft.section')}
-          className="flex flex-col gap-3 rounded-md border border-slate-200 bg-white p-3"
+          className="flex flex-col gap-3 rounded-md border border-line-subtle bg-surface p-3"
         >
           <h4 className="text-sm font-semibold">{t('listingDraft.section')}</h4>
           <ListingFields copy={copy} platform={platform.trim() || null} />
@@ -136,7 +136,7 @@ export function SaleForm({ mode, copy, sale, onDone }: Readonly<SaleFormProps>) 
       )}
 
       {mutation.error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger">
           {mutation.error.message}
         </p>
       )}
@@ -145,14 +145,14 @@ export function SaleForm({ mode, copy, sale, onDone }: Readonly<SaleFormProps>) 
         <button
           type="submit"
           disabled={mutation.isPending}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-fg disabled:opacity-60"
         >
           {mutation.isPending ? t('sale.saving') : t(texts.submit)}
         </button>
         <button
           type="button"
           onClick={onDone}
-          className="rounded-md border border-slate-300 px-4 py-2 text-sm"
+          className="rounded-md border border-line px-4 py-2 text-sm"
         >
           {t('sale.cancel')}
         </button>

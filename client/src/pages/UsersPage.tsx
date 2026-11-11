@@ -24,7 +24,7 @@ import {
 import { MIN_PASSWORD_LENGTH } from '@/lib/passwords';
 
 const ICON_CLASS =
-  'rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 disabled:opacity-60';
+  'rounded-md p-2 text-content-subtle hover:bg-surface-emphasis hover:text-content disabled:opacity-60';
 
 interface AccountFields {
   username: string;
@@ -117,7 +117,7 @@ function AddUserForm() {
   return (
     <form
       onSubmit={submit}
-      className="flex flex-col gap-3 rounded-md border border-slate-200 bg-white p-4"
+      className="flex flex-col gap-3 rounded-md border border-line-subtle bg-surface p-4"
     >
       <h3 className="font-medium">{t('users.addTitle')}</h3>
       <AccountFieldset
@@ -127,7 +127,7 @@ function AddUserForm() {
         passwordRequired
       />
       {create.error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger">
           {create.error.message}
         </p>
       )}
@@ -175,7 +175,7 @@ function EditUserForm({ user, onDone }: Readonly<{ user: UserItem; onDone: () =>
         passwordRequired={false}
       />
       {update.error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger">
           {update.error.message}
         </p>
       )}
@@ -256,9 +256,11 @@ function UserRow({ user, isMe }: Readonly<{ user: UserItem; isMe: boolean }>) {
         <div className="min-w-0">
           <p className="flex flex-wrap items-center gap-2 font-medium">
             <span className="break-all">{user.username}</span>
-            {isMe && <span className="text-sm font-normal text-slate-500">({t('users.you')})</span>}
+            {isMe && (
+              <span className="text-sm font-normal text-content-subtle">({t('users.you')})</span>
+            )}
             {user.isAdmin && (
-              <span className="rounded bg-slate-900 px-1.5 py-0.5 text-xs font-medium text-white">
+              <span className="rounded bg-primary px-1.5 py-0.5 text-xs font-medium text-primary-fg">
                 {t('users.admin')}
               </span>
             )}
@@ -266,7 +268,7 @@ function UserRow({ user, isMe }: Readonly<{ user: UserItem; isMe: boolean }>) {
               <span className={SUCCESS_BADGE_CLASS}>{t('users.twoFactor')}</span>
             )}
           </p>
-          <p className="text-sm break-words text-slate-500">{details.join(' · ')}</p>
+          <p className="text-sm break-words text-content-subtle">{details.join(' · ')}</p>
         </div>
         <div className="flex shrink-0">
           <button
@@ -284,7 +286,7 @@ function UserRow({ user, isMe }: Readonly<{ user: UserItem; isMe: boolean }>) {
               onClick={() => setMode('disableTotp')}
               aria-label={t('users.disableTotp', { name: user.username })}
               title={t('users.disableTotp', { name: user.username })}
-              className={`${ICON_CLASS} hover:text-red-700`}
+              className={`${ICON_CLASS} hover:text-danger`}
             >
               <ShieldOff aria-hidden className="size-4" />
             </button>
@@ -295,7 +297,7 @@ function UserRow({ user, isMe }: Readonly<{ user: UserItem; isMe: boolean }>) {
               onClick={() => setMode('remove')}
               aria-label={t('users.remove', { name: user.username })}
               title={t('users.remove', { name: user.username })}
-              className={`${ICON_CLASS} hover:text-red-700`}
+              className={`${ICON_CLASS} hover:text-danger`}
             >
               <Trash2 aria-hidden className="size-4" />
             </button>
@@ -315,16 +317,16 @@ function TestEmailCard() {
   const { t } = useTranslation();
   const testEmail = useTestEmail();
   return (
-    <div className="flex flex-col gap-3 rounded-md border border-slate-200 bg-white p-4">
+    <div className="flex flex-col gap-3 rounded-md border border-line-subtle bg-surface p-4">
       <h3 className="font-medium">{t('users.mailTitle')}</h3>
-      <p className="text-sm text-slate-600">{t('users.mailIntro')}</p>
+      <p className="text-sm text-content-muted">{t('users.mailIntro')}</p>
       {testEmail.error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger">
           {testEmail.error.message}
         </p>
       )}
       {testEmail.isSuccess && (
-        <output className="block text-sm text-green-700">{t('users.testEmailSent')}</output>
+        <output className="block text-sm text-success">{t('users.testEmailSent')}</output>
       )}
       <button
         type="button"
@@ -346,16 +348,16 @@ export function UsersPage() {
 
   let list;
   if (users.isPending) {
-    list = <p className="text-sm text-slate-500">{t('users.loading')}</p>;
+    list = <p className="text-sm text-content-subtle">{t('users.loading')}</p>;
   } else if (users.error) {
     list = (
-      <p role="alert" className="text-sm text-red-700">
+      <p role="alert" className="text-sm text-danger">
         {users.error.message}
       </p>
     );
   } else {
     list = (
-      <ul className="flex flex-col divide-y divide-slate-200 rounded-md border border-slate-200 bg-white">
+      <ul className="flex flex-col divide-y divide-line-subtle rounded-md border border-line-subtle bg-surface">
         {users.data.items.map((user) => (
           <UserRow key={user.id} user={user} isMe={user.id === me?.id} />
         ))}

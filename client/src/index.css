@@ -1,10 +1,123 @@
 @import 'tailwindcss';
 @custom-variant dark (&:is(.dark *));
 
+/* Tokens exposés comme utilitaires Tailwind. `inline` : les utilitaires lisent directement les variables --c-* (donc le thème .dark). */
 @theme inline {
   --font-sans: 'Inter', system-ui, sans-serif;
+
+  --color-canvas: var(--c-canvas);
+  --color-surface: var(--c-surface);
+  --color-surface-muted: var(--c-surface-muted);
+  --color-surface-emphasis: var(--c-surface-emphasis);
+  --color-surface-strong: var(--c-surface-strong);
+  --color-primary: var(--c-primary);
+  --color-primary-fg: var(--c-primary-fg);
+  --color-content: var(--c-content);
+  --color-content-secondary: var(--c-content-secondary);
+  --color-content-muted: var(--c-content-muted);
+  --color-content-subtle: var(--c-content-subtle);
+  --color-content-faint: var(--c-content-faint);
+  --color-line: var(--c-line);
+  --color-line-subtle: var(--c-line-subtle);
+  --color-line-strong: var(--c-line-strong);
+  --color-success: var(--c-success);
+  --color-success-surface: var(--c-success-surface);
+  --color-danger: var(--c-danger);
+  --color-danger-surface: var(--c-danger-surface);
+  --color-danger-line: var(--c-danger-line);
+  --color-warning: var(--c-warning);
+  --color-warning-surface: var(--c-warning-surface);
+  --color-info: var(--c-info);
+  --color-info-surface: var(--c-info-surface);
 }
 
-body {
-  margin: 0;
+/*
+ * Tokens de couleur (comme cash-ctrl) : source unique des teintes neutres et
+ * sémantiques. Les classes Tailwind (`bg-surface`, `text-content-subtle`,
+ * `border-line`, `text-danger`…) pointent vers ces variables ; le mode sombre
+ * ne fait que redéfinir leur valeur sous `.dark`. Les fonds de `canvas` doivent
+ * rester alignés avec `public/theme-init.js` et les `theme-color` d'index.html.
+ */
+:root {
+  color-scheme: light;
+
+  /* Surfaces (de la plus basse à la plus élevée) */
+  --c-canvas: #f8fafc;
+  --c-surface: #ffffff;
+  --c-surface-muted: #f8fafc;
+  --c-surface-emphasis: #f1f5f9;
+  --c-surface-strong: #e2e8f0;
+
+  /* Bouton principal, onglet et choix actifs */
+  --c-primary: #0f172a;
+  --c-primary-fg: #ffffff;
+
+  /* Texte (du plus contrasté au plus discret) */
+  --c-content: #0f172a;
+  --c-content-secondary: #334155;
+  --c-content-muted: #475569;
+  --c-content-subtle: #64748b;
+  --c-content-faint: #94a3b8;
+
+  /* Bordures */
+  --c-line: #cbd5e1;
+  --c-line-subtle: #e2e8f0;
+  --c-line-strong: #64748b;
+
+  /* Sémantiques : fg = texte/icône, surface = fond atténué */
+  --c-success: #15803d;
+  --c-success-surface: #dcfce7;
+  --c-danger: #b91c1c;
+  --c-danger-surface: #fef2f2;
+  --c-danger-line: #fecaca;
+  --c-warning: #92400e;
+  --c-warning-surface: #fef3c7;
+  --c-info: #075985;
+  --c-info-surface: #e0f2fe;
+}
+
+.dark {
+  color-scheme: dark;
+
+  --c-canvas: #0f172a;
+  --c-surface: #1e293b;
+  --c-surface-muted: #172033;
+  --c-surface-emphasis: #273449;
+  --c-surface-strong: #334155;
+
+  --c-primary: #f1f5f9;
+  --c-primary-fg: #0f172a;
+
+  --c-content: #f1f5f9;
+  --c-content-secondary: #e2e8f0;
+  --c-content-muted: #cbd5e1;
+  --c-content-subtle: #94a3b8;
+  --c-content-faint: #64748b;
+
+  --c-line: rgb(255 255 255 / 0.16);
+  --c-line-subtle: rgb(255 255 255 / 0.09);
+  --c-line-strong: rgb(255 255 255 / 0.32);
+
+  --c-success: #4ade80;
+  --c-success-surface: rgb(34 197 94 / 0.15);
+  --c-danger: #f87171;
+  --c-danger-surface: rgb(239 68 68 / 0.12);
+  --c-danger-line: rgb(248 113 113 / 0.35);
+  --c-warning: #fbbf24;
+  --c-warning-surface: rgb(245 158 11 / 0.15);
+  --c-info: #38bdf8;
+  --c-info-surface: rgb(14 165 233 / 0.15);
+}
+
+@layer base {
+  body {
+    margin: 0;
+    @apply bg-canvas text-content antialiased;
+  }
+
+  /* Tailwind 4 ne met plus le pointeur sur les boutons : on le rétablit, sauf désactivés. */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']) {
+    cursor: pointer;
+  }
 }

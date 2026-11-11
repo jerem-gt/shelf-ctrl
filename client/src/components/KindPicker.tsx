@@ -18,7 +18,7 @@ export function KindPicker({ value, onChange }: Readonly<KindPickerProps>) {
         {MEDIA_KINDS.map((kind) => (
           <label
             key={kind}
-            className="flex cursor-pointer flex-col items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-3 text-center text-sm font-medium text-slate-700 has-checked:border-slate-900 has-checked:bg-slate-900 has-checked:text-white has-focus-visible:ring-2 has-focus-visible:ring-slate-500"
+            className="flex cursor-pointer flex-col items-center gap-1 rounded-md border border-line bg-surface px-2 py-3 text-center text-sm font-medium text-content-secondary has-checked:border-primary has-checked:bg-primary has-checked:text-primary-fg has-focus-visible:ring-2 has-focus-visible:ring-line-strong"
           >
             <input
               type="radio"

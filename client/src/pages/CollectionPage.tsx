@@ -16,7 +16,7 @@ import { useConsoles, useCopies } from '@/hooks/useCopies';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 const FIELD_CLASS =
-  'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-slate-500 focus:outline-none';
+  'w-full rounded-md border border-line bg-surface px-3 py-2 text-sm focus:border-line-strong focus:outline-none';
 
 function isMediaFormat(value: string): value is MediaFormat {
   return (MEDIA_FORMATS as readonly string[]).includes(value);
@@ -53,29 +53,31 @@ export function CollectionPage() {
   let content;
   if (error) {
     content = (
-      <div role="alert" className="flex flex-col items-start gap-2 text-red-700">
+      <div role="alert" className="flex flex-col items-start gap-2 text-danger">
         <p>{error.message}</p>
         <button
           type="button"
           onClick={() => void refetch()}
-          className="rounded-md border border-red-300 px-3 py-1 text-sm"
+          className="rounded-md border border-danger-line px-3 py-1 text-sm"
         >
           {t('collection.retry')}
         </button>
       </div>
     );
   } else if (isPending) {
-    content = <p className="text-slate-500">{t('collection.loading')}</p>;
+    content = <p className="text-content-subtle">{t('collection.loading')}</p>;
   } else if (data.items.length === 0) {
     content = (
-      <p className="text-slate-500">
+      <p className="text-content-subtle">
         {hasFilters ? t('collection.noResult') : t('collection.empty')}
       </p>
     );
   } else {
     content = (
       <>
-        <p className="text-sm text-slate-500">{t('collection.count', { count: data.total })}</p>
+        <p className="text-sm text-content-subtle">
+          {t('collection.count', { count: data.total })}
+        </p>
         <ul className="grid gap-3 md:grid-cols-2">
           {data.items.map((copy) => (
             <li key={copy.id}>
@@ -93,7 +95,7 @@ export function CollectionPage() {
         <h2 className="text-xl font-semibold">{t('collection.title')}</h2>
         <Link
           to="/add"
-          className="flex items-center gap-1 rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white"
+          className="flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-fg"
         >
           <Plus aria-hidden className="size-4" />
           {t('collection.add')}

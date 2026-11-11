@@ -38,9 +38,9 @@ function TotpStep({
   return (
     <AuthCard subtitle={t('login.totpTitle')} error={verify.error?.message}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <p className="text-sm text-slate-600">{t('login.totpIntro')}</p>
+        <p className="text-sm text-content-muted">{t('login.totpIntro')}</p>
         <TotpCodeInput label={t('login.totpCode')} value={code} onChange={setCode} />
-        <label className="flex items-center gap-2 text-sm text-slate-700">
+        <label className="flex items-center gap-2 text-sm text-content-secondary">
           <input
             type="checkbox"
             checked={remember}

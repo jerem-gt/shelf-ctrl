@@ -9,9 +9,9 @@ import { useImportJob, usePreviewImport, useStartImport } from '@/hooks/useImpor
 import { currentLang } from '@/lib/format';
 
 const BUTTON_CLASS =
-  'rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium disabled:opacity-60';
+  'rounded-md border border-line bg-surface px-4 py-2 text-sm font-medium disabled:opacity-60';
 const PRIMARY_BUTTON_CLASS =
-  'rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60';
+  'rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-fg disabled:opacity-60';
 /** Au-delà, la liste des lignes à corriger est tronquée : le fichier se corrige par morceaux. */
 const MAX_LISTED_PROBLEMS = 50;
 
@@ -47,7 +47,7 @@ function IssueList({ rows, label }: Readonly<{ rows: ListedRow[]; label: string 
   return (
     <ul
       aria-label={label}
-      className="flex flex-col divide-y divide-slate-200 rounded-md border border-slate-200 bg-white"
+      className="flex flex-col divide-y divide-line-subtle rounded-md border border-line-subtle bg-surface"
     >
       {rows.map((row) => (
         <li key={row.line} className="flex flex-col gap-0.5 p-3 text-sm">
@@ -55,7 +55,7 @@ function IssueList({ rows, label }: Readonly<{ rows: ListedRow[]; label: string 
             {t('import.line', { line: row.line })} · {row.title ?? t('import.untitled')}
           </p>
           {row.issues.map((issue) => (
-            <p key={`${issue.code}-${issue.field}`} className="text-red-700">
+            <p key={`${issue.code}-${issue.field}`} className="text-danger">
               <IssueText issue={issue} />
             </p>
           ))}
@@ -79,27 +79,27 @@ function PreviewSummary({ preview }: Readonly<{ preview: ImportPreview }>) {
         })}
       </p>
       {preview.toComplete > 0 && (
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-content-muted">
           {t('import.toComplete', { count: preview.toComplete })}
         </p>
       )}
       {preview.duplicates > 0 && (
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-content-muted">
           {t('import.duplicates', { count: preview.duplicates })}
         </p>
       )}
       {preview.ignoredColumns.length > 0 && (
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-content-muted">
           {t('import.ignoredColumns', { columns: preview.ignoredColumns.join(', ') })}
         </p>
       )}
       {problems.length > 0 && (
         <section className="flex flex-col gap-2">
           <h3 className="font-semibold">{t('import.problems')}</h3>
-          <p className="text-sm text-slate-600">{t('import.problemsHint')}</p>
+          <p className="text-sm text-content-muted">{t('import.problemsHint')}</p>
           <IssueList rows={problems.slice(0, MAX_LISTED_PROBLEMS)} label={t('import.problems')} />
           {problems.length > MAX_LISTED_PROBLEMS && (
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-content-muted">
               {t('import.moreProblems', { count: problems.length - MAX_LISTED_PROBLEMS })}
             </p>
           )}
@@ -150,7 +150,7 @@ function ImportUpload({ onStarted }: Readonly<{ onStarted: (jobId: string) => vo
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-slate-600">{t('import.intro')}</p>
+      <p className="text-sm text-content-muted">{t('import.intro')}</p>
       <div className="flex flex-wrap items-center gap-3">
         <a
           href={api.import.templateUrl(currentLang())}
@@ -172,14 +172,14 @@ function ImportUpload({ onStarted }: Readonly<{ onStarted: (jobId: string) => vo
         </label>
       </div>
 
-      {preview.isPending && <p className="text-sm text-slate-500">{t('import.analyzing')}</p>}
+      {preview.isPending && <p className="text-sm text-content-subtle">{t('import.analyzing')}</p>}
       {unreadable && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger">
           {t('import.errors.unreadable')}
         </p>
       )}
       {error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger">
           {errorMessage(error)}
         </p>
       )}
@@ -196,7 +196,7 @@ function ImportUpload({ onStarted }: Readonly<{ onStarted: (jobId: string) => vo
               {start.isPending ? t('import.starting') : t('import.start', { count: summary.valid })}
             </button>
           ) : (
-            <p className="text-sm text-slate-600">{t('import.nothingToImport')}</p>
+            <p className="text-sm text-content-muted">{t('import.nothingToImport')}</p>
           )}
         </div>
       )}
@@ -208,7 +208,7 @@ function JobReport({ job }: Readonly<{ job: ImportJob }>) {
   const { t } = useTranslation();
   return (
     <div className="flex flex-col gap-3">
-      <p className={job.status === 'failed' ? 'text-sm text-red-700' : 'text-sm font-medium'}>
+      <p className={job.status === 'failed' ? 'text-sm text-danger' : 'text-sm font-medium'}>
         {t(job.status === 'failed' ? 'import.failed' : 'import.done')}
       </p>
       <ul className="flex flex-col gap-1 text-sm">
@@ -235,12 +235,12 @@ function ImportProgress({ jobId, onNew }: Readonly<{ jobId: string; onNew: () =>
   if (error) {
     const unknown = error instanceof ApiError && error.status === 404;
     body = (
-      <p role="alert" className="text-sm text-red-700">
+      <p role="alert" className="text-sm text-danger">
         {unknown ? t('import.notFound') : error.message}
       </p>
     );
   } else if (!job) {
-    body = <p className="text-sm text-slate-500">{t('collection.loading')}</p>;
+    body = <p className="text-sm text-content-subtle">{t('collection.loading')}</p>;
   } else if (job.status === 'running') {
     body = (
       <div className="flex flex-col gap-2">

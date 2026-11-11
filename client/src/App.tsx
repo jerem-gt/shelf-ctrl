@@ -20,7 +20,7 @@ import { SetupPage } from '@/pages/SetupPage';
 import { UsersPage } from '@/pages/UsersPage';
 
 function navClass({ isActive }: { isActive: boolean }) {
-  return isActive ? 'text-slate-900 underline underline-offset-4' : 'text-slate-500';
+  return isActive ? 'text-content underline underline-offset-4' : 'text-content-subtle';
 }
 
 export function AppRoutes() {
@@ -29,8 +29,8 @@ export function AppRoutes() {
   const isAdmin = useMe().data?.isAdmin === true;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="border-b border-slate-200 bg-white">
+    <div className="min-h-screen bg-canvas text-content">
+      <header className="border-b border-line-subtle bg-surface">
         <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 sm:gap-x-6">
           <Link to="/" className="order-1 text-xl font-bold">
             <h1>{t('appName')}</h1>
@@ -67,7 +67,7 @@ export function AppRoutes() {
               disabled={logout.isPending}
               aria-label={t('nav.logout')}
               title={t('nav.logout')}
-              className="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 disabled:opacity-60"
+              className="rounded-md p-2 text-content-subtle hover:bg-surface-emphasis hover:text-content disabled:opacity-60"
             >
               <LogOut aria-hidden className="size-5" />
             </button>
@@ -96,7 +96,7 @@ function PublicRoutes() {
   const setup = useSetupStatus();
 
   if (setup.isPending) {
-    return <p className="p-6 text-slate-500">{t('collection.loading')}</p>;
+    return <p className="p-6 text-content-subtle">{t('collection.loading')}</p>;
   }
   if (setup.data?.required) {
     return <SetupPage />;
@@ -120,7 +120,7 @@ function AuthGate({ children }: Readonly<{ children: ReactNode }>) {
     return <ResetPasswordPage />;
   }
   if (isPending) {
-    return <p className="p-6 text-slate-500">{t('collection.loading')}</p>;
+    return <p className="p-6 text-content-subtle">{t('collection.loading')}</p>;
   }
   // Le 401 d'abord : après une déconnexion ou une expiration, la dernière donnée connue reste en
   // cache à côté de l'erreur, et ne doit pas ouvrir l'application.
@@ -131,7 +131,7 @@ function AuthGate({ children }: Readonly<{ children: ReactNode }>) {
     return <>{children}</>;
   }
   return (
-    <p role="alert" className="p-6 text-red-700">
+    <p role="alert" className="p-6 text-danger">
       {error?.message}
     </p>
   );

@@ -12,7 +12,7 @@ import { StatusBadge } from './StatusBadge';
 function CoverThumbnail({ copy }: Readonly<{ copy: CopyItem }>) {
   const url = coverUrl(copy.edition.coverPath);
   return (
-    <div className="flex h-24 w-16 shrink-0 items-center justify-center overflow-hidden rounded bg-slate-100 text-slate-400">
+    <div className="flex h-24 w-16 shrink-0 items-center justify-center overflow-hidden rounded bg-surface-emphasis text-content-faint">
       {url ? (
         <img src={url} alt="" loading="lazy" className="size-full object-cover" />
       ) : (
@@ -27,18 +27,18 @@ export function CopyCard({ copy }: Readonly<{ copy: CopyItem }>) {
   const { work, edition } = copy;
 
   return (
-    <article className="relative flex gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm hover:border-slate-400">
+    <article className="relative flex gap-3 rounded-lg border border-line-subtle bg-surface p-4 shadow-sm hover:border-line-strong">
       <CoverThumbnail copy={copy} />
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="truncate font-semibold text-slate-900">
+            <h2 className="truncate font-semibold text-content">
               <Link to={`/copies/${copy.id}`} className="after:absolute after:inset-0">
                 {work.title}
               </Link>
             </h2>
             {work.series && (
-              <p className="truncate text-sm text-slate-600">
+              <p className="truncate text-sm text-content-muted">
                 {work.series}
                 {work.volumeNumber !== null &&
                   ` · ${t('collection.volume', { number: work.volumeNumber })}`}
@@ -48,7 +48,7 @@ export function CopyCard({ copy }: Readonly<{ copy: CopyItem }>) {
           <StatusBadge status={copy.status} />
         </div>
 
-        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600">
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-content-muted">
           <span>{edition.console ?? t(`formats.${edition.format}`)}</span>
           <span>{t(`conditions.${copy.condition}`)}</span>
           {copy.location && (
