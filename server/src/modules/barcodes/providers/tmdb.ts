@@ -1,7 +1,7 @@
 import type { BarcodeSuggestion } from '@shelfctrl/types';
 
 import type { FetchFn } from '../../../sources/http.js';
-import { isSameTitle } from '../../../sources/text.js';
+import { isSameTitle } from '../../../sources/metadata.js';
 import { searchTmdb } from '../../../sources/tmdb.js';
 
 /**

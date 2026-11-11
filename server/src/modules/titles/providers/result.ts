@@ -3,7 +3,7 @@ import type { BarcodeSuggestion, TitleSearchResult } from '@shelfctrl/types';
 type Work = BarcodeSuggestion['work'];
 type Edition = BarcodeSuggestion['edition'];
 
-export interface TitleResultInput {
+interface TitleResultInput {
   source: TitleSearchResult['source'];
   barcode?: string | null;
   work: Pick<Work, 'title'> & Partial<Work>;
@@ -11,31 +11,45 @@ export interface TitleResultInput {
   consoles?: string[];
 }
 
+/** Champs `undefined` retirés : étalés tels quels, ils écraseraient la valeur par défaut. */
+function definedFields<T extends object>(value: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, field]) => field !== undefined),
+  ) as Partial<T>;
+}
+
 /**
- * Résultat d'une recherche par titre : ce que la source ne donne pas vaut `null` (code-barres,
- * champs de l'œuvre et de l'édition) ou `[]` (consoles).
+ * Résultat d'une recherche par titre : ce que la source ne donne pas (absent ou `undefined`)
+ * vaut `null` (code-barres, champs de l'œuvre et de l'édition) ou `[]` (consoles).
  */
 export function titleResult({
   source,
-  barcode = null,
+  barcode,
   work,
   edition = {},
-  consoles = [],
+  consoles,
 }: TitleResultInput): TitleSearchResult {
   return {
-    barcode,
+    barcode: barcode ?? null,
     source,
     suggestion: {
-      work: { series: null, volumeNumber: null, creators: null, year: null, ...work },
+      work: {
+        series: null,
+        volumeNumber: null,
+        creators: null,
+        year: null,
+        ...definedFields(work),
+        title: work.title,
+      },
       edition: {
         format: null,
         publisher: null,
         releaseYear: null,
         language: null,
         console: null,
-        ...edition,
+        ...definedFields(edition),
       },
     },
-    consoles,
+    consoles: consoles ?? [],
   };
 }

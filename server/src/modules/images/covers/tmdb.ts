@@ -1,7 +1,7 @@
 import { kindOfFormat } from '@shelfctrl/types';
 
 import type { FetchFn } from '../../../sources/http.js';
-import { isSameTitle } from '../../../sources/text.js';
+import { isSameTitle } from '../../../sources/metadata.js';
 import { searchTmdb } from '../../../sources/tmdb.js';
 import { type CoverProvider, fetchImage } from './types.js';
 
