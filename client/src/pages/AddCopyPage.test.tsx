@@ -402,8 +402,11 @@ describe('AddCopyPage — recherche par titre', () => {
     await user.click(screen.getByRole('radio', { name: 'Jeu vidéo' }));
     await user.type(screen.getByLabelText('Titre, série ou auteur'), 'last of us{Enter}');
 
-    expect(await screen.findByText('Naughty Dog · 2022 · PlayStation 5 / PC')).toBeInTheDocument();
-    expect(screen.getByText('Naughty Dog · 2022 · PlayStation 3')).toBeInTheDocument();
+    // Consoles sur leur propre ligne, non tronquée, sous les détails.
+    const consoles = await screen.findByText('PlayStation 5 / PC');
+    expect(consoles).not.toHaveClass('truncate');
+    expect(screen.getByText('PlayStation 3')).toBeInTheDocument();
+    expect(screen.getAllByText('Naughty Dog · 2022')).toHaveLength(2);
 
     await user.click(screen.getByRole('button', { name: 'Choisir : The Last of Us Part I' }));
     expect(screen.getByLabelText('Console')).toHaveValue('');

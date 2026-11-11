@@ -22,11 +22,14 @@ export function kindOfFormat(format: MediaFormat): MediaKind {
 }
 
 /**
- * Un jeu vidéo : le seul format qui a une console, et dont les auteurs sont un studio. Seul endroit
- * où ce test s'écrit (format vide ou inconnu d'un filtre ou d'une fiche : faux).
+ * Le format d'un jeu vidéo : le seul qui a une console, et dont les auteurs sont un studio. Seule
+ * écriture de cette valeur pour cette règle, SQL compris (passé en paramètre aux requêtes).
  */
+export const GAME_FORMAT = 'game' satisfies MediaFormat;
+
+/** Un jeu vidéo ? (format vide ou inconnu d'un filtre ou d'une fiche : faux). */
 export function isGameFormat(format: MediaFormat | '' | null | undefined): boolean {
-  return format === 'game';
+  return format === GAME_FORMAT;
 }
 
 /** Console à garder pour ce format : la valeur pour un jeu vidéo, `null` pour tout autre format. */
