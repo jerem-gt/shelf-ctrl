@@ -80,7 +80,8 @@
       },
       "tooShort": "Enter at least 2 characters.",
       "applied": "Details taken from {{source}}: check them before saving.",
-      "volume": "volume {{number}}"
+      "volume": "volume {{number}}",
+      "via": "via {{source}}"
     },
     "lookup": {
       "button": "Look up",
