@@ -348,6 +348,7 @@ describe('AddCopyPage — recherche par titre', () => {
             console: null,
           },
         },
+        consoles: [],
       },
       {
         barcode: null,
@@ -362,10 +363,51 @@ describe('AddCopyPage — recherche par titre', () => {
             console: null,
           },
         },
+        consoles: [],
       },
     ],
     configured: true,
   } satisfies TitleSearchResponse;
+
+  it('cite toutes les consoles d’un jeu, sans en préremplir quand il y en a plusieurs', async () => {
+    const game = (title: string, consoles: string[]) => ({
+      barcode: null,
+      source: 'igdb' as const,
+      suggestion: {
+        work: { title, series: null, volumeNumber: null, creators: 'Naughty Dog', year: 2022 },
+        edition: {
+          format: 'game' as const,
+          publisher: null,
+          releaseYear: 2022,
+          language: null,
+          console: consoles.length === 1 ? consoles[0] : null,
+        },
+      },
+      consoles,
+    });
+    server.use(
+      http.get('/api/titles/search', () =>
+        HttpResponse.json({
+          results: [
+            game('The Last of Us Part I', ['PlayStation 5', 'PC']),
+            game('The Last of Us', ['PlayStation 3']),
+          ],
+          configured: true,
+        } satisfies TitleSearchResponse),
+      ),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('radio', { name: 'Jeu vidéo' }));
+    await user.type(screen.getByLabelText('Titre, série ou auteur'), 'last of us{Enter}');
+
+    expect(await screen.findByText('Naughty Dog · 2022 · PlayStation 5 / PC')).toBeInTheDocument();
+    expect(screen.getByText('Naughty Dog · 2022 · PlayStation 3')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Choisir : The Last of Us Part I' }));
+    expect(screen.getByLabelText('Console')).toHaveValue('');
+  });
 
   it('préremplit le formulaire avec le résultat choisi', async () => {
     let query: string | null = null;

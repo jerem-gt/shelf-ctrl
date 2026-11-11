@@ -59,6 +59,7 @@ const result = (barcode: string | null, title: string) => ({
     work: { title, series: null, volumeNumber: null, creators: null, year: null },
     edition: { format: null, publisher: null, releaseYear: null, language: null, console: null },
   },
+  consoles: [],
 });
 
 describe('GET /api/titles/search', () => {
@@ -282,6 +283,7 @@ describe('providers de recherche par titre', () => {
             console: null,
           },
         },
+        consoles: [],
       },
     ]);
   });

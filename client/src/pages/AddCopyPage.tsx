@@ -105,8 +105,9 @@ function applySuggestion(
 }
 
 /**
- * « Tintin, tome 20 », « Hergé · Casterman 2006 », « Nintendo EPD · Nintendo 2017 · Nintendo
- * Switch » : de quoi distinguer deux résultats voisins.
+ * « Tintin, tome 20 », « Hergé · Casterman 2006 », « Naughty Dog · Sony 2022 · PlayStation 5 /
+ * PC » : de quoi distinguer deux résultats voisins. Toutes les consoles d'un jeu sont citées, même
+ * quand aucune n'est préremplie faute d'être unique.
  */
 function describeResult(result: TitleSearchResult, volumeLabel: (number: number) => string) {
   const { work, edition } = result.suggestion;
@@ -114,7 +115,8 @@ function describeResult(result: TitleSearchResult, volumeLabel: (number: number)
     .filter(Boolean)
     .join(', ');
   const publisher = [edition.publisher, edition.releaseYear ?? work.year].filter(Boolean).join(' ');
-  const details = [work.creators, publisher, edition.console].filter(Boolean).join(' · ');
+  const consoles = result.consoles.join(' / ');
+  const details = [work.creators, publisher, consoles].filter(Boolean).join(' · ');
   return { title: work.title, heading, details };
 }
 

@@ -205,6 +205,11 @@ export interface TitleSearchResult {
   barcode: string | null;
   source: BarcodeSource;
   suggestion: BarcodeSuggestion;
+  /**
+   * Toutes les consoles d'un jeu vidéo, pour que l'utilisateur voie entre lesquelles choisir ;
+   * vide hors jeu. `suggestion.edition.console` n'est rempli que s'il n'y en a qu'une.
+   */
+  consoles: string[];
 }
 
 export interface TitleSearchResponse {

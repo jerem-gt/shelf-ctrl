@@ -36,6 +36,7 @@ export function createTmdbTitleSearch(
             console: null,
           },
         },
+        consoles: [],
       }));
     },
   };
