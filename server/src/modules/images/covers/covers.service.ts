@@ -1,24 +1,21 @@
 import type { MediaFormat } from '@shelfctrl/types';
 import type { Database } from 'better-sqlite3';
 
+import type { SourcesEnv } from '../../../sources/env.js';
 import type { FetchFn } from '../../../sources/http.js';
-import { igdbClientFromEnv, type IgdbEnv } from '../../../sources/igdb.js';
+import { igdbClientFromEnv } from '../../../sources/igdb.js';
 import type { ImageStore } from '../imageStore.js';
 import { createIgdbCoverProvider } from './igdb.js';
 import { createOpenLibraryCoverProvider } from './openLibrary.js';
 import { createTmdbCoverProvider } from './tmdb.js';
 import type { CoverProvider } from './types.js';
 
-export interface CoverEnv extends IgdbEnv {
-  TMDB_API_KEY?: string;
-}
-
 /**
  * Open Library pour les livres ; TMDB pour les films et IGDB pour les jeux vidéo si leurs clés
  * sont renseignées.
  */
 export function createDefaultCoverProviders(
-  env: CoverEnv = process.env,
+  env: SourcesEnv = process.env,
   fetchFn: FetchFn = fetch,
 ): CoverProvider[] {
   const providers = [createOpenLibraryCoverProvider(fetchFn)];

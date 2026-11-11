@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { normalizeConsole } from '../lib/consoles.js';
+import type { SourcesEnv } from './env.js';
 import { ensureOk, type FetchFn, fetchWithTimeout } from './http.js';
 import { isSameTitle } from './metadata.js';
 
@@ -164,13 +165,8 @@ export function onlyConsole(game: IgdbGame): string | null {
   return game.consoles.length === 1 ? game.consoles[0] : null;
 }
 
-export interface IgdbEnv {
-  IGDB_CLIENT_ID?: string;
-  IGDB_CLIENT_SECRET?: string;
-}
-
 /** Client IGDB si ses deux identifiants sont renseignés, sinon `null` (source désactivée). */
-export function igdbClientFromEnv(env: IgdbEnv, fetchFn: FetchFn = fetch): IgdbClient | null {
+export function igdbClientFromEnv(env: SourcesEnv, fetchFn: FetchFn = fetch): IgdbClient | null {
   return env.IGDB_CLIENT_ID && env.IGDB_CLIENT_SECRET
     ? createIgdbClient(env.IGDB_CLIENT_ID, env.IGDB_CLIENT_SECRET, fetchFn)
     : null;

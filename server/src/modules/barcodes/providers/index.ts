@@ -1,7 +1,8 @@
 import { isGameFormat } from '@shelfctrl/types';
 
+import type { SourcesEnv } from '../../../sources/env.js';
 import type { FetchFn } from '../../../sources/http.js';
-import { igdbClientFromEnv, type IgdbEnv } from '../../../sources/igdb.js';
+import { igdbClientFromEnv } from '../../../sources/igdb.js';
 import { createBnfProvider } from './bnf.js';
 import { createGoogleBooksProvider } from './googleBooks.js';
 import { createIgdbEnricher } from './igdb.js';
@@ -10,18 +11,13 @@ import { createTmdbEnricher } from './tmdb.js';
 import type { BarcodeProvider, Enricher } from './types.js';
 import { createUpcItemDbProvider } from './upcItemDb.js';
 
-export interface ProviderEnv extends IgdbEnv {
-  GOOGLE_BOOKS_API_KEY?: string;
-  TMDB_API_KEY?: string;
-}
-
 /**
  * Chaîne de sources, essayées dans l'ordre pour le type de code concerné.
  * Google Books, TMDB et IGDB sont optionnels : ils s'activent si leur clé est renseignée.
  * TMDB fiabilise les fiches de films d'UPCitemdb, IGDB celles de jeux vidéo.
  */
 export function createDefaultProviders(
-  env: ProviderEnv = process.env,
+  env: SourcesEnv = process.env,
   fetchFn: FetchFn = fetch,
 ): BarcodeProvider[] {
   // La BnF d'abord : elle donne série et tome des BD francophones, que les autres sources manquent.
