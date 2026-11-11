@@ -1,9 +1,9 @@
 import { kindOfFormat } from '@shelfctrl/types';
 
-import type { FetchFn } from '../../../sources/http.js';
+import { type FetchFn, fetchImage } from '../../../sources/http.js';
 import { isSameTitle } from '../../../sources/metadata.js';
 import { searchTmdb } from '../../../sources/tmdb.js';
-import { type CoverProvider, fetchImage } from './types.js';
+import type { CoverProvider } from './types.js';
 
 const POSTER_BASE = 'https://image.tmdb.org/t/p/w500';
 
