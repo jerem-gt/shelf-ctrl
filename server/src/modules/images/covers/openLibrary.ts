@@ -1,5 +1,5 @@
-import type { FetchFn } from '../../../sources/http.js';
-import { type CoverProvider, fetchImage } from './types.js';
+import { type FetchFn, fetchImage } from '../../../sources/http.js';
+import type { CoverProvider } from './types.js';
 
 const ISBN_PREFIX = /^97[89]/;
 
