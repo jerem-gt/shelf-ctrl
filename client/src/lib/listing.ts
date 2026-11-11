@@ -1,6 +1,7 @@
-import type { CopyItem } from '@shelfctrl/types';
+import { consoleOf, type CopyItem, isGameFormat, kindOfFormat } from '@shelfctrl/types';
 import type { TFunction } from 'i18next';
 
+import { creatorsLabelKey } from './formats';
 import { titleLimit } from './platforms';
 
 export interface ListingDraft {
@@ -37,11 +38,9 @@ function buildTitle(copy: CopyItem, platform: string | null, t: TFunction): stri
     lead.push(t('collection.volume', { number: work.volumeNumber }));
   }
   lead.push(work.title);
-  if (edition.format === 'game') {
-    // Pour un jeu, la console dit tout (« Zelda - Nintendo Switch ») ; à défaut, « Jeu vidéo ».
-    lead.push(edition.console ?? t('formats.game'));
-  } else if (edition.format !== 'book') {
-    lead.push(t(`formats.${edition.format}`));
+  const support = supportLabel(edition, t);
+  if (support) {
+    lead.push(support);
   }
 
   const optional = [t(`conditions.${copy.condition}`), work.creators].filter(
@@ -53,6 +52,17 @@ function buildTitle(copy: CopyItem, platform: string | null, t: TFunction): stri
     parts.pop();
   }
   return truncate(parts.join(TITLE_SEPARATOR), max);
+}
+
+/**
+ * Support à citer dans le titre : la console d'un jeu (« Zelda - Nintendo Switch »), à défaut
+ * « Jeu vidéo » ; le format d'un film (DVD, Blu-ray…) ; rien pour un livre.
+ */
+function supportLabel(edition: CopyItem['edition'], t: TFunction): string | null {
+  if (isGameFormat(edition.format)) {
+    return edition.console ?? t('formats.game');
+  }
+  return kindOfFormat(edition.format) === 'movie' ? t(`formats.${edition.format}`) : null;
 }
 
 function describeSeries(copy: CopyItem, t: TFunction): string | null {
@@ -87,17 +97,15 @@ function buildDescription(copy: CopyItem, t: TFunction): string {
     ? t(`listing.languages.${edition.language}`, { defaultValue: edition.language.toUpperCase() })
     : null;
 
-  const isGame = edition.format === 'game';
-  let creators: string | null = null;
-  if (work.creators) {
-    creators = t(isGame ? 'listing.developers' : 'listing.creators', { creators: work.creators });
-  }
+  const gameConsole = consoleOf(edition.format, edition.console);
   const details = [
     describeSeries(copy, t),
-    creators,
+    work.creators
+      ? t(creatorsLabelKey('listing', edition.format), { creators: work.creators })
+      : null,
     describePublisher(copy, t),
     t('listing.format', { format: t(`formats.${edition.format}`) }),
-    isGame && edition.console ? t('listing.console', { console: edition.console }) : null,
+    gameConsole ? t('listing.console', { console: gameConsole }) : null,
     language ? t('listing.language', { language }) : null,
     edition.barcode ? t('listing.barcode', { barcode: edition.barcode }) : null,
   ].filter((line): line is string => line !== null);

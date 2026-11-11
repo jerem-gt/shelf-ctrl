@@ -1,25 +1,14 @@
-import type { CopyItem } from '@shelfctrl/types';
-import type { MediaFormat } from '@shelfctrl/types';
-import { BookOpen, Disc3, Gamepad2, MapPin } from 'lucide-react';
+import { type CopyItem, kindOfFormat } from '@shelfctrl/types';
+import { MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import { coverUrl } from '@/lib/images';
 
+import { KindIcon } from './KindIcon';
 import { StatusBadge } from './StatusBadge';
 
-/** Icône du support : livre, jeu vidéo ou disque (film). */
-function FormatIcon({ format }: Readonly<{ format: MediaFormat }>) {
-  if (format === 'book') {
-    return <BookOpen aria-hidden className="size-6" />;
-  }
-  if (format === 'game') {
-    return <Gamepad2 aria-hidden className="size-6" />;
-  }
-  return <Disc3 aria-hidden className="size-6" />;
-}
-
-/** Pochette en miniature, ou une icône du support quand l'édition n'en a pas. */
+/** Pochette en miniature, ou l'icône du type de média quand l'édition n'en a pas. */
 function CoverThumbnail({ copy }: Readonly<{ copy: CopyItem }>) {
   const url = coverUrl(copy.edition.coverPath);
   return (
@@ -27,7 +16,7 @@ function CoverThumbnail({ copy }: Readonly<{ copy: CopyItem }>) {
       {url ? (
         <img src={url} alt="" loading="lazy" className="size-full object-cover" />
       ) : (
-        <FormatIcon format={copy.edition.format} />
+        <KindIcon kind={kindOfFormat(copy.edition.format)} className="size-6" />
       )}
     </div>
   );

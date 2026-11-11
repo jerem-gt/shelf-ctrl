@@ -1,9 +1,11 @@
-import type {
-  CopyCondition,
-  CopyItem,
-  CopyListResponse,
-  CopyStatus,
-  MediaFormat,
+import {
+  consoleOf,
+  type CopyCondition,
+  type CopyItem,
+  type CopyListResponse,
+  type CopyStatus,
+  isGameFormat,
+  type MediaFormat,
 } from '@shelfctrl/types';
 import type { Database } from 'better-sqlite3';
 
@@ -85,7 +87,8 @@ export interface RemovedFiles {
  * (« ps5 » → « PlayStation 5 ») pour que le filtre et l'import la retrouvent.
  */
 function consoleFor(format: MediaFormat, value: string | null | undefined): string | null {
-  return format === 'game' && value ? normalizeConsole(value) : null;
+  const kept = consoleOf(format, value);
+  return kept === null ? null : normalizeConsole(kept);
 }
 
 function escapeLike(value: string) {
@@ -234,7 +237,7 @@ export function createCopiesService(db: Database) {
         if (!copy) {
           return null;
         }
-        if (input.console !== undefined && copy.edition.format === 'game') {
+        if (input.console !== undefined && isGameFormat(copy.edition.format)) {
           db.prepare('UPDATE editions SET console = ? WHERE id = ? AND user_id = ?').run(
             consoleFor(copy.edition.format, input.console),
             copy.edition.id,

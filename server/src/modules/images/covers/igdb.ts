@@ -1,3 +1,5 @@
+import { isGameFormat } from '@shelfctrl/types';
+
 import { findMatchingGame, type IgdbClient } from '../../barcodes/providers/igdb.js';
 import { type CoverProvider, type FetchFn, fetchImage } from './types.js';
 
@@ -11,7 +13,7 @@ export function createIgdbCoverProvider(
 ): CoverProvider {
   return {
     source: 'igdb',
-    supports: (query) => query.format === 'game',
+    supports: (query) => isGameFormat(query.format),
     async find(query) {
       const games = (await client.searchGames(query.title, 10)).filter((game) => game.coverUrl);
       const match = findMatchingGame(games, query.title, query.year);
