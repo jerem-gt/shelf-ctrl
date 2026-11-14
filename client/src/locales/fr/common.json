@@ -322,8 +322,15 @@
   },
   "settings": {
     "title": "Réglages",
-    "preferencesTitle": "Préférences",
-    "salesTitle": "Ventes",
+    "menuLabel": "Rubriques des réglages",
+    "menu": {
+      "account": "Compte",
+      "sales": "Ventes",
+      "profile": "Profil et mot de passe",
+      "twoFactor": "Double authentification",
+      "platforms": "Plateformes de vente"
+    },
+    "back": "Toutes les rubriques",
     "platformsIntro": "Coche les plateformes sur lesquelles tu as un compte : ce sont les seules proposées quand tu mets un exemplaire en vente. Tant que tu n'en as coché aucune, toutes les plateformes connues sont proposées.",
     "known": "Plateformes connues",
     "custom": "Autres plateformes",
@@ -414,7 +421,6 @@
     "requestNew": "Refaire une demande"
   },
   "profile": {
-    "title": "Mon compte",
     "username": "Nom d'utilisateur",
     "email": "Adresse e-mail (facultative)",
     "emailHint": "Sert à recevoir un lien si tu oublies ton mot de passe.",
@@ -467,7 +473,6 @@
     "disablingTotp": "Désactivation…"
   },
   "twoFactor": {
-    "title": "Double authentification (2FA)",
     "enabled": "Activée",
     "disabled": "Désactivée",
     "enabledIntro": "Un code de ton application d'authentification est demandé à chaque connexion, sauf sur les appareils mémorisés.",

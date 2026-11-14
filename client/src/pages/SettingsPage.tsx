@@ -1,310 +1,221 @@
-import type { PlatformItem } from '@shelfctrl/types';
-import { Trash2 } from 'lucide-react';
-import { type ReactNode, type SyntheticEvent, useId, useState } from 'react';
+import { ChevronLeft } from 'lucide-react';
+import { type ComponentType, type RefObject, useEffect, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router';
 
-import { ApiError } from '@/api/client';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { PlatformsSettings } from '@/components/PlatformsSettings';
 import { ProfileCard } from '@/components/ProfileCard';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { TwoFactorCard } from '@/components/TwoFactorCard';
+import { MD_QUERY, useMediaQuery } from '@/hooks/useMediaQuery';
 import {
-  useAddPlatform,
-  usePlatforms,
-  useRemovePlatform,
-  useSetDefaultPlatform,
-  useSetPlatformUrl,
-} from '@/hooks/usePlatforms';
-import { findKnownPlatform, KNOWN_PLATFORMS } from '@/lib/platforms';
+  isSettingsSection,
+  SETTINGS_SECTIONS,
+  settingsPath,
+  type SettingsSection,
+} from '@/lib/navigation';
 
-const FIELD_CLASS =
-  'w-full rounded-md border border-line bg-surface px-3 py-2 text-sm focus:border-line-strong focus:outline-none';
-const BUTTON_CLASS =
-  'rounded-md border border-line bg-surface px-3 py-1.5 text-sm font-medium disabled:opacity-60';
+/** Groupes du menu, dans leur ordre d'affichage ; titre traduit sous `settings.menu.<groupe>`. */
+const MENU_GROUPS = ['account', 'sales'] as const;
 
-const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+/** Groupe et contenu de chaque rubrique (le menu se construit de là) ; libellé `settings.menu.<rubrique>`. */
+const SECTIONS: Record<
+  SettingsSection,
+  { group: (typeof MENU_GROUPS)[number]; Content: ComponentType }
+> = {
+  profile: { group: 'account', Content: ProfileCard },
+  twoFactor: { group: 'account', Content: TwoFactorCard },
+  platforms: { group: 'sales', Content: PlatformsSettings },
+};
 
-/** Message d'une erreur de réglage : saisie invalide expliquée, sinon le code traduit du serveur. */
-function useErrorMessage() {
+/** Rubrique affichée sur grand écran quand l'adresse n'en désigne aucune. */
+const DEFAULT_SECTION: SettingsSection = 'profile';
+
+const menuKey = (key: string) => `settings.menu.${key}`;
+
+const ITEM_CLASS = 'block rounded-md px-3 py-2 text-sm font-medium';
+const ITEM_ACTIVE = `${ITEM_CLASS} bg-primary text-primary-fg`;
+const ITEM_IDLE = `${ITEM_CLASS} text-content-secondary hover:bg-surface-emphasis hover:text-content`;
+
+/**
+ * Marque d'une entrée d'historique ouverte depuis le menu seul (mobile) : le retour au menu y revient
+ * en arrière plutôt que d'empiler une page (sinon le retour d'Android rouvrirait la rubrique).
+ */
+type SettingsLocationState = { fromMenu?: boolean } | null;
+
+/** Comment les liens du menu naviguent : remplacer l'entrée courante ou non, et ce qu'ils marquent. */
+type MenuNavigation = { replace: boolean; state: { fromMenu: boolean } };
+
+function SettingsMenu({
+  shown,
+  navigation,
+}: Readonly<{ shown: SettingsSection | null; navigation: MenuNavigation }>) {
   const { t } = useTranslation();
-  return (error: Error): string => {
-    if (error instanceof ApiError && error.code === 'validation.invalid') {
-      return t('settings.errors.invalid');
-    }
-    return error.message;
-  };
-}
-
-function CustomPlatformRow({
-  platform,
-  onRemove,
-  busy,
-}: Readonly<{ platform: PlatformItem; onRemove: () => void; busy: boolean }>) {
-  const { t } = useTranslation();
-  const urlId = useId();
-  const saveUrl = useSetPlatformUrl();
-  const errorMessage = useErrorMessage();
-  const [url, setUrl] = useState(platform.publishUrl ?? '');
-  const changed = url.trim() !== (platform.publishUrl ?? '');
-
-  const save = (event: SyntheticEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    saveUrl.mutate({ id: platform.id, publishUrl: url.trim() || null });
-  };
+  const languageId = useId();
+  const themeId = useId();
 
   return (
-    <li className="flex flex-col gap-2 p-3">
-      <div className="flex items-center justify-between gap-3">
-        <p className="font-medium">{platform.name}</p>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={onRemove}
-          aria-label={t('settings.remove', { name: platform.name })}
-          className="rounded-md p-2 text-content-subtle hover:bg-surface-emphasis hover:text-danger disabled:opacity-60"
-        >
-          <Trash2 aria-hidden className="size-4" />
-        </button>
+    <div className="flex w-full flex-col gap-5 md:w-60 md:shrink-0 md:border-r md:border-line-subtle md:pr-6">
+      <nav aria-label={t('settings.menuLabel')} className="flex flex-col gap-4">
+        {MENU_GROUPS.map((group) => (
+          <div key={group} className="flex flex-col gap-1">
+            <h3 className="px-3 text-xs font-semibold tracking-wider text-content-subtle uppercase">
+              {t(menuKey(group))}
+            </h3>
+            <ul className="flex flex-col gap-0.5">
+              {SETTINGS_SECTIONS.filter((section) => SECTIONS[section].group === group).map(
+                (section) => (
+                  <li key={section}>
+                    <Link
+                      to={settingsPath(section)}
+                      replace={navigation.replace}
+                      state={navigation.state}
+                      data-section={section}
+                      aria-current={section === shown ? 'page' : undefined}
+                      className={section === shown ? ITEM_ACTIVE : ITEM_IDLE}
+                    >
+                      {t(menuKey(section))}
+                    </Link>
+                  </li>
+                ),
+              )}
+            </ul>
+          </div>
+        ))}
+      </nav>
+      <div className="flex flex-col gap-4 border-t border-line-subtle pt-4">
+        <section aria-labelledby={languageId} className="flex flex-col gap-2">
+          <h3 id={languageId} className="text-sm font-medium text-content-secondary">
+            {t('language.title')}
+          </h3>
+          <LanguageSwitcher />
+        </section>
+        <section aria-labelledby={themeId} className="flex flex-col gap-2">
+          <h3 id={themeId} className="text-sm font-medium text-content-secondary">
+            {t('theme.title')}
+          </h3>
+          <ThemeSwitcher />
+        </section>
       </div>
-      <form onSubmit={save} className="flex flex-col gap-2 sm:flex-row sm:items-end">
-        <div className="flex flex-1 flex-col gap-1">
-          <label htmlFor={urlId} className="text-xs font-medium text-content-muted">
-            {t('settings.publishUrl')}
-          </label>
-          <input
-            id={urlId}
-            type="url"
-            maxLength={500}
-            value={url}
-            onChange={(event) => setUrl(event.target.value)}
-            className={FIELD_CLASS}
-          />
-        </div>
-        <button type="submit" disabled={!changed || saveUrl.isPending} className={BUTTON_CLASS}>
-          {t('settings.saveUrl')}
-        </button>
-      </form>
-      {saveUrl.error && (
-        <p role="alert" className="text-sm text-danger">
-          {errorMessage(saveUrl.error)}
-        </p>
-      )}
-    </li>
-  );
-}
-
-function AddPlatformForm() {
-  const { t } = useTranslation();
-  const nameId = useId();
-  const urlId = useId();
-  const add = useAddPlatform();
-  const errorMessage = useErrorMessage();
-  const [name, setName] = useState('');
-  const [url, setUrl] = useState('');
-
-  const submit = (event: SyntheticEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    add.mutate(
-      { name: name.trim(), publishUrl: url.trim() || undefined },
-      {
-        onSuccess: () => {
-          setName('');
-          setUrl('');
-        },
-      },
-    );
-  };
-
-  return (
-    <form onSubmit={submit} className="flex flex-col gap-3">
-      <h5 className="font-medium">{t('settings.addTitle')}</h5>
-      <div className="flex flex-col gap-1">
-        <label htmlFor={nameId} className="text-sm font-medium text-content-secondary">
-          {t('settings.name')}
-        </label>
-        <input
-          id={nameId}
-          required
-          maxLength={100}
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          className={FIELD_CLASS}
-        />
-      </div>
-      <div className="flex flex-col gap-1">
-        <label htmlFor={urlId} className="text-sm font-medium text-content-secondary">
-          {t('settings.publishUrl')}
-        </label>
-        <input
-          id={urlId}
-          type="url"
-          maxLength={500}
-          value={url}
-          onChange={(event) => setUrl(event.target.value)}
-          aria-describedby={`${urlId}-hint`}
-          className={FIELD_CLASS}
-        />
-        <p id={`${urlId}-hint`} className="text-xs text-content-subtle">
-          {t('settings.publishUrlHint')}
-        </p>
-      </div>
-      {add.error && (
-        <p role="alert" className="text-sm text-danger">
-          {errorMessage(add.error)}
-        </p>
-      )}
-      <div>
-        <button type="submit" disabled={add.isPending} className={BUTTON_CLASS}>
-          {t(add.isPending ? 'settings.adding' : 'settings.add')}
-        </button>
-      </div>
-    </form>
-  );
-}
-
-function PlatformsSettings() {
-  const { t } = useTranslation();
-  const defaultId = useId();
-  const { data, error, isPending } = usePlatforms();
-  const add = useAddPlatform();
-  const remove = useRemovePlatform();
-  const setDefault = useSetDefaultPlatform();
-  const errorMessage = useErrorMessage();
-
-  if (error) {
-    return (
-      <p role="alert" className="text-sm text-danger">
-        {error.message}
-      </p>
-    );
-  }
-  if (isPending) {
-    return <p className="text-sm text-content-subtle">{t('settings.loading')}</p>;
-  }
-
-  const items = data.items;
-  const custom = items.filter((item) => findKnownPlatform(item.name) === undefined);
-  const busy = add.isPending || remove.isPending || setDefault.isPending;
-  const mutationError = add.error ?? remove.error ?? setDefault.error;
-  const current = items.find((item) => item.isDefault);
-
-  return (
-    <div className="flex flex-col gap-5">
-      <p className="text-sm text-content-muted">{t('settings.platformsIntro')}</p>
-
-      <fieldset className="flex flex-col gap-2">
-        <legend className="mb-1 font-medium">{t('settings.known')}</legend>
-        <ul className="grid gap-2 sm:grid-cols-2">
-          {KNOWN_PLATFORMS.map((known) => {
-            const row = items.find((item) => sameName(item.name, known.name));
-            return (
-              <li key={known.name}>
-                <label className="flex items-center gap-2 rounded-md border border-line-subtle bg-surface px-3 py-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={row !== undefined}
-                    disabled={busy}
-                    onChange={() =>
-                      row ? remove.mutate(row.id) : add.mutate({ name: known.name })
-                    }
-                  />
-                  {known.name}
-                </label>
-              </li>
-            );
-          })}
-        </ul>
-      </fieldset>
-
-      <section className="flex flex-col gap-2">
-        <h4 className="font-medium">{t('settings.custom')}</h4>
-        {custom.length === 0 ? (
-          <p className="text-sm text-content-subtle">{t('settings.noCustom')}</p>
-        ) : (
-          <ul
-            aria-label={t('settings.custom')}
-            className="flex flex-col divide-y divide-line-subtle rounded-md border border-line-subtle bg-surface"
-          >
-            {custom.map((platform) => (
-              <CustomPlatformRow
-                key={platform.id}
-                platform={platform}
-                busy={busy}
-                onRemove={() => remove.mutate(platform.id)}
-              />
-            ))}
-          </ul>
-        )}
-        <AddPlatformForm />
-      </section>
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor={defaultId} className="text-sm font-medium text-content-secondary">
-          {t('settings.default')}
-        </label>
-        <select
-          id={defaultId}
-          value={current?.id ?? ''}
-          disabled={busy || items.length === 0}
-          onChange={(event) =>
-            setDefault.mutate(event.target.value === '' ? null : Number(event.target.value))
-          }
-          className={`${FIELD_CLASS} sm:w-64`}
-        >
-          <option value="">{t('settings.noDefault')}</option>
-          {items.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name}
-            </option>
-          ))}
-        </select>
-        <p className="text-xs text-content-subtle">{t('settings.defaultHint')}</p>
-      </div>
-
-      {mutationError && (
-        <p role="alert" className="text-sm text-danger">
-          {errorMessage(mutationError)}
-        </p>
-      )}
     </div>
   );
 }
 
-/** Groupe de réglages : un titre, puis ses sous-parties, séparé des autres par un filet. */
-function SettingsGroup({ title, children }: Readonly<{ title: string; children: ReactNode }>) {
-  const titleId = useId();
+/** Retour au menu (mobile) : en arrière si l'on vient du menu, sinon vers le menu sans empiler. */
+function BackToMenu({ fromMenu }: Readonly<BackToMenuProps>) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const className =
+    'flex items-center gap-1 self-start text-sm text-content-muted hover:text-content';
+  const content = (
+    <>
+      <ChevronLeft aria-hidden className="size-4" />
+      {t('settings.back')}
+    </>
+  );
+
+  if (fromMenu) {
+    return (
+      <button type="button" onClick={() => void navigate(-1)} className={className}>
+        {content}
+      </button>
+    );
+  }
   return (
-    <section
-      aria-labelledby={titleId}
-      className="flex flex-col gap-4 border-t border-line-subtle pt-5 first-of-type:border-t-0 first-of-type:pt-0"
-    >
-      <h3 id={titleId} className="text-lg font-semibold">
-        {title}
+    <Link to="/settings" replace className={className}>
+      {content}
+    </Link>
+  );
+}
+
+/** Retour au menu à afficher (mobile seulement), et si l'on vient du menu. */
+type BackToMenuProps = { fromMenu: boolean };
+
+function SettingsContent({
+  section,
+  titleRef,
+  back,
+}: Readonly<{
+  section: SettingsSection;
+  titleRef: RefObject<HTMLHeadingElement | null>;
+  back: BackToMenuProps | null;
+}>) {
+  const { t } = useTranslation();
+  const titleId = useId();
+  const { Content } = SECTIONS[section];
+  return (
+    <section aria-labelledby={titleId} className="flex min-w-0 flex-1 flex-col gap-4">
+      {back && <BackToMenu fromMenu={back.fromMenu} />}
+      <h3 id={titleId} ref={titleRef} tabIndex={-1} className="rounded-sm text-lg font-semibold">
+        {t(menuKey(section))}
       </h3>
-      {children}
+      <Content />
     </section>
   );
 }
 
+/**
+ * Réglages du compte, sur le modèle de cash-ctrl : menu des rubriques à gauche, rubrique ouverte à
+ * droite (le profil par défaut) ; sur mobile, le menu seul, puis la rubrique avec un retour. En plus
+ * de cash-ctrl : la rubrique est dans l'adresse (le retour d'Android ramène au menu) et seul ce qui
+ * est affiché est monté.
+ */
 export function SettingsPage() {
   const { t } = useTranslation();
+  const [params] = useSearchParams();
+  const location = useLocation();
+  const isDesktop = useMediaQuery(MD_QUERY);
+  const layoutRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const previousRef = useRef<SettingsSection | null>(null);
+
+  const requested = params.get('section');
+  // Rubrique désignée par l'adresse, si elle existe.
+  const selected = isSettingsSection(requested) ? requested : null;
+  // Rubrique affichée : la désignée, ou celle par défaut sur grand écran ; aucune sur le menu mobile.
+  const shown = selected ?? (isDesktop ? DEFAULT_SECTION : null);
+  const fromMenu = (location.state as SettingsLocationState)?.fromMenu === true;
+  // Une rubrique déjà affichée est remplacée par la suivante ; depuis le menu seul, on empile.
+  const navigation: MenuNavigation = {
+    replace: shown !== null,
+    state: { fromMenu: shown === null || fromMenu },
+  };
+
+  // Sur mobile, le menu et le contenu s'échangent : le focus suit, vers le titre de la rubrique
+  // ouverte, ou au retour vers le lien de celle qu'on quitte. Seul un changement de rubrique le
+  // déplace, pas un changement de largeur ; sur grand écran, il reste sur le lien cliqué.
+  useEffect(() => {
+    const previous = previousRef.current;
+    previousRef.current = selected;
+    if (isDesktop || previous === selected) {
+      return;
+    }
+    if (selected === null) {
+      layoutRef.current?.querySelector<HTMLAnchorElement>(`[data-section="${previous}"]`)?.focus();
+    } else {
+      titleRef.current?.focus();
+    }
+  }, [selected, isDesktop]);
+
+  // Rubrique inconnue : l'adresse est corrigée, sans entrée d'historique.
+  if (requested !== null && selected === null) {
+    return <Navigate to="/settings" replace />;
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <h2 className="text-xl font-semibold">{t('settings.title')}</h2>
-      <SettingsGroup title={t('profile.title')}>
-        <ProfileCard />
-        <h4 className="font-semibold">{t('twoFactor.title')}</h4>
-        <TwoFactorCard />
-      </SettingsGroup>
-      <SettingsGroup title={t('settings.preferencesTitle')}>
-        <h4 className="font-semibold">{t('language.title')}</h4>
-        <LanguageSwitcher />
-        <h4 className="font-semibold">{t('theme.title')}</h4>
-        <ThemeSwitcher />
-      </SettingsGroup>
-      <SettingsGroup title={t('settings.salesTitle')}>
-        <PlatformsSettings />
-      </SettingsGroup>
+      <div ref={layoutRef} className="flex flex-col gap-6 md:flex-row md:items-start md:gap-8">
+        {(isDesktop || selected === null) && <SettingsMenu shown={shown} navigation={navigation} />}
+        {shown !== null && (
+          <SettingsContent
+            section={shown}
+            titleRef={titleRef}
+            back={isDesktop ? null : { fromMenu }}
+          />
+        )}
+      </div>
     </div>
   );
 }

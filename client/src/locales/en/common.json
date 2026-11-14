@@ -322,8 +322,15 @@
   },
   "settings": {
     "title": "Settings",
-    "preferencesTitle": "Preferences",
-    "salesTitle": "Sales",
+    "menuLabel": "Settings sections",
+    "menu": {
+      "account": "Account",
+      "sales": "Sales",
+      "profile": "Profile and password",
+      "twoFactor": "Two-factor authentication",
+      "platforms": "Sales platforms"
+    },
+    "back": "All sections",
     "platformsIntro": "Tick the platforms where you have an account: only those are offered when you list a copy for sale. As long as none is ticked, all known platforms are offered.",
     "known": "Known platforms",
     "custom": "Other platforms",
@@ -414,7 +421,6 @@
     "requestNew": "Make a new request"
   },
   "profile": {
-    "title": "My account",
     "username": "Username",
     "email": "Email address (optional)",
     "emailHint": "Used to receive a link if you forget your password.",
@@ -467,7 +473,6 @@
     "disablingTotp": "Disabling…"
   },
   "twoFactor": {
-    "title": "Two-factor authentication (2FA)",
     "enabled": "Enabled",
     "disabled": "Disabled",
     "enabledIntro": "A code from your authenticator app is required at each login, except on remembered devices.",

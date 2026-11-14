@@ -170,7 +170,7 @@ function PasswordForm() {
   );
 }
 
-/** Carte « Mon compte » des réglages : profil et mot de passe. */
+/** Rubrique « Profil et mot de passe » des réglages. */
 export function ProfileCard() {
   const { data: me } = useMe();
   // Ici et non dans le formulaire, remonté après chaque enregistrement : garde le message de succès.

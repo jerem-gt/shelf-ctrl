@@ -160,7 +160,7 @@ describe('SaleSection — sans vente', () => {
     expect(screen.getByText(/Aucune plateforme réglée/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Régler mes plateformes' })).toHaveAttribute(
       'href',
-      '/settings',
+      '/settings?section=platforms',
     );
   });
 

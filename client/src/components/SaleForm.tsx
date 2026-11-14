@@ -7,6 +7,7 @@ import { usePlatformChoices } from '@/hooks/usePlatforms';
 import { useListForSale, useSellCopy, useUpdateSale } from '@/hooks/useSales';
 import { localToday } from '@/lib/format';
 import { parsePrice, PRICE_PATTERN, priceToInput } from '@/lib/money';
+import { settingsPath } from '@/lib/navigation';
 
 import { ListingFields } from './ListingDraftPanel';
 
@@ -95,7 +96,7 @@ export function SaleForm({ mode, copy, sale, onDone }: Readonly<SaleFormProps>) 
         <p id={hintId} className="text-xs text-content-subtle">
           {mode === 'sell' ? null : `${t('sale.platformHint')} `}
           {unconfigured && `${t('sale.platformUnconfigured')} `}
-          <Link to="/settings" className="underline underline-offset-2">
+          <Link to={settingsPath('platforms')} className="underline underline-offset-2">
             {t('sale.platformSettings')}
           </Link>
         </p>
