@@ -5,7 +5,7 @@ import {
   MEDIA_FORMATS,
   type MediaFormat,
 } from '@shelfctrl/types';
-import { Plus } from 'lucide-react';
+import { Plus, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
@@ -17,6 +17,8 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 const FIELD_CLASS =
   'w-full rounded-md border border-line bg-surface px-3 py-2 text-sm focus:border-line-strong focus:outline-none';
+/** Forme commune des boutons d'action de l'en-tête (importer, ajouter), dont seules les couleurs varient. */
+const ACTION_CLASS = 'flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium';
 
 function isMediaFormat(value: string): value is MediaFormat {
   return (MEDIA_FORMATS as readonly string[]).includes(value);
@@ -91,15 +93,21 @@ export function CollectionPage() {
 
   return (
     <section className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-semibold">{t('collection.title')}</h2>
-        <Link
-          to="/add"
-          className="flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-fg"
-        >
-          <Plus aria-hidden className="size-4" />
-          {t('collection.add')}
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/import"
+            className={`${ACTION_CLASS} border border-line bg-surface text-content`}
+          >
+            <Upload aria-hidden className="size-4" />
+            {t('collection.import')}
+          </Link>
+          <Link to="/add" className={`${ACTION_CLASS} bg-primary text-primary-fg`}>
+            <Plus aria-hidden className="size-4" />
+            {t('collection.add')}
+          </Link>
+        </div>
       </div>
 
       <div className={`grid gap-3 ${filterColumns}`}>

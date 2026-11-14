@@ -28,6 +28,7 @@
   "collection": {
     "title": "My collection",
     "add": "Add",
+    "import": "Import",
     "searchLabel": "Search",
     "searchPlaceholder": "Title, series, author, console, barcode…",
     "formatFilter": "Format",
@@ -158,7 +159,8 @@
     "collection": "Collection",
     "loans": "Loans",
     "sales": "Sales",
-    "import": "Import",
+    "account": "Account",
+    "accountMenu": "Account menu",
     "settings": "Settings",
     "logout": "Log out",
     "users": "Users"
@@ -320,7 +322,8 @@
   },
   "settings": {
     "title": "Settings",
-    "platformsTitle": "My sales platforms",
+    "preferencesTitle": "Preferences",
+    "salesTitle": "Sales",
     "platformsIntro": "Tick the platforms where you have an account: only those are offered when you list a copy for sale. As long as none is ticked, all known platforms are offered.",
     "known": "Known platforms",
     "custom": "Other platforms",

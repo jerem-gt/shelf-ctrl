@@ -1,11 +1,12 @@
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { LogOut } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter, Link, NavLink, Route, Routes, useLocation } from 'react-router';
 
 import { ApiError } from '@/api/client';
-import { ME_KEY, useLogout, useMe, useSetupStatus } from '@/hooks/useAuth';
+import { AccountMenu } from '@/components/AccountMenu';
+import { ME_KEY, useMe, useSetupStatus } from '@/hooks/useAuth';
+import { COLLECTION_ROUTES, matchesAnyRoute } from '@/lib/navigation';
 import { AddCopyPage } from '@/pages/AddCopyPage';
 import { CollectionPage } from '@/pages/CollectionPage';
 import { CopyPage } from '@/pages/CopyPage';
@@ -19,14 +20,19 @@ import { SettingsPage } from '@/pages/SettingsPage';
 import { SetupPage } from '@/pages/SetupPage';
 import { UsersPage } from '@/pages/UsersPage';
 
+const ACTIVE_NAV = 'text-content underline underline-offset-4';
+const IDLE_NAV = 'text-content-subtle hover:text-content';
+
 function navClass({ isActive }: { isActive: boolean }) {
-  return isActive ? 'text-content underline underline-offset-4' : 'text-content-subtle';
+  return isActive ? ACTIVE_NAV : IDLE_NAV;
 }
 
 export function AppRoutes() {
   const { t } = useTranslation();
-  const logout = useLogout();
+  const { pathname } = useLocation();
   const isAdmin = useMe().data?.isAdmin === true;
+  // La collection reste l'onglet actif sur ses pages (ajout, import, fiche d'un exemplaire).
+  const inCollection = pathname === '/' || matchesAnyRoute(pathname, COLLECTION_ROUTES);
 
   return (
     <div className="min-h-screen bg-canvas text-content">
@@ -37,40 +43,24 @@ export function AppRoutes() {
           </Link>
           <nav
             aria-label={t('nav.main')}
-            className="order-3 flex w-full flex-wrap gap-x-3 gap-y-1 text-sm font-medium sm:order-2 sm:w-auto sm:gap-x-4"
+            className="order-3 flex w-full flex-wrap gap-x-4 gap-y-1 text-sm font-medium sm:order-2 sm:w-auto"
           >
-            <NavLink to="/" end className={navClass}>
+            <Link
+              to="/"
+              aria-current={inCollection ? 'page' : undefined}
+              className={navClass({ isActive: inCollection })}
+            >
               {t('nav.collection')}
-            </NavLink>
+            </Link>
             <NavLink to="/loans" className={navClass}>
               {t('nav.loans')}
             </NavLink>
             <NavLink to="/sales" className={navClass}>
               {t('nav.sales')}
             </NavLink>
-            <NavLink to="/import" className={navClass}>
-              {t('nav.import')}
-            </NavLink>
-            <NavLink to="/settings" className={navClass}>
-              {t('nav.settings')}
-            </NavLink>
-            {isAdmin && (
-              <NavLink to="/admin" className={navClass}>
-                {t('nav.users')}
-              </NavLink>
-            )}
           </nav>
-          <div className="order-2 ml-auto flex items-center gap-3 sm:order-3">
-            <button
-              type="button"
-              onClick={() => logout.mutate()}
-              disabled={logout.isPending}
-              aria-label={t('nav.logout')}
-              title={t('nav.logout')}
-              className="rounded-md p-2 text-content-subtle hover:bg-surface-emphasis hover:text-content disabled:opacity-60"
-            >
-              <LogOut aria-hidden className="size-5" />
-            </button>
+          <div className="order-2 ml-auto sm:order-3">
+            <AccountMenu />
           </div>
         </div>
       </header>

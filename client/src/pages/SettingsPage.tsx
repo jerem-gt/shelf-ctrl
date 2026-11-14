@@ -1,6 +1,6 @@
 import type { PlatformItem } from '@shelfctrl/types';
 import { Trash2 } from 'lucide-react';
-import { type SyntheticEvent, useId, useState } from 'react';
+import { type ReactNode, type SyntheticEvent, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ApiError } from '@/api/client';
@@ -117,7 +117,7 @@ function AddPlatformForm() {
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-3">
-      <h4 className="font-medium">{t('settings.addTitle')}</h4>
+      <h5 className="font-medium">{t('settings.addTitle')}</h5>
       <div className="flex flex-col gap-1">
         <label htmlFor={nameId} className="text-sm font-medium text-content-secondary">
           {t('settings.name')}
@@ -217,7 +217,7 @@ function PlatformsSettings() {
       </fieldset>
 
       <section className="flex flex-col gap-2">
-        <h3 className="font-medium">{t('settings.custom')}</h3>
+        <h4 className="font-medium">{t('settings.custom')}</h4>
         {custom.length === 0 ? (
           <p className="text-sm text-content-subtle">{t('settings.noCustom')}</p>
         ) : (
@@ -270,21 +270,41 @@ function PlatformsSettings() {
   );
 }
 
+/** Groupe de réglages : un titre, puis ses sous-parties, séparé des autres par un filet. */
+function SettingsGroup({ title, children }: Readonly<{ title: string; children: ReactNode }>) {
+  const titleId = useId();
+  return (
+    <section
+      aria-labelledby={titleId}
+      className="flex flex-col gap-4 border-t border-line-subtle pt-5 first-of-type:border-t-0 first-of-type:pt-0"
+    >
+      <h3 id={titleId} className="text-lg font-semibold">
+        {title}
+      </h3>
+      {children}
+    </section>
+  );
+}
+
 export function SettingsPage() {
   const { t } = useTranslation();
   return (
-    <section className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <h2 className="text-xl font-semibold">{t('settings.title')}</h2>
-      <h3 className="text-lg font-semibold">{t('profile.title')}</h3>
-      <ProfileCard />
-      <h3 className="text-lg font-semibold">{t('twoFactor.title')}</h3>
-      <TwoFactorCard />
-      <h3 className="text-lg font-semibold">{t('language.title')}</h3>
-      <LanguageSwitcher />
-      <h3 className="text-lg font-semibold">{t('theme.title')}</h3>
-      <ThemeSwitcher />
-      <h3 className="text-lg font-semibold">{t('settings.platformsTitle')}</h3>
-      <PlatformsSettings />
-    </section>
+      <SettingsGroup title={t('profile.title')}>
+        <ProfileCard />
+        <h4 className="font-semibold">{t('twoFactor.title')}</h4>
+        <TwoFactorCard />
+      </SettingsGroup>
+      <SettingsGroup title={t('settings.preferencesTitle')}>
+        <h4 className="font-semibold">{t('language.title')}</h4>
+        <LanguageSwitcher />
+        <h4 className="font-semibold">{t('theme.title')}</h4>
+        <ThemeSwitcher />
+      </SettingsGroup>
+      <SettingsGroup title={t('settings.salesTitle')}>
+        <PlatformsSettings />
+      </SettingsGroup>
+    </div>
   );
 }

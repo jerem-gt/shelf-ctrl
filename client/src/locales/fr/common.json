@@ -28,6 +28,7 @@
   "collection": {
     "title": "Ma collection",
     "add": "Ajouter",
+    "import": "Importer",
     "searchLabel": "Rechercher",
     "searchPlaceholder": "Titre, série, auteur, console, code-barres…",
     "formatFilter": "Format",
@@ -158,7 +159,8 @@
     "collection": "Collection",
     "loans": "Prêts",
     "sales": "Ventes",
-    "import": "Import",
+    "account": "Compte",
+    "accountMenu": "Menu du compte",
     "settings": "Réglages",
     "logout": "Se déconnecter",
     "users": "Utilisateurs"
@@ -320,7 +322,8 @@
   },
   "settings": {
     "title": "Réglages",
-    "platformsTitle": "Mes plateformes de vente",
+    "preferencesTitle": "Préférences",
+    "salesTitle": "Ventes",
     "platformsIntro": "Coche les plateformes sur lesquelles tu as un compte : ce sont les seules proposées quand tu mets un exemplaire en vente. Tant que tu n'en as coché aucune, toutes les plateformes connues sont proposées.",
     "known": "Plateformes connues",
     "custom": "Autres plateformes",

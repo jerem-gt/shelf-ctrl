@@ -29,6 +29,7 @@ describe('CollectionPage', () => {
     expect(screen.getByText('Alien')).toBeInTheDocument();
     expect(screen.getByText('2 exemplaires')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Ajouter/ })).toHaveAttribute('href', '/add');
+    expect(screen.getByRole('link', { name: /Importer/ })).toHaveAttribute('href', '/import');
   });
 
   it('ouvre la fiche d’un exemplaire au clic sur son titre', async () => {

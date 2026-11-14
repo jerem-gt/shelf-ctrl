@@ -31,6 +31,10 @@ function stubSession(loggedIn: boolean) {
 }
 
 describe('App connectée', () => {
+  afterEach(() => {
+    globalThis.history.pushState({}, '', '/');
+  });
+
   it("affiche le nom de l'application et la collection", async () => {
     render(<App />);
 
@@ -38,30 +42,37 @@ describe('App connectée', () => {
     expect(await screen.findByText('Tintin au Tibet')).toBeInTheDocument();
   });
 
-  it('propose la navigation entre la collection, les prêts et les ventes', async () => {
+  it('ne met que la collection, les prêts et les ventes dans la navigation principale', async () => {
     render(<App />);
 
     const nav = await screen.findByRole('navigation', { name: 'Navigation' });
-    expect(within(nav).getByRole('link', { name: 'Collection' })).toHaveAttribute('href', '/');
-    expect(within(nav).getByRole('link', { name: 'Prêts' })).toHaveAttribute('href', '/loans');
-    expect(within(nav).getByRole('link', { name: 'Ventes' })).toHaveAttribute('href', '/sales');
+    const links = within(nav).getAllByRole('link');
+    expect(links.map((link) => link.getAttribute('href'))).toEqual(['/', '/loans', '/sales']);
+    expect(within(nav).getByRole('link', { name: 'Collection' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Prêts' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Ventes' })).toBeInTheDocument();
   });
 
-  it('montre le lien Utilisateurs aux seuls administrateurs', async () => {
-    const { unmount } = render(<App />);
-    const nav = await screen.findByRole('navigation', { name: 'Navigation' });
-    expect(within(nav).getByRole('link', { name: 'Utilisateurs' })).toHaveAttribute(
-      'href',
-      '/admin',
-    );
-    unmount();
-
-    server.use(
-      http.get('/api/auth/me', () => HttpResponse.json({ ...SESSION_ADMIN, isAdmin: false })),
-    );
+  it('range les réglages et l’administration dans le menu du compte', async () => {
+    const user = userEvent.setup();
     render(<App />);
-    const userNav = await screen.findByRole('navigation', { name: 'Navigation' });
-    expect(within(userNav).queryByRole('link', { name: 'Utilisateurs' })).not.toBeInTheDocument();
+
+    await user.click(await screen.findByRole('button', { name: /Menu du compte/ }));
+    await user.click(screen.getByRole('link', { name: 'Utilisateurs' }));
+
+    expect(await screen.findByRole('heading', { name: 'Utilisateurs' })).toBeInTheDocument();
+  });
+
+  it('garde la collection active sur ses pages (ajout, import, fiche)', async () => {
+    globalThis.history.pushState({}, '', '/import');
+    render(<App />);
+
+    const nav = await screen.findByRole('navigation', { name: 'Navigation' });
+    expect(within(nav).getByRole('link', { name: 'Collection' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(within(nav).getByRole('link', { name: 'Prêts' })).not.toHaveAttribute('aria-current');
   });
 
   it('se déconnecte et revient à la page de connexion', async () => {
@@ -69,7 +80,8 @@ describe('App connectée', () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(await screen.findByRole('button', { name: 'Se déconnecter' }));
+    await user.click(await screen.findByRole('button', { name: /Menu du compte/ }));
+    await user.click(screen.getByRole('button', { name: 'Se déconnecter' }));
 
     expect(await screen.findByLabelText('Identifiant')).toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();

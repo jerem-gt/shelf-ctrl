@@ -110,7 +110,7 @@ function TrustedDevices() {
 
   return (
     <section className="flex flex-col gap-2">
-      <h4 className="font-medium">{t('twoFactor.devicesTitle')}</h4>
+      <h5 className="font-medium">{t('twoFactor.devicesTitle')}</h5>
       {devices.length === 0 ? (
         <p className="text-sm text-content-subtle">{t('twoFactor.devicesEmpty')}</p>
       ) : (
@@ -147,7 +147,7 @@ function SetupForm({
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-3">
-      <h4 className="font-medium">{t('twoFactor.setupTitle')}</h4>
+      <h5 className="font-medium">{t('twoFactor.setupTitle')}</h5>
       <p className="text-sm text-content-muted">{t('twoFactor.setupScan')}</p>
       <div className="self-center rounded-md border border-line-subtle bg-surface p-3">
         <QRCodeSVG value={setup.uri} size={176} title={t('twoFactor.qrLabel')} />
@@ -195,7 +195,7 @@ function DisableForm({
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-3">
-      <h4 className="font-medium">{t('twoFactor.disableTitle')}</h4>
+      <h5 className="font-medium">{t('twoFactor.disableTitle')}</h5>
       <p className="text-sm text-content-muted">{t('twoFactor.disableIntro')}</p>
       <label className={LABEL_CLASS}>
         {t('twoFactor.password')}
